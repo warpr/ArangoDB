@@ -82,6 +82,12 @@
     <Filter Include="Utils Header">
       <UniqueIdentifier>{e9fb58cc-8cec-41be-94ad-6ec0870d48fb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CapConstraint Header">
+      <UniqueIdentifier>{a62cd376-601d-47e3-8627-7351466719d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CapConstraint Source">
+      <UniqueIdentifier>{72bf77e0-a790-421f-893b-ae3a700c7f1d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -176,12 +182,6 @@
     </ClCompile>
     <ClCompile Include="..\..\arangod\GeoIndex\GeoIndex.c">
       <Filter>GeoIndex Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\arangod\HashIndex\hasharray.c">
-      <Filter>HashIndex Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\arangod\HashIndex\hashindex.c">
-      <Filter>HashIndex Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\arangod\IndexIterators\index-iterator.c">
       <Filter>IndexIterators Source</Filter>
@@ -312,6 +312,18 @@
     <ClCompile Include="..\..\arangod\FulltextIndex\fulltext-wordlist.c">
       <Filter>VocBase Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\arangod\GeoIndex\geo-index.c">
+      <Filter>GeoIndex Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\arangod\CapConstraint\cap-constraint.c">
+      <Filter>CapConstraint Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\arangod\HashIndex\hash-array.c">
+      <Filter>HashIndex Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\arangod\HashIndex\hash-index.c">
+      <Filter>HashIndex Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\arangod\RestServer\ArangoServer.h">
@@ -400,15 +412,6 @@
     </ClInclude>
     <ClInclude Include="..\..\arangod\GeoIndex\GeoIndex.h">
       <Filter>GeoIndex Header</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\arangod\HashIndex\compare.h">
-      <Filter>HashIndex Header</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\arangod\HashIndex\hasharray.h">
-      <Filter>HashIndex Header</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\arangod\HashIndex\hashindex.h">
-      <Filter>HashIndex Header</Filter>
     </ClInclude>
     <ClInclude Include="..\..\arangod\IndexIterators\index-iterator.h">
       <Filter>IndexIterators Header</Filter>
@@ -577,6 +580,18 @@
     </ClInclude>
     <ClInclude Include="..\..\arangod\Utils\CollectionNameResolver.h">
       <Filter>Utils Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\arangod\GeoIndex\geo-index.h">
+      <Filter>GeoIndex Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\arangod\CapConstraint\cap-constraint.h">
+      <Filter>CapConstraint Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\arangod\HashIndex\hash-array.h">
+      <Filter>HashIndex Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\arangod\HashIndex\hash-index.h">
+      <Filter>HashIndex Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
