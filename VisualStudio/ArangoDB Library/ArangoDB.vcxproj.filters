@@ -130,9 +130,6 @@
     <ClInclude Include="..\..\lib\BasicsC\string-buffer.h">
       <Filter>BasicsCHeader</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\lib\BasicsC\strings.h">
-      <Filter>BasicsCHeader</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\lib\BasicsC\structures.h">
       <Filter>BasicsCHeader</Filter>
     </ClInclude>
@@ -421,6 +418,9 @@
     <ClInclude Include="..\..\lib\BasicsC\application-exit.h">
       <Filter>BasicsCHeader</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\lib\BasicsC\tri-strings.h">
+      <Filter>BasicsCHeader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\lib\BasicsC\associative.c">
@@ -475,9 +475,6 @@
       <Filter>BasicsCSource</Filter>
     </ClCompile>
     <ClCompile Include="..\..\lib\BasicsC\string-buffer.c">
-      <Filter>BasicsCSource</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\lib\BasicsC\strings.c">
       <Filter>BasicsCSource</Filter>
     </ClCompile>
     <ClCompile Include="..\..\lib\BasicsC\structures.c">
@@ -715,6 +712,9 @@
       <Filter>BasicsCSource</Filter>
     </ClCompile>
     <ClCompile Include="..\..\lib\BasicsC\application-exit.c">
+      <Filter>BasicsCSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib\BasicsC\tri-strings.c">
       <Filter>BasicsCSource</Filter>
     </ClCompile>
   </ItemGroup>
