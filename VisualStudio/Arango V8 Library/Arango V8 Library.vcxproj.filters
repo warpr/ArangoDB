@@ -60,6 +60,9 @@
     <ClCompile Include="..\..\lib\SimpleHttpClient\SslClientConnection.cpp">
       <Filter>SimpleHttpClient Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\lib\V8\v8-buffer.cpp">
+      <Filter>V8 Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\lib\V8\JSLoader.h">
@@ -103,6 +106,9 @@
     </ClInclude>
     <ClInclude Include="..\..\lib\SimpleHttpClient\SslClientConnection.h">
       <Filter>SimpleHttpClient Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\lib\V8\v8-buffer.h">
+      <Filter>V8 Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
