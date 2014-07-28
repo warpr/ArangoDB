@@ -1,12 +1,10 @@
-/*jslint indent: 2, nomen: true, maxlen: 100, sloppy: true, vars: true, white: true, plusplus: true, evil: true */
-/*global require, exports, module, ArangoServerState */
+/*jslint indent: 2, nomen: true, maxlen: 120, sloppy: true, vars: true, white: true, plusplus: true */
+/*global require */
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief open actions
+/// @brief initialise a new database
 ///
 /// @file
-/// Actions that are mapped under the "_open" path. Allowing to execute the
-/// actions without authorization.
 ///
 /// DISCLAIMER
 ///
@@ -27,37 +25,29 @@
 /// Copyright holder is ArangoDB GmbH, Cologne, Germany
 ///
 /// @author Dr. Frank Celler
-/// @author Copyright 2014, triAGENS GmbH, Cologne, Germany
+/// @author Copyright 2014, ArangoDB GmbH, Cologne, Germany
 ////////////////////////////////////////////////////////////////////////////////
 
-var actions = require("org/arangodb/actions");
-var console = require("console");
-
 // -----------------------------------------------------------------------------
-// --SECTION--                                                  public functions
+// --SECTION--                                         initialise a new database
 // -----------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief ceberus password manager
+/// @brief initialise a new database
 ////////////////////////////////////////////////////////////////////////////////
 
-actions.defineHttp({
-  url: "_open/cerberus",
-  prefix : true,
+(function () {
+  var internal = require("internal");
 
-  callback : function (req, res) {
-    req.user = null;
-    req.database = "_system";
+  UPGRADE_ARGS = {
+    isCluster: true,
+    isCoordinator: true,
+    isRelaunch: false
+  };
 
-    var suffix = "system/cerberus";
-    suffix = suffix.split("/");
-    suffix = suffix.concat(req.suffix);
-
-    req.suffix = suffix;
-
-    actions.routeRequest(req, res);
-  }
-});
+  // run the local upgrade-database script
+  return internal.loadStartup("server/bootstrap/local-database.js");
+}());
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                       END-OF-FILE

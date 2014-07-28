@@ -1,17 +1,14 @@
-/*jslint indent: 2, nomen: true, maxlen: 100, sloppy: true, vars: true, white: true, plusplus: true, stupid: true, continue: true, regexp: true nonpropdel: true*/
-/*global require, exports, module, UPGRADE_ARGS */
+/*jslint indent: 2, nomen: true, maxlen: 120, sloppy: true, vars: true, white: true, plusplus: true */
+/*global require */
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief upgrade check
+/// @brief autoload modules
 ///
 /// @file
-/// 
-/// Version check at the start of the server, will optionally perform necessary
-/// upgrades.
 ///
 /// DISCLAIMER
 ///
-/// Copyright 2014 triAGENS GmbH, Cologne, Germany
+/// Copyright 2014 ArangoDB GmbH, Cologne, Germany
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -25,18 +22,46 @@
 /// See the License for the specific language governing permissions and
 /// limitations under the License.
 ///
-/// Copyright holder is triAGENS GmbH, Cologne, Germany
+/// Copyright holder is ArangoDB GmbH, Cologne, Germany
 ///
 /// @author Dr. Frank Celler
-/// @author Copyright 2014, triAGENS GmbH, Cologne, Germany
+/// @author Copyright 2014, ArangoDB GmbH, Cologne, Germany
 ////////////////////////////////////////////////////////////////////////////////
 
 // -----------------------------------------------------------------------------
-// --SECTION--                                                     upgrade check
+// --SECTION--                                                  autoload modules
 // -----------------------------------------------------------------------------
 
-(function() {
-  return require("org/arangodb/database-version").databaseVersion().result;
+////////////////////////////////////////////////////////////////////////////////
+/// @brief autoload modules
+////////////////////////////////////////////////////////////////////////////////
+
+(function () {
+  return {
+    startup: function () {
+      var internal = require("internal");
+      var db = internal.db;
+
+      db._useDatabase("_system");
+
+      var databases = db._listDatabases();
+      var i;
+
+      try {
+        for (i = 0;  i < databases.length;  ++i) {
+          db._useDatabase(databases[i]);
+
+          internal.autoloadModules();
+        }
+      }
+      catch (err) {
+        db._useDatabase("_system");
+        throw err;
+      }
+
+      return true;
+    }
+  };
 }());
 
 // -----------------------------------------------------------------------------
@@ -45,5 +70,5 @@
 
 // Local Variables:
 // mode: outline-minor
-// outline-regexp: "^\\(/// @brief\\|/// @addtogroup\\|// --SECTION--\\|/// @page\\|/// @}\\)"
+// outline-regexp: "/// @brief\\|/// {@inheritDoc}\\|/// @page\\|// --SECTION--\\|/// @\\}"
 // End:
