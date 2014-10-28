@@ -447,6 +447,8 @@ QueryResult Query::prepare (QueryRegistry* registry) {
       int res = _trx->begin();
 
       if (res != TRI_ERROR_NO_ERROR) {
+        // return the V8 context
+        exitContext();
         return transactionError(res);
       }
 
@@ -454,6 +456,8 @@ QueryResult Query::prepare (QueryRegistry* registry) {
       plan.reset(ExecutionPlan::instanciateFromAst(parser->ast()));
       if (plan.get() == nullptr) {
         // oops
+        // return the V8 context
+        exitContext();
         return QueryResult(TRI_ERROR_INTERNAL, "failed to create query execution engine");
       }
 
@@ -481,6 +485,8 @@ QueryResult Query::prepare (QueryRegistry* registry) {
       }
 
       if (res != TRI_ERROR_NO_ERROR) {
+        // return the V8 context
+        exitContext();
         return transactionError(res);
       }
 
@@ -488,6 +494,8 @@ QueryResult Query::prepare (QueryRegistry* registry) {
       plan.reset(ExecutionPlan::instanciateFromJson(parser->ast(), _queryJson));
       if (plan.get() == nullptr) {
         // oops
+        // return the V8 context
+        exitContext();
         return QueryResult(TRI_ERROR_INTERNAL);
       }
 
@@ -523,6 +531,7 @@ QueryResult Query::prepare (QueryRegistry* registry) {
     _plan = plan.release();
     _parser = parser.release();
     _engine = engine;
+    std::cout << "instanciation complete" << std::endl;
     return QueryResult();
   }
   catch (triagens::arango::Exception const& ex) {
@@ -549,6 +558,7 @@ QueryResult Query::prepare (QueryRegistry* registry) {
 
 QueryResult Query::execute (QueryRegistry* registry) {
   // Now start the execution:
+  std::cout << "Starting execute..." << std::endl;
   try {
     QueryResult res = prepare(registry);
     if (res.code != TRI_ERROR_NO_ERROR) {
@@ -561,6 +571,7 @@ QueryResult Query::execute (QueryRegistry* registry) {
     AqlItemBlock* value;
 
     while (nullptr != (value = _engine->getSome(1, ExecutionBlock::DefaultBatchSize))) {
+      std::cout << "getSome" << std::endl;
       auto doc = value->getDocumentCollection(0);
       size_t const n = value->size();
       // reserve space for n additional results at once
@@ -580,6 +591,7 @@ QueryResult Query::execute (QueryRegistry* registry) {
 
     _trx->commit();
    
+    std::cout << "Have committed." << std::endl;
     cleanupPlanAndEngine(TRI_ERROR_NO_ERROR);
 
     enterState(FINALIZATION); 
@@ -967,6 +979,15 @@ std::vector<std::string> Query::getRulesFromOptions () const {
 ////////////////////////////////////////////////////////////////////////////////
 
 void Query::enterState (ExecutionState state) {
+  std::cout << "enterState: " << state << " ";
+  if (_queryString != nullptr) {
+    std::cout << _queryString;
+  }
+  else {
+    std::cout << "no queryString";
+  }
+  std::cout << std::endl;
+
   if (_profile != nullptr) {
     _profile->enter(_state);
   }
@@ -990,13 +1011,17 @@ std::string Query::getStateString () const {
 void Query::cleanupPlanAndEngine (int errorCode) {
   if (_engine != nullptr) {
     try {
+      std::cout << "Calling shutdown on engine..." << std::endl;
       _engine->shutdown(errorCode); 
+      std::cout << "done shutdown on engine..." << std::endl;
     }
     catch (...) {
       // shutdown may fail but we must not throw here 
       // (we're also called from the destructor)
     }
+    std::cout << "Calling delete on engine..." << std::endl;
     delete _engine;
+    std::cout << "done delete on engine..." << std::endl;
     _engine = nullptr;
   }
 

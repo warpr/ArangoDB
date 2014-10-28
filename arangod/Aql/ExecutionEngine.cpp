@@ -470,7 +470,7 @@ struct CoordinatorInstanciator : public WalkerWorker<ExecutionNode> {
         // create an engine on a remote DB server
         // hand in the previous engine's id
         generatePlansForDBServers((*it), id, true);
-        queryIds = distributePlansToShards((*it), id);
+        distributePlansToShards((*it), id, queryIds);
         resetPlans();
       }
     }
@@ -525,7 +525,7 @@ struct CoordinatorInstanciator : public WalkerWorker<ExecutionNode> {
       result.set("options", options);
       std::unique_ptr<std::string> body(new std::string(triagens::basics::JsonHelper::toString(result.json())));
     
-      // std::cout << "GENERATED A PLAN FOR THE REMOTE SERVERS: " << *(body.get()) << "\n";
+      std::cout << "GENERATED A PLAN FOR THE REMOTE SERVERS: " << *(body.get()) << "\n";
     
       // TODO: pass connectedId to the shard so it can fetch data using the correct query id
       auto headers = new std::map<std::string, std::string>;
@@ -545,12 +545,12 @@ struct CoordinatorInstanciator : public WalkerWorker<ExecutionNode> {
       }
   }
 
-  std::unordered_map<std::string, std::string> aggregateQueryIds(triagens::arango::ClusterComm*& cc,
-                                                                 triagens::arango::CoordTransactionID &coordTransactionID,
-                                                                 Collection *collection) {
+  aggregateQueryIds(triagens::arango::ClusterComm*& cc,
+                    triagens::arango::CoordTransactionID &coordTransactionID,
+                    Collection *collection,
+                    std::unordered_map<std::string, std::string>& queryIds ) {
 
     // pick up the remote query ids
-    std::unordered_map<std::string, std::string> queryIds;
     std::vector<std::string> shardIds = collection->shardIds();
 
     std::string error;
@@ -570,12 +570,12 @@ struct CoordinatorInstanciator : public WalkerWorker<ExecutionNode> {
           triagens::basics::Json response(TRI_UNKNOWN_MEM_ZONE, triagens::basics::JsonHelper::fromString(res->answer->body()));
           std::string queryId = triagens::basics::JsonHelper::getStringValue(response.json(), "queryId", "");
 
-          // std::cout << "DB SERVER ANSWERED WITHOUT ERROR: " << res->answer->body() << ", SHARDID:"  << res->shardID << ", QUERYID: " << queryId << "\n";
+          std::cout << "DB SERVER ANSWERED WITHOUT ERROR: " << res->answer->body() << ", SHARDID:"  << res->shardID << ", QUERYID: " << queryId << "\n";
           queryIds.emplace(std::make_pair(res->shardID, queryId));
           
         }
         else {
-          // std::cout << "DB SERVER ANSWERED WITH ERROR: " << res->answer->body() << "\n";
+          std::cout << "DB SERVER ANSWERED WITH ERROR: " << res->answer->body() << "\n";
         }
       }
       else {
@@ -588,18 +588,17 @@ struct CoordinatorInstanciator : public WalkerWorker<ExecutionNode> {
       delete res;
     }
 
-    // std::cout << "GOT ALL RESPONSES FROM DB SERVERS: " << nrok << "\n";
+    std::cout << "GOT ALL RESPONSES FROM DB SERVERS: " << nrok << "\n";
 
     if (nrok != (int) shardIds.size()) {
       // TODO: provide sensible error message with more details
       THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL, error);
     }
-          
-    return queryIds;
   }
 
-  std::unordered_map<std::string, std::string> distributePlansToShards(EngineInfo const& info,
-                                                                       QueryId connectedId)
+  distributePlansToShards(EngineInfo const& info,
+                          QueryId connectedId,
+                          std::unordered_map<std::string, std::string>& queryIds)
   {
     Collection* collection = info.getCollection();
     // now send the plan to the remote servers
@@ -620,12 +619,13 @@ struct CoordinatorInstanciator : public WalkerWorker<ExecutionNode> {
 
     // fix collection  
     collection->resetCurrentShard();
-    return aggregateQueryIds (cc, coordTransactionID, collection);
+    aggregateQueryIds(cc, coordTransactionID, collection, queryIds);
   }
 
 
-  ExecutionEngine* buildEngineCoordinator (EngineInfo& info,
-                                           std::unordered_map<std::string, std::string> const& queryIds) {
+  ExecutionEngine* buildEngineCoordinator (
+         EngineInfo& info,
+         std::unordered_map<std::string, std::string>& queryIds) {
     // need a new query instance on the coordinator
     auto clone = query->clone(PART_DEPENDENT, false);
 

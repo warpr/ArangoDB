@@ -312,6 +312,8 @@ function startInstance (protocol, options, addArgs, testname) {
     fs.makeDirectoryRecursive(fs.join(tmpDataDir,"data"));
     args.push("--log.file");
     args.push(fs.join(tmpDataDir,"log"));
+    args.push("--log.requests-file");
+    args.push(fs.join(tmpDataDir,"logrequests"));
     if (protocol === "ssl") {
       args.push("--server.keyfile");
       args.push(fs.join("UnitTests","server.pem"));
@@ -347,6 +349,10 @@ function startInstance (protocol, options, addArgs, testname) {
   }
   instanceInfo.endpoint = endpoint;
   instanceInfo.url = url;
+
+  print("Waiting for blabla...");
+  wait(120);
+  print("Going on with blabla...");
 
   return instanceInfo;
 }
