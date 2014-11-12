@@ -85,19 +85,16 @@ class V8Wrapper {
       : _refs(0),
         _object(object),
         _free(free),
-        _isolate(isolate),
-        _theObject(nullptr) {
+        _isolate(isolate) {
 
       // sanity checks
       TRI_ASSERT(_handle.IsEmpty());
       TRI_ASSERT(result->InternalFieldCount() > 0);
 
-      // its private inside the _handle, so we need to remember this.
-      _theObject = result;
       // create a new persistent handle
+      result->SetAlignedPointerInInternalField(0, this);
       _handle = v8::Persistent<v8::Object>(_isolate, result);
 
-      _theObject->SetAlignedPointerInInternalField(0, this);
       _handle.SetWrapperClassId(CID);
 
       // and make it weak, so that we can garbage collect
@@ -113,8 +110,8 @@ class V8Wrapper {
         TRI_ASSERT(_handle.IsNearDeath());
 
         _handle.ClearWeak();
-        _theObject->SetInternalField(0, v8::Undefined(_isolate));
-        _theObject = nullptr;
+        v8::Local<v8::Object> data = v8::Local<v8::Object>::New(_isolate, _handle);
+        data->SetInternalField(0, v8::Undefined(_isolate));
         _handle.Reset();
 
         _handle.Reset();
@@ -199,7 +196,6 @@ class V8Wrapper {
 ////////////////////////////////////////////////////////////////////////////////
 
     v8::Persistent<v8::Object> _handle;
-    v8::Handle<v8::Object>     _theObject;
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                 protected methods
