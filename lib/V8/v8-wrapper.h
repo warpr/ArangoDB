@@ -85,17 +85,20 @@ class V8Wrapper {
       : _refs(0),
         _object(object),
         _free(free),
-        _isolate(isolate) {
+        _isolate(isolate),
+        _theObject(nullptr) {
 
       // sanity checks
       TRI_ASSERT(_handle.IsEmpty());
       TRI_ASSERT(result->InternalFieldCount() > 0);
 
+      // its private inside the _handle, so we need to remember this.
+      _theObject = result;
       // create a new persistent handle
-      _handle = v8::Persistent<v8::Object>::New(_isolate, result);
+      _handle = v8::Persistent<v8::Object>(_isolate, result);
 
-      _handle->SetAlignedPointerInInternalField(0, this);
-      _handle.SetWrapperClassId(_isolate, CID);
+      _theObject->SetAlignedPointerInInternalField(0, this);
+      _handle.SetWrapperClassId(CID);
 
       // and make it weak, so that we can garbage collect
       makeWeak();
@@ -107,13 +110,14 @@ class V8Wrapper {
 
     virtual ~V8Wrapper () {
       if (! _handle.IsEmpty()) {
-        TRI_ASSERT(_handle.IsNearDeath(_isolate));
+        TRI_ASSERT(_handle.IsNearDeath());
 
-        _handle.ClearWeak(_isolate);
-        _handle->SetInternalField(0, v8::Undefined());
-        _handle.Dispose(_isolate);
+        _handle.ClearWeak();
+        _theObject->SetInternalField(0, v8::Undefined(_isolate));
+        _theObject = nullptr;
+        _handle.Reset();
 
-        _handle.Clear();
+        _handle.Reset();
 
         if (_free != 0) {
           _free(_object);
@@ -159,7 +163,7 @@ class V8Wrapper {
     virtual void ref () {
       TRI_ASSERT(! _handle.IsEmpty());
       ++_refs;
-      _handle.ClearWeak(_isolate);
+      _handle.ClearWeak();
     }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -175,9 +179,9 @@ class V8Wrapper {
 ////////////////////////////////////////////////////////////////////////////////
 
     virtual void unref () {
-      TRI_ASSERT(! _handle.IsEmpty());
-      TRI_ASSERT(! _handle.IsWeak(_isolate));
-      TRI_ASSERT(_refs > 0);
+      //TRI_ASSERT(! _handle.IsEmpty());
+      //TRI_ASSERT(! _handle.IsWeak(_isolate));
+      //TRI_ASSERT(_refs > 0);
 
       if (--_refs == 0) {
         makeWeak();
@@ -195,6 +199,7 @@ class V8Wrapper {
 ////////////////////////////////////////////////////////////////////////////////
 
     v8::Persistent<v8::Object> _handle;
+    v8::Handle<v8::Object>     _theObject;
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                 protected methods
@@ -207,8 +212,8 @@ class V8Wrapper {
 ////////////////////////////////////////////////////////////////////////////////
 
     void makeWeak () {
-      _handle.MakeWeak(_isolate, this, weakCallback);
-      _handle.MarkIndependent(_isolate);
+      //_handle.MakeWeak(_isolate, this, weakCallback);
+      //_handle.MarkIndependent(_isolate);
     }
 
 // -----------------------------------------------------------------------------
@@ -258,8 +263,7 @@ class V8Wrapper {
 
       TRI_ASSERT(value == obj->_handle);
       TRI_ASSERT(! obj->_refs);
-      TRI_ASSERT(value.IsNearDeath(isolate));
-
+      TRI_ASSERT(value.IsNearDeath());
       delete obj;
     }
 };
