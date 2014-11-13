@@ -129,7 +129,8 @@ class V8Buffer : public V8Wrapper<V8Buffer, TRI_V8_BUFFER_CID> {
 ////////////////////////////////////////////////////////////////////////////////
 
     static inline char* data (V8Buffer *b) {
-      return data(b->_handle);
+      //// return data(b->_handle);
+      return nullptr;//// TODO
     }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -148,7 +149,7 @@ class V8Buffer : public V8Wrapper<V8Buffer, TRI_V8_BUFFER_CID> {
 ////////////////////////////////////////////////////////////////////////////////
 
     static inline size_t length (V8Buffer *b) {
-      return length(b->_handle);
+      return 0; /// TODO length(b->_handle);
     }
 
 // -----------------------------------------------------------------------------
@@ -173,7 +174,7 @@ class V8Buffer : public V8Wrapper<V8Buffer, TRI_V8_BUFFER_CID> {
 /// @brief instance constructor
 ////////////////////////////////////////////////////////////////////////////////
 
-    static v8::Handle<v8::Value> New (const v8::Arguments &args);
+    static v8::Handle<v8::Value> New (v8::FunctionCallbackInfo<v8::Value> const& args);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief C++ API for constructing fast buffer

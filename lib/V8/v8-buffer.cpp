@@ -653,7 +653,7 @@ namespace {
 /// @brief constructs a new buffer from arguments
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Value> V8Buffer::New (const v8::Arguments& args) {
+v8::Handle<v8::Value> V8Buffer::New (v8::FunctionCallbackInfo<v8::Value> const& args) {
   TRI_V8_CURRENT_GLOBALS_AND_SCOPE;
 
   if (! args.IsConstructCall()) {
@@ -1057,7 +1057,7 @@ static v8::Handle<v8::Value> JS_Fill (const v8::Arguments& args) {
 ////////////////////////////////////////////////////////////////////////////////
 
 static v8::Handle<v8::Value> JS_Copy (const v8::Arguments& args) {
-  v8::HandleScope scope;
+  v8::HandleScope scope(getIsolate());
 
   V8Buffer* source = V8Buffer::unwrap(args.This());
 

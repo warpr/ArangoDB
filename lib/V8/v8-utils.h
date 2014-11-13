@@ -142,73 +142,74 @@ std::string TRI_StringifyV8Exception (v8::TryCatch*);
 /// @brief prints an exception and stacktrace
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_LogV8Exception (v8::TryCatch*);
+void TRI_LogV8Exception (v8::Isolate* isolate,
+                         v8::TryCatch*);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief reads a file into the current context
 ////////////////////////////////////////////////////////////////////////////////
 
-bool TRI_ExecuteGlobalJavaScriptFile (char const*);
+bool TRI_ExecuteGlobalJavaScriptFile (v8::Isolate* isolate, char const*);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief reads all files from a directory into the current context
 ////////////////////////////////////////////////////////////////////////////////
 
-bool TRI_ExecuteGlobalJavaScriptDirectory (char const*);
+bool TRI_ExecuteGlobalJavaScriptDirectory (v8::Isolate* isolate, char const*);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief executes a file in a local context
 ////////////////////////////////////////////////////////////////////////////////
 
-bool TRI_ExecuteLocalJavaScriptFile (char const*);
+bool TRI_ExecuteLocalJavaScriptFile (v8::Isolate* isolate, char const*);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief executes all files from a directory in a local context
 ////////////////////////////////////////////////////////////////////////////////
 
-bool TRI_ExecuteLocalJavaScriptDirectory (char const*);
+bool TRI_ExecuteLocalJavaScriptDirectory (v8::Isolate* isolate, char const*);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief parses a file
 ////////////////////////////////////////////////////////////////////////////////
 
-bool TRI_ParseJavaScriptFile (char const*);
+bool TRI_ParseJavaScriptFile (v8::Isolate* isolate, char const*);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief executes a string within a V8 context, optionally print the result
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Handle<v8::Context> context,
-                                                   v8::Handle<v8::String> const source,
-                                                   v8::Handle<v8::Value> const name,
-                                                   bool printResult);
+void TRI_ExecuteJavaScriptString (const v8::FunctionCallbackInfo<v8::Value>& args,
+                                  v8::Handle<v8::Context> context,
+                                  v8::Handle<v8::String> const source,
+                                  v8::Handle<v8::String> const name,
+                                  bool printResult);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates an error in a javascript object, based on error number only
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Object> TRI_CreateErrorObject (const char* file,
-                                              int line,
-                                              int errorNumber);
+
+
+void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args, int errorNumber);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates an error in a javascript object, using supplied text
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Object> TRI_CreateErrorObject (const char* file,
-                                              int line,
-                                              int errorNumber,
-                                              std::string const& message);
+void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args,
+                            int errorNumber,
+                            std::string const& message);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates an error in a javascript object
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Object> TRI_CreateErrorObject (const char* file,
-                                              int line,
-                                              int errorNumber,
-                                              std::string const& message,
-                                              bool autoPrepend);
+void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args,
+                            int errorNumber,
+                            std::string const& message,
+                            bool autoPrepend);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief normalize a v8 object
