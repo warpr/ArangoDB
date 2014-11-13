@@ -60,6 +60,7 @@ void Print(const v8::FunctionCallbackInfo<v8::Value>& args);
 void Read(const v8::FunctionCallbackInfo<v8::Value>& args);
 void Load(const v8::FunctionCallbackInfo<v8::Value>& args);
 void Quit(const v8::FunctionCallbackInfo<v8::Value>& args);
+void blarg(const v8::FunctionCallbackInfo<v8::Value>& args);
 void Version(const v8::FunctionCallbackInfo<v8::Value>& args);
 v8::Handle<v8::String> ReadFile(v8::Isolate* isolate, const char* name);
 void ReportException(v8::Isolate* isolate, v8::TryCatch* handler);
@@ -131,6 +132,10 @@ v8::Handle<v8::Context> CreateShellContext(v8::Isolate* isolate) {
   // Bind the 'quit' function
   global->Set(v8::String::NewFromUtf8(isolate, "quit"),
               v8::FunctionTemplate::New(isolate, Quit));
+
+  global->Set(v8::String::NewFromUtf8(isolate, "blarg"),
+              v8::FunctionTemplate::New(isolate, blarg));
+
   // Bind the 'version' function
   global->Set(v8::String::NewFromUtf8(isolate, "version"),
               v8::FunctionTemplate::New(isolate, Version));
@@ -215,6 +220,23 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 }
 
+
+// The callback that is invoked by v8 whenever the JavaScript 'load'
+// function is called.  Loads, compiles and executes its argument
+// JavaScript file.
+v8::Handle<v8::Value> blub(v8::Isolate* isolate, v8::Handle<v8::Object> arg) {
+
+  return v8::String::NewFromUtf8(isolate, "snatoheu");
+}
+
+// The callback that is invoked by v8 whenever the JavaScript 'load'
+// function is called.  Loads, compiles and executes its argument
+// JavaScript file.
+void blarg(const v8::FunctionCallbackInfo<v8::Value>& args) {
+
+  args.GetReturnValue().Set(
+                            blub(args.GetIsolate(), v8::Object::New(args.GetIsolate())));
+}
 
 // The callback that is invoked by v8 whenever the JavaScript 'quit'
 // function is called.  Quits.
