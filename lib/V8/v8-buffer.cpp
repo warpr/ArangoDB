@@ -811,9 +811,7 @@ bool V8Buffer::hasInstance (v8::Handle<v8::Value> val) {
 
   TRI_GET_GLOBAL(FastBufferConstructor, v8::Function);
   TRI_ASSERT(! FastBufferConstructor.IsEmpty());
-  /// TODO  return obj->GetConstructor()->StrictEquals(FastBufferConstructor);  
-  TRI_ASSERT(false);
-  return false;
+  return strcmp(*v8::String::Utf8Value(obj->GetConstructorName()), "Buffer") == 0;
 }
 
 // -----------------------------------------------------------------------------
