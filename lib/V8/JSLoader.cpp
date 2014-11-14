@@ -59,9 +59,11 @@ JSLoader::JSLoader () {
 /// @brief executes a named script in the global context
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Value> JSLoader::executeGlobalScript (v8::Handle<v8::Context> context,
-                                                     string const& name) {
-  v8::HandleScope scope;
+void JSLoader::executeGlobalScript (const v8::FunctionCallbackInfo<v8::Value>& args,
+                                    v8::Handle<v8::Context> context,
+                                    string const& name) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
 
   findScript(name);
@@ -71,36 +73,37 @@ v8::Handle<v8::Value> JSLoader::executeGlobalScript (v8::Handle<v8::Context> con
   if (i == _scripts.end()) {
     // correct the path/name
     LOG_ERROR("unknown script '%s'", StringUtils::correctPath(name).c_str());
-    return scope.Close(v8::Undefined());
+    TRI_V8_RETURN_UNDEFINED();
   }
 
-  v8::Handle<v8::Value> result = TRI_ExecuteJavaScriptString(context,
-                                                             v8::String::New(i->second.c_str(), (int) i->second.size()),
-                                                             v8::String::New(name.c_str(), (int) name.size()),
-                                                             false);
+  TRI_ExecuteJavaScriptString(args,
+                              context,
+                              TRI_V8_SYMBOL_STD_STRING(i->second),
+                              TRI_V8_SYMBOL_STD_STRING(name),
+                              false);
 
   if (tryCatch.HasCaught()) {
     if (tryCatch.CanContinue()) {
-      TRI_LogV8Exception(&tryCatch);
-      return scope.Close(v8::Undefined());
+      TRI_LogV8Exception(isolate, &tryCatch);/// TODO: could this be the place where we loose the information about parse errors of scripts?
+      TRI_V8_RETURN_UNDEFINED();
     }
     else {
-      TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(v8::Isolate::GetCurrent()->GetData());
+      TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(v8::Isolate::GetCurrent()->GetData(V8DataSlot));
 
       v8g->_canceled = true;
-      return scope.Close(result);
     }
   }
-
-  return scope.Close(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief loads a named script
 ////////////////////////////////////////////////////////////////////////////////
 
-bool JSLoader::loadScript (v8::Persistent<v8::Context> context, string const& name) {
-  v8::HandleScope scope;
+bool JSLoader::loadScript (const v8::FunctionCallbackInfo<v8::Value>& args,
+                           v8::Persistent<v8::Context> context,
+                           string const& name) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
 
   findScript(name);
@@ -112,19 +115,29 @@ bool JSLoader::loadScript (v8::Persistent<v8::Context> context, string const& na
     LOG_ERROR("unknown script '%s'", StringUtils::correctPath(name).c_str());
     return false;
   }
+  //v8::Handle<v8::Context>
+  //v8::Handle<v8::Context>(context),
+  // v8::Persistent::Cast<v8::Context>(context),
+  v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
+  v8::Handle<v8::Context> localContext = v8::Context::New(isolate, NULL, global);
+  // Enter the newly created execution environment.
+  v8::Context::Scope context_scope(localContext);
 
-  TRI_ExecuteJavaScriptString(context,
-                              v8::String::New(i->second.c_str(), (int) i->second.size()),
-                              v8::String::New(name.c_str(), (int) name.size()),
+  context.Reset(isolate, localContext);
+  
+  TRI_ExecuteJavaScriptString(args,
+                              localContext,
+                              TRI_V8_SYMBOL_STD_STRING(i->second),
+                              TRI_V8_SYMBOL_STD_STRING(name),
                               false);
 
   if (tryCatch.HasCaught()) {
     if (tryCatch.CanContinue()) {
-      TRI_LogV8Exception(&tryCatch);
+      TRI_LogV8Exception(isolate, &tryCatch);
       return false;
     }
     else {
-      TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(v8::Isolate::GetCurrent()->GetData());
+      TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(v8::Isolate::GetCurrent()->GetData(V8DataSlot));
 
       v8g->_canceled = true;
       return false;
@@ -138,8 +151,10 @@ bool JSLoader::loadScript (v8::Persistent<v8::Context> context, string const& na
 /// @brief loads all scripts
 ////////////////////////////////////////////////////////////////////////////////
 
-bool JSLoader::loadAllScripts (v8::Persistent<v8::Context> context) {
-  v8::HandleScope scope;
+bool JSLoader::loadAllScripts (const v8::FunctionCallbackInfo<v8::Value>& args,
+                               v8::Persistent<v8::Context> context) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
 
   if (_directory.empty()) {
     return true;
@@ -150,7 +165,7 @@ bool JSLoader::loadAllScripts (v8::Persistent<v8::Context> context) {
   bool result = true;
 
   for (size_t i = 0; i < parts.size(); i++) {
-    result = result && TRI_ExecuteGlobalJavaScriptDirectory(parts.at(i).c_str());
+    result = result && TRI_ExecuteGlobalJavaScriptDirectory(isolate, parts.at(i).c_str());
   }
 
   return result;
@@ -160,8 +175,10 @@ bool JSLoader::loadAllScripts (v8::Persistent<v8::Context> context) {
 /// @brief loads a named script
 ////////////////////////////////////////////////////////////////////////////////
 
-bool JSLoader::executeScript (v8::Persistent<v8::Context> context, string const& name) {
-  v8::HandleScope scope;
+bool JSLoader::executeScript (const v8::FunctionCallbackInfo<v8::Value>& args,
+                              v8::Persistent<v8::Context> context, string const& name) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
 
   findScript(name);
@@ -174,13 +191,24 @@ bool JSLoader::executeScript (v8::Persistent<v8::Context> context, string const&
 
   string content = "(function() { " + i->second + "/* end-of-file '" + name + "' */ })()";
 
-  TRI_ExecuteJavaScriptString(context,
-                              v8::String::New(content.c_str(), (int) content.size()),
-                              v8::String::New(name.c_str(), (int) name.size()),
+  //v8::Handle<v8::Context>
+  //v8::Handle<v8::Context>(context),
+  // v8::Persistent::Cast<v8::Context>(context),
+  v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
+  v8::Handle<v8::Context> localContext = v8::Context::New(isolate, NULL, global);
+  // Enter the newly created execution environment.
+  v8::Context::Scope context_scope(localContext);
+
+  context.Reset(isolate, localContext);
+  
+  TRI_ExecuteJavaScriptString(args,
+                              localContext,
+                              TRI_V8_SYMBOL_STD_STRING(content),
+                              TRI_V8_SYMBOL_STD_STRING(name),
                               false);
 
   if (! tryCatch.HasCaught()) {
-    TRI_LogV8Exception(&tryCatch);
+    TRI_LogV8Exception(isolate, &tryCatch);
     return false;
   }
 
@@ -191,8 +219,10 @@ bool JSLoader::executeScript (v8::Persistent<v8::Context> context, string const&
 /// @brief executes all scripts
 ////////////////////////////////////////////////////////////////////////////////
 
-bool JSLoader::executeAllScripts (v8::Persistent<v8::Context> context) {
-  v8::HandleScope scope;
+bool JSLoader::executeAllScripts (const v8::FunctionCallbackInfo<v8::Value>& args,
+                                  v8::Persistent<v8::Context> context) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
   bool ok;
 
@@ -200,7 +230,7 @@ bool JSLoader::executeAllScripts (v8::Persistent<v8::Context> context) {
     return true;
   }
 
-  ok = TRI_ExecuteLocalJavaScriptDirectory(_directory.c_str());
+  ok = TRI_ExecuteLocalJavaScriptDirectory(isolate, _directory.c_str());
 
   return ok;
 }

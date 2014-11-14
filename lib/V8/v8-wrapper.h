@@ -93,7 +93,7 @@ class V8Wrapper {
 
       // create a new persistent handle
       result->SetAlignedPointerInInternalField(0, this);
-      _handle = v8::Persistent<v8::Object>(_isolate, result);
+      _handle.Reset(_isolate, result);
 
       _handle.SetWrapperClassId(CID);
 

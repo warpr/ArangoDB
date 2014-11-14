@@ -112,7 +112,6 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_CURRENT_GLOBALS_AND_SCOPE                                \
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();                     \
   TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(isolate->GetData(V8DataSlot)); \
   v8::HandleScope scope(isolate);                                       \
   while (0)
@@ -937,21 +936,21 @@ template <typename TARGET>
 void TRI_V8_AddProtoMethod (v8::Isolate* isolate,
                             TARGET tpl,
                             char const* name,
-                            //   v8::FunctionCallbackInfo<v8::Value> callback,
                             v8::FunctionCallback callback,
                             bool isHidden = false) {
-  // hidden method
+    // hidden method
   if (isHidden) {
-    tpl->PrototypeTemplate()->Set(isolate,
+    tpl->PrototypeTemplate()->Set(TRI_V8_SYMBOL(name),
                                   v8::FunctionTemplate::New(isolate, callback),
                                   v8::DontEnum);
   }
 
   // normal method
   else {
+  
     tpl->PrototypeTemplate()->Set(TRI_V8_SYMBOL(name),
                                   v8::FunctionTemplate::New(isolate, callback));
-  }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -959,16 +958,16 @@ void TRI_V8_AddProtoMethod (v8::Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename TARGET>
-inline void TRI_V8_AddMethod (TARGET tpl,
+inline void TRI_V8_AddMethod (v8::Isolate* isolate,
+                              TARGET tpl,
                               char const* name,
                               v8::Handle<v8::FunctionTemplate> callback,
                               bool isHidden = false) {
   // hidden method
-  ISOLATE;
   if (isHidden) {
-    tpl->Set(TRI_V8_SYMBOL(name),
-             callback->GetFunction(),
-             v8::DontEnum);
+    tpl->ForceSet(TRI_V8_SYMBOL(name),
+                  callback->GetFunction(),
+                  v8::DontEnum);
   }
 
   // normal method
@@ -979,11 +978,11 @@ inline void TRI_V8_AddMethod (TARGET tpl,
 }
 
 template <typename TARGET>
-inline void TRI_V8_AddMethod (TARGET tpl,
+inline void TRI_V8_AddMethod (v8::Isolate* isolate,
+                              TARGET tpl,
                               char const* name,
                               v8::FunctionCallback callback,
                               bool isHidden = false) {
-  ISOLATE;
   // hidden method
   if (isHidden) {
     tpl->Set(TRI_V8_SYMBOL(name),
@@ -998,11 +997,12 @@ inline void TRI_V8_AddMethod (TARGET tpl,
 }
 
 template <>
-inline void TRI_V8_AddMethod (v8::Handle<v8::FunctionTemplate> tpl,
+inline void TRI_V8_AddMethod (v8::Isolate* isolate,
+                              v8::Handle<v8::FunctionTemplate> tpl,
                               const char* const name,
                               v8::FunctionCallback callback,
                               bool isHidden) {
-  TRI_V8_AddMethod(tpl->GetFunction(), name, callback, isHidden);
+  TRI_V8_AddMethod(isolate, tpl->GetFunction(), name, callback, isHidden);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

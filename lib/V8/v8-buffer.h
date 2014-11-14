@@ -174,31 +174,35 @@ class V8Buffer : public V8Wrapper<V8Buffer, TRI_V8_BUFFER_CID> {
 /// @brief instance constructor
 ////////////////////////////////////////////////////////////////////////////////
 
-    static v8::Handle<v8::Value> New (v8::FunctionCallbackInfo<v8::Value> const& args);
+    static void New (v8::FunctionCallbackInfo<v8::Value> const& args);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief C++ API for constructing fast buffer
 ////////////////////////////////////////////////////////////////////////////////
 
-    static v8::Handle<v8::Object> New (v8::Handle<v8::String> string);
+    static v8::Handle<v8::Object> New (v8::Isolate* isolate,
+                                       v8::Handle<v8::String> string);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief constructor
 ////////////////////////////////////////////////////////////////////////////////
 
-    static V8Buffer* New (size_t length);
+    static V8Buffer* New (v8::Isolate* isolate,
+                          size_t length);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief constructor, data is copied
 ////////////////////////////////////////////////////////////////////////////////
 
-    static V8Buffer* New (const char *data, size_t length);
+    static V8Buffer* New (v8::Isolate* isolate,
+                          const char *data, size_t length);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief constructor with free callback
 ////////////////////////////////////////////////////////////////////////////////
 
-    static V8Buffer* New (char *data,
+    static V8Buffer* New (v8::Isolate* isolate,
+                          char *data,
                           size_t length,
                           free_callback_fptr callback,
                           void *hint);
@@ -231,7 +235,11 @@ class V8Buffer : public V8Wrapper<V8Buffer, TRI_V8_BUFFER_CID> {
 /// Buffer::New requires this
 ////////////////////////////////////////////////////////////////////////////////
 
-    void replace (char *data, size_t length, free_callback_fptr callback, void *hint);
+    void replace (v8::Isolate* isolate,
+                  char *data,
+                  size_t length,
+                  free_callback_fptr callback,
+                  void *hint);
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                  public variables
@@ -280,7 +288,7 @@ class V8Buffer : public V8Wrapper<V8Buffer, TRI_V8_BUFFER_CID> {
 /// @brief initialises the buffer module
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitV8Buffer (v8::Handle<v8::Context> context);
+void TRI_InitV8Buffer (v8::Isolate* isolate, v8::Handle<v8::Context> context);
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                       END-OF-FILE

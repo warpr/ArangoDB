@@ -71,32 +71,38 @@ namespace triagens {
 /// @brief executes a named script in the global context
 ////////////////////////////////////////////////////////////////////////////////
 
-        v8::Handle<v8::Value> executeGlobalScript (v8::Handle<v8::Context> context,
-                                                   std::string const& name);
+        void executeGlobalScript (const v8::FunctionCallbackInfo<v8::Value>& args,
+                                  v8::Handle<v8::Context> context,
+                                  std::string const& name);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief loads a named script
 ////////////////////////////////////////////////////////////////////////////////
 
-        bool loadScript (v8::Persistent<v8::Context>, std::string const& name);
+        bool loadScript (const v8::FunctionCallbackInfo<v8::Value>& args,
+                         v8::Persistent<v8::Context>,
+                         std::string const& name);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief loads all scripts
 ////////////////////////////////////////////////////////////////////////////////
 
-        bool loadAllScripts (v8::Persistent<v8::Context>);
+        bool loadAllScripts (const v8::FunctionCallbackInfo<v8::Value>& args,
+                             v8::Persistent<v8::Context>);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief executes a named script
 ////////////////////////////////////////////////////////////////////////////////
 
-        bool executeScript (v8::Persistent<v8::Context>, std::string const& name);
+        bool executeScript (const v8::FunctionCallbackInfo<v8::Value>& args,
+                            v8::Persistent<v8::Context>, std::string const& name);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief executes all scripts
 ////////////////////////////////////////////////////////////////////////////////
 
-        bool executeAllScripts (v8::Persistent<v8::Context>);
+        bool executeAllScripts (const v8::FunctionCallbackInfo<v8::Value>& args,
+                                v8::Persistent<v8::Context>);
     };
   }
 }
