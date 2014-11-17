@@ -3580,7 +3580,7 @@ void TRI_AugmentObject (v8::Isolate* isolate, v8::Handle<v8::Value> value, TRI_j
     }
 
     TRI_json_t* j = (TRI_json_t*) TRI_AtVector(&json->_value._objects, i + 1);
-    v8::Handle<v8::Value> val = TRI_ObjectJson(j);
+    v8::Handle<v8::Value> val = TRI_ObjectJson(isolate, j);
 
     object->Set(TRI_V8_SYMBOL(key->_value._string.data), val);
   }
@@ -3984,11 +3984,10 @@ void TRI_InitV8Utils (v8::Isolate* isolate,
   SleepAndRequeueFunc->Get(TRI_V8_SYMBOL("prototype"))->ToObject()->SetPrototype(ErrorPrototype);
 
   TRI_AddGlobalFunctionVocbase(isolate, context, "SleepAndRequeue", SleepAndRequeueFunc);
-  /*
+  
   rt = ft->InstanceTemplate();
-  v8g->SleepAndRequeueTempl = v8::Persistent<v8::ObjectTemplate>::New(isolate, rt);
-  v8g->SleepAndRequeueFuncTempl = v8::Persistent<v8::FunctionTemplate>::New(isolate, ft);
-  */
+  v8g->SleepAndRequeueTempl.Reset(isolate, rt);
+  v8g->SleepAndRequeueFuncTempl.Reset(isolate, ft);
   // .............................................................................
   // create the global functions
   // .............................................................................

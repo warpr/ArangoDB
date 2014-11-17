@@ -31,6 +31,7 @@
 #include "Basics/StringUtils.h"
 #include "Basics/StringBuffer.h"
 #include "Basics/json-utilities.h"
+#include "V8/v8-globals.h"
 #include "HashIndex/hash-index.h"
 #include "Utils/Exception.h"
 #include "VocBase/edge-collection.h"
@@ -992,8 +993,8 @@ bool IndexRangeBlock::readIndex () {
         engine->getQuery()->exitContext(); 
       }
     };
-
-    v8::HandleScope scope; // do not delete this!
+    ISOLATE;
+    v8::HandleScope scope(isolate); // do not delete this!
 
     size_t posInExpressions = 0;
     for (auto r : en->_ranges.at(0)) {
@@ -1958,8 +1959,8 @@ void CalculationBlock::doEvaluation (AqlItemBlock* result) {
         engine->getQuery()->exitContext(); 
       }
     };
-    
-    v8::HandleScope scope; // do not delete this!
+    ISOLATE;
+    v8::HandleScope scope(isolate); // do not delete this!
 
     for (size_t i = 0; i < n; i++) {
       // need to execute the expression

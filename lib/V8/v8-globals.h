@@ -132,7 +132,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 
 #define TRI_V8_EXCEPTION_MESSAGE(code, message)         \
   TRI_CreateErrorObject(args, code, message, true);     \
-    return
+  return
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief shortcut for throwing an exception and returning
@@ -285,6 +285,10 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 
 #define TRI_V8_RETURN_STDSTR(WHAT)                                      \
   args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT.c_str(), v8::String::kNormalString, (int) WHAT.length())); \
+  return;
+  
+#define TRI_V8_RETURN_PAIR(WHAT, WHATLEN)                                       \
+  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT, v8::String::kNormalString, (int) WHATLEN)); \
   return;
   
 typedef struct TRI_v8_global_s {

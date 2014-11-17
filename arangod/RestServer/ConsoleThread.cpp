@@ -117,13 +117,16 @@ void ConsoleThread::run () {
 ////////////////////////////////////////////////////////////////////////////////
 
 void ConsoleThread::inner () {
-  v8::HandleScope globalScope;
+  ISOLATE;
+  v8::HandleScope globalScope(isolate);
 
   // run the shell
   std::cout << "ArangoDB JavaScript emergency console (" << rest::Version::getVerboseVersionString() << ")" << std::endl;
 
-  v8::Local<v8::String> name(v8::String::New("(arango)"));
-  v8::Context::Scope contextScope(_context->_context);
+  v8::Local<v8::String> name(TRI_V8_SYMBOL("(arango)"));
+
+  auto localContext = v8::Local<v8::Context>::New(isolate, _context->_context);
+  v8::Context::Scope contextScope(localContext);
 
   // .............................................................................
   // run console
@@ -133,16 +136,22 @@ void ConsoleThread::inner () {
   uint64_t nrCommands = 0;
 
   const std::string pretty = "start_pretty_print();";
-  TRI_ExecuteJavaScriptString(_context->_context, v8::String::New(pretty.c_str(), (int) pretty.size()), v8::String::New("(internal)"), false);
-
-  V8LineEditor console(_context->_context, ".arangod.history");
+  /* TODO
+  TRI_ExecuteJavaScriptString(args,
+                              localContext,
+                              TRI_V8_SYMBOL_STD_STRING(pretty),
+                              (int) pretty.size(),
+                              TRI_V8_SYMBOL("(internal)"),
+                              false);
+  */
+  V8LineEditor console(localContext, ".arangod.history");
 
   console.open(true);
 
   while (! _userAborted) {
     if (nrCommands >= gcInterval) {
-      v8::V8::LowMemoryNotification();
-      while(! v8::V8::IdleNotification()) {
+      isolate->LowMemoryNotification();
+      while (! isolate->IdleNotification(1000)) {
       }
 
       nrCommands = 0;
@@ -172,10 +181,10 @@ void ConsoleThread::inner () {
     nrCommands++;
     console.addHistory(input);
 
-    v8::HandleScope scope;
+    v8::HandleScope scope(isolate);
     v8::TryCatch tryCatch;
 
-    TRI_ExecuteJavaScriptString(_context->_context, v8::String::New(input), name, true);
+    /// TODO: args    TRI_ExecuteJavaScriptString(args, localContext, TRI_V8_SYMBOL(input), name, true);
     TRI_FreeString(TRI_UNKNOWN_MEM_ZONE, input);
 
     if (tryCatch.HasCaught()) {
