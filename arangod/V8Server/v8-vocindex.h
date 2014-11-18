@@ -45,7 +45,7 @@ TRI_index_t* TRI_LookupIndexByHandle (triagens::arango::CollectionNameResolver c
                                       TRI_vocbase_col_t const*,
                                       v8::Handle<v8::Value>,
                                       bool,
-                                      v8::Handle<v8::Object>*);
+                                      const v8::FunctionCallbackInfo<v8::Value>& args);
 
 void TRI_InitV8indexCollection (v8::Handle<v8::Context> context,
                                 TRI_server_t* server,

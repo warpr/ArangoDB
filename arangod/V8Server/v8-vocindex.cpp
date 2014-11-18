@@ -1226,7 +1226,7 @@ static v8::Handle<v8::Value> DropIndexCoordinator (TRI_vocbase_col_t const* coll
 /// @endDocuBlock
 ////////////////////////////////////////////////////////////////////////////////
 
-static v8::Handle<v8::Value> JS_DropIndexVocbaseCol (v8::Arguments const& argv) {
+static v8::Handle<v8::Value> JS_DropIndexVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::HandleScope scope;
 
   PREVENT_EMBEDDED_TRANSACTION(scope);
@@ -1256,10 +1256,10 @@ static v8::Handle<v8::Value> JS_DropIndexVocbaseCol (v8::Arguments const& argv) 
   TRI_document_collection_t* document = trx.documentCollection();
 
   v8::Handle<v8::Object> err;
-  TRI_index_t* idx = TRI_LookupIndexByHandle(trx.resolver(), collection, argv[0], true, &err);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(trx.resolver(), collection, argv[0], true, args);
 
   if (idx == nullptr) {
-    if (err.IsEmpty()) {
+    if (err.IsEmpty()) {/// TODO
       return scope.Close(v8::False());
     }
     else {
@@ -1428,7 +1428,7 @@ TRI_index_t* TRI_LookupIndexByHandle (CollectionNameResolver const* resolver,
                                       TRI_vocbase_col_t const* collection,
                                       v8::Handle<v8::Value> const val,
                                       bool ignoreNotFound,
-                                      v8::Handle<v8::Object>* err) {
+                                      const v8::FunctionCallbackInfo<v8::Value>& args) {
   // reset the collection identifier
   string collectionName;
   TRI_idx_iid_t iid = 0;
@@ -1440,8 +1440,8 @@ TRI_index_t* TRI_LookupIndexByHandle (CollectionNameResolver const* resolver,
   // extract the index identifier from a string
   if (val->IsString() || val->IsStringObject() || val->IsNumber()) {
     if (! IsIndexHandle(val, collectionName, iid)) {
-      *err = TRI_CreateErrorObject(__FILE__, __LINE__, TRI_ERROR_ARANGO_INDEX_HANDLE_BAD);
-      return nullptr;
+      TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_INDEX_HANDLE_BAD)
+        nullptr;
     }
   }
 
@@ -1453,8 +1453,8 @@ TRI_index_t* TRI_LookupIndexByHandle (CollectionNameResolver const* resolver,
     v8::Handle<v8::Value> iidVal = obj->Get(v8g->IdKey);
 
     if (! IsIndexHandle(iidVal, collectionName, iid)) {
-      *err = TRI_CreateErrorObject(__FILE__, __LINE__, TRI_ERROR_ARANGO_INDEX_HANDLE_BAD);
-      return nullptr;
+      TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_INDEX_HANDLE_BAD)
+        nullptr;
     }
   }
 
@@ -1462,8 +1462,8 @@ TRI_index_t* TRI_LookupIndexByHandle (CollectionNameResolver const* resolver,
     if (! EqualCollection(resolver, collectionName, collection)) {
       // I wish this error provided me with more information!
       // e.g. 'cannot access index outside the collection it was defined in'
-      *err = TRI_CreateErrorObject(__FILE__, __LINE__, TRI_ERROR_ARANGO_CROSS_COLLECTION_REQUEST);
-      return nullptr;
+      TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_CROSS_COLLECTION_REQUEST)
+        nullptr;
     }
   }
 
@@ -1471,7 +1471,8 @@ TRI_index_t* TRI_LookupIndexByHandle (CollectionNameResolver const* resolver,
 
   if (idx == nullptr) {
     if (! ignoreNotFound) {
-      *err = TRI_CreateErrorObject(__FILE__, __LINE__, TRI_ERROR_ARANGO_INDEX_NOT_FOUND);
+      TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_INDEX_NOT_FOUND)
+        nullptr;
     }
   }
 

@@ -63,9 +63,9 @@ extern int32_t const WRP_VOCBASE_COL_TYPE;
 /// @brief macro to make sure we won't continue if we are inside a transaction
 ////////////////////////////////////////////////////////////////////////////////
 
-#define PREVENT_EMBEDDED_TRANSACTION(scope)                               \
-  if (triagens::arango::V8TransactionContext::IsEmbedded()) {             \
-    TRI_V8_EXCEPTION(scope, TRI_ERROR_TRANSACTION_DISALLOWED_OPERATION);  \
+#define PREVENT_EMBEDDED_TRANSACTION()                                  \
+  if (triagens::arango::V8TransactionContext::IsEmbedded()) {           \
+    TRI_V8_EXCEPTION(TRI_ERROR_TRANSACTION_DISALLOWED_OPERATION);       \
   }
 
 ////////////////////////////////////////////////////////////////////////////////

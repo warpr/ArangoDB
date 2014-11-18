@@ -261,6 +261,9 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 #define TRI_GET_GLOBAL(WHICH, TYPE)                                          \
   auto WHICH = v8::Local<TYPE>::New(isolate, v8g->WHICH);
 
+#define TRI_GET_GLOBAL_STR(WHICH)                               \
+  auto WHICH = v8::Local<v8::String>::New(isolate, v8g->WHICH);
+
 #define TRI_V8_CANCEL_FUNCTION()                           \
   TRI_GET_GLOBALS();                                       \
   v8g->_canceled = true;                                   \
@@ -279,6 +282,10 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
   args.GetReturnValue().Set(v8::False(isolate));        \
   return;
   
+#define TRI_V8_RETURN_NULL()                            \
+  args.GetReturnValue().Set(v8::Null(isolate));         \
+  return;
+
 #define TRI_V8_RETURN(WHAT)               \
   args.GetReturnValue().Set(WHAT);        \
   return;

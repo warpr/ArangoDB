@@ -142,11 +142,11 @@ bool EqualCollection (CollectionNameResolver const* resolver,
 /// @brief create a v8 collection id value from the internal collection id
 ////////////////////////////////////////////////////////////////////////////////
 
-static inline v8::Handle<v8::Value> V8CollectionId (TRI_voc_cid_t cid) {
+static inline v8::Handle<v8::Value> V8CollectionId (v8::Isolate* isolate, TRI_voc_cid_t cid) {
   char buffer[21];
   size_t len = TRI_StringUInt64InPlace((uint64_t) cid, (char*) &buffer);
 
-  return v8::String::New((const char*) buffer, (int) len);
+  return TRI_V8_SYMBOL_PAIR((const char*) buffer, (int) len);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,45 +156,47 @@ static inline v8::Handle<v8::Value> V8CollectionId (TRI_voc_cid_t cid) {
 static void WeakCollectionCallback (v8::Isolate* isolate,
                                     v8::Persistent<v8::Value> object,
                                     void* parameter) {
-  TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(v8::Isolate::GetCurrent()->GetData());
+  v8::HandleScope scope(isolate);
+  TRI_GET_GLOBALS();
   TRI_vocbase_col_t* collection = static_cast<TRI_vocbase_col_t*>(parameter);
 
   v8g->_hasDeadObjects = true;
 
-  v8::HandleScope scope; // do not remove, will fail otherwise!!
-
   // decrease the reference-counter for the database
   TRI_ReleaseVocBase(collection->_vocbase);
-
+  // TODO
   // find the persistent handle
-  v8::Persistent<v8::Value> persistent = v8g->JSCollections[collection];
-  v8g->JSCollections.erase(collection);
+  //  std::map< void*, v8::Persistent<v8::Value> > JSCollections;
+
+  //TRI_GET_GLOBAL(JSCollections, (void*, v8::Persistent<v8::Value>))
+  //  v8::Persistent<v8::Value> persistent = JSCollections[collection];
+  /// v8g->JSCollections.erase(collection);
 
   if (! collection->_isLocal) {
     FreeCoordinatorCollection(collection);
   }
 
   // dispose and clear the persistent handle
-  persistent.Dispose(isolate);
-  persistent.Clear();
+  //  persistent.Reset();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 /// @brief wraps a TRI_vocbase_col_t
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Object> WrapCollection (TRI_vocbase_col_t const* collection) {
-  v8::HandleScope scope;
+v8::Handle<v8::Object> WrapCollection (v8::Isolate* isolate,
+                                       TRI_vocbase_col_t const* collection) {
+  ///v8::HandleScope scope(isolate);
 
-  TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(v8::Isolate::GetCurrent()->GetData());
-  v8::Handle<v8::Object> result = v8g->VocbaseColTempl->NewInstance();
+  TRI_GET_GLOBALS();
+  TRI_GET_GLOBAL(VocbaseColTempl, v8::ObjectTemplate);
+  v8::Handle<v8::Object> result = VocbaseColTempl->NewInstance();
 
   if (! result.IsEmpty()) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
     TRI_vocbase_col_t* c = const_cast<TRI_vocbase_col_t*>(collection);
 
-    result->SetInternalField(SLOT_CLASS_TYPE, v8::Integer::New(WRP_VOCBASE_COL_TYPE));
-    result->SetInternalField(SLOT_CLASS, v8::External::New(c));
+    result->SetInternalField(SLOT_CLASS_TYPE, v8::Integer::New(isolate, WRP_VOCBASE_COL_TYPE));
+    result->SetInternalField(SLOT_CLASS, v8::External::New(isolate, c));
 
     map< void*, v8::Persistent<v8::Value> >::iterator i = v8g->JSCollections.find(c);
 
@@ -202,21 +204,28 @@ v8::Handle<v8::Object> WrapCollection (TRI_vocbase_col_t const* collection) {
       // increase the reference-counter for the database
       TRI_UseVocBase(collection->_vocbase);
 
-      v8::Persistent<v8::Value> persistent = v8::Persistent<v8::Value>::New(isolate, v8::External::New(c));
-      result->SetInternalField(SLOT_COLLECTION, persistent);
+      v8::Persistent<v8::Value> persistent;
 
-      v8g->JSCollections[c] = persistent;
-      persistent.MakeWeak(isolate, c, WeakCollectionCallback);
+      //persistent.Reset(isolate, v8::External::New(isolate, c));
+
+      //result->SetInternalField(SLOT_COLLECTION, persistent); //// TODO
+      result->SetInternalField(SLOT_COLLECTION, v8::External::New(isolate, c));
+
+      //// TODO v8g->JSCollections[c] = persistent;
+      /// TODO persistent.MakeWeak(isolate, c, WeakCollectionCallback);
     }
     else {
-      result->SetInternalField(SLOT_COLLECTION, i->second);
+      //// TODO result->SetInternalField(SLOT_COLLECTION, i->second);
     }
-
-    result->Set(v8g->_IdKey, V8CollectionId(collection->_cid), v8::ReadOnly);
-    result->Set(v8g->_DbNameKey, v8::String::New(collection->_dbName));
-    result->Set(v8g->VersionKey, v8::Number::New((double) collection->_internalVersion), v8::DontEnum);
+    TRI_GET_GLOBAL_STR(_IdKey);
+    TRI_GET_GLOBAL_STR(_DbNameKey);
+    TRI_GET_GLOBAL_STR(VersionKey);
+    result->ForceSet(_IdKey, V8CollectionId(isolate, collection->_cid), v8::ReadOnly);
+    result->Set(_DbNameKey, TRI_V8_SYMBOL(collection->_dbName));
+    result->ForceSet(VersionKey, v8::Number::New(isolate, (double) collection->_internalVersion), v8::DontEnum);
   }
 
-  return scope.Close(result);
+  ///TRI_V8_RETURN(result);
+  return result; /// TODO
 }
 
