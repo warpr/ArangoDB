@@ -422,7 +422,7 @@ v8::Handle<v8::Value> V8ClientConnection::requestData (HttpRequest::HttpRequestT
 /// @brief handles a result
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Value> V8ClientConnection::handleResult () {
+v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
   if (! _httpResult->isComplete()) {
     // not complete
     _lastErrorMessage = _client->getErrorMessage();
@@ -433,9 +433,9 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult () {
 
     _lastHttpReturnCode = HttpResponse::SERVER_ERROR;
 
-    v8::Handle<v8::Object> result = v8::Object::New();
-    result->Set(v8::String::New("error"), v8::Boolean::New(true));
-    result->Set(v8::String::New("code"), v8::Integer::New(HttpResponse::SERVER_ERROR));
+    v8::Handle<v8::Object> result = v8::Object::New(isolate);
+    result->Set(TRI_V8_SYMBOL("error"), v8::Boolean::New(isolate, true));
+    result->Set(TRI_V8_SYMBOL("code"), v8::Integer::New(isolate, HttpResponse::SERVER_ERROR));
 
     int errorNumber = 0;
 
@@ -457,8 +457,8 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult () {
         break;
     }
 
-    result->Set(v8::String::New("errorNum"), v8::Integer::New(errorNumber));
-    result->Set(v8::String::New("errorMessage"), v8::String::New(_lastErrorMessage.c_str(), (int) _lastErrorMessage.length()));
+    result->Set(TRI_V8_SYMBOL("errorNum"), v8::Integer::New(isolate, errorNumber));
+    result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STR(_lastErrorMessage));
 
     return result;
   }

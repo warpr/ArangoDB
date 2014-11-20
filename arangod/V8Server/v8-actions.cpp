@@ -772,7 +772,7 @@ static TRI_action_result_t ExecuteActionVocbase (TRI_vocbase_t* vocbase,
         result.sleep = TRI_ObjectToDouble(exception->ToObject()->Get(SleepKey));
       }
       else {
-        string msg = TRI_StringifyV8Exception(&tryCatch);
+        string msg = TRI_StringifyV8Exception(isolate, &tryCatch);
 
         HttpResponse* response = new HttpResponse(HttpResponse::SERVER_ERROR, request->compatibility());
         response->body().appendText(msg);

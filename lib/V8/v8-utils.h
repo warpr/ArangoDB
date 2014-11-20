@@ -136,7 +136,7 @@ void TRI_AugmentObject (v8::Handle<v8::Value>, TRI_json_t const*);
 /// @brief reports an exception
 ////////////////////////////////////////////////////////////////////////////////
 
-std::string TRI_StringifyV8Exception (v8::TryCatch*);
+std::string TRI_StringifyV8Exception (v8::Isolate* isolate, v8::TryCatch*);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief prints an exception and stacktrace
@@ -189,8 +189,6 @@ void TRI_ExecuteJavaScriptString (const v8::FunctionCallbackInfo<v8::Value>& arg
 /// @brief creates an error in a javascript object, based on error number only
 ////////////////////////////////////////////////////////////////////////////////
 
-
-
 void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args, int errorNumber);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -212,6 +210,29 @@ void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args,
 
 
 ////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object, based on error number only
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args, int errorNumber);
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object, using supplied text
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
+                            int errorNumber,
+                            std::string const& message);
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
+                            int errorNumber,
+                            std::string const& message,
+                            bool autoPrepend);
+
+////////////////////////////////////////////////////////////////////////////////
 /// @brief normalize a v8 object
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -225,7 +246,7 @@ v8::Handle<v8::Value> TRI_normalize_V8_Obj (v8::Handle<v8::Value> obj);
 /// the modification for windows version -- since there isn't one yet!
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Array> TRI_V8PathList (std::string const&);
+v8::Handle<v8::Array> TRI_V8PathList (v8::Isolate* isolate, std::string const&);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief stores the V8 utils function inside the global variable

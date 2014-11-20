@@ -290,6 +290,10 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
   args.GetReturnValue().Set(WHAT);        \
   return;
 
+#define TRI_V8_RETURN_STR(WHAT)                                         \
+  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT));    \
+  return;
+
 #define TRI_V8_RETURN_STDSTR(WHAT)                                      \
   args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT.c_str(), v8::String::kNormalString, (int) WHAT.length())); \
   return;

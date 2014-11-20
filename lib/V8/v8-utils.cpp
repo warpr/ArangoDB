@@ -120,8 +120,8 @@ TRI_Utf8ValueNFC::~TRI_Utf8ValueNFC () {
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief create a Javascript error object
 ////////////////////////////////////////////////////////////////////////////////
-
-static void CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args,
+template <typename ARGS_TYPE>
+static void CreateErrorObject (ARGS_TYPE args,
                                int errorNumber,
                                string const& message) {
   v8::Isolate* isolate = args.GetIsolate();
@@ -163,7 +163,6 @@ static void CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args,
   }
   args.GetIsolate()->ThrowException(errorObject);
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief reads/execute a file into/in the current context
 ////////////////////////////////////////////////////////////////////////////////
@@ -428,7 +427,7 @@ static void JS_Parse (const v8::FunctionCallbackInfo<v8::Value>& args) {
   // compilation failed, we have caught an exception
   if (tryCatch.HasCaught()) {
     if (tryCatch.CanContinue()) {
-      string err = TRI_StringifyV8Exception(&tryCatch);
+      string err = TRI_StringifyV8Exception(isolate, &tryCatch);
 
       TRI_V8_SYNTAX_ERROR(err.c_str());
     }
@@ -3839,7 +3838,9 @@ void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args, int
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  CreateErrorObject(args, errorNumber, TRI_errno_string(errorNumber));
+  CreateErrorObject<v8::FunctionCallbackInfo<v8::Value> const&>(args,
+                                                                errorNumber,
+                                                                TRI_errno_string(errorNumber));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3851,7 +3852,9 @@ void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args,
                             string const& message) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-  CreateErrorObject(args, errorNumber, message);
+  CreateErrorObject<v8::FunctionCallbackInfo<v8::Value> const&>(args,
+                                                                errorNumber,
+                                                                message);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3866,12 +3869,69 @@ void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args,
   v8::HandleScope scope(isolate);
 
   if (autoPrepend) {
-    CreateErrorObject(args, errorNumber, message + ": " + string(TRI_errno_string(errorNumber)));
+    CreateErrorObject<v8::FunctionCallbackInfo<v8::Value> const&>(args,
+                                                                  errorNumber,
+                                                                  message + ": " + string(TRI_errno_string(errorNumber)));
   }
   else {
-    CreateErrorObject(args, errorNumber, message);
+    CreateErrorObject<v8::FunctionCallbackInfo<v8::Value> const&>(args,
+                                                                  errorNumber,
+                                                                  message);
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object, based on error number only
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
+                            int errorNumber) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  CreateErrorObject<v8::PropertyCallbackInfo<v8::Boolean> const&>(args,
+                                                                  errorNumber,
+                                                                  TRI_errno_string(errorNumber));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object, using supplied text
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
+                            int errorNumber,
+                            string const& message) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
+  CreateErrorObject<v8::PropertyCallbackInfo<v8::Boolean> const&>(args,
+                                                                  errorNumber,
+                                                                  message);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
+                            int errorNumber,
+                            string const& message,
+                            bool autoPrepend) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  if (autoPrepend) {
+    CreateErrorObject<v8::PropertyCallbackInfo<v8::Boolean> const&>(args,
+                                                                    errorNumber,
+                                                                    message + ": " + string(TRI_errno_string(errorNumber)));
+  }
+  else {
+    CreateErrorObject<v8::PropertyCallbackInfo<v8::Boolean> const&>(args,
+                                                                    errorNumber,
+                                                                    message);
+  }
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief normalizes a v8 object

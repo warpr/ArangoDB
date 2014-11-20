@@ -1067,7 +1067,7 @@ int ArangoServer::runUnitTests (TRI_vocbase_t* vocbase) {
 
     if (tryCatch.HasCaught()) {
       if (tryCatch.CanContinue()) {
-        std::cerr << TRI_StringifyV8Exception(&tryCatch);
+        std::cerr << TRI_StringifyV8Exception(isolate, &tryCatch);
       }
       else {
         // will stop, so need for v8g->_canceled = true;

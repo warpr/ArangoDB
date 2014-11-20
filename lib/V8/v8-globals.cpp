@@ -294,6 +294,24 @@ void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
   }
 }
 
+void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
+                                   v8::Handle<v8::Context> context,
+                                   char const* name,
+                                   v8::Handle<v8::Function> func,
+                                   bool isHidden) {
+  // all global functions are read-only
+  if (isHidden) {
+    context->Global()->ForceSet(TRI_V8_SYMBOL(name),
+                                v8::FunctionTemplate::New(isolate, func)->GetFunction(),
+                                static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontEnum));
+  }
+  else {
+    context->Global()->ForceSet(TRI_V8_SYMBOL(name),
+                                v8::FunctionTemplate::New(isolate, func)->GetFunction(),
+                                v8::ReadOnly);
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief adds a global read-only variable to the given context
 ////////////////////////////////////////////////////////////////////////////////

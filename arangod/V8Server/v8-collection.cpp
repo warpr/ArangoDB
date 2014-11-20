@@ -2988,7 +2988,7 @@ static void InsertEdgeCol (TRI_vocbase_col_t* col,
   SingleCollectionWriteTransaction<1> trx(new V8TransactionContext(true), col->_vocbase, col->_cid);
 
   // extract from
-  res = TRI_ParseVertex(trx.resolver(), edge._fromCid, fromKey, args[0]);
+  res = TRI_ParseVertex(args, trx.resolver(), edge._fromCid, fromKey, args[0]);
 
   if (res != TRI_ERROR_NO_ERROR) {
     TRI_V8_EXCEPTION(res);
@@ -2996,7 +2996,7 @@ static void InsertEdgeCol (TRI_vocbase_col_t* col,
   edge._fromKey = fromKey.get();
 
   // extract to
-  res = TRI_ParseVertex(trx.resolver(), edge._toCid, toKey, args[1]);
+  res = TRI_ParseVertex(args, trx.resolver(), edge._toCid, toKey, args[1]);
 
   if (res != TRI_ERROR_NO_ERROR) {
     TRI_V8_EXCEPTION(res);

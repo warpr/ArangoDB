@@ -188,7 +188,7 @@ void ConsoleThread::inner () {
     TRI_FreeString(TRI_UNKNOWN_MEM_ZONE, input);
 
     if (tryCatch.HasCaught()) {
-      std::cout << TRI_StringifyV8Exception(&tryCatch);
+      std::cout << TRI_StringifyV8Exception(isolate, &tryCatch);
     }
   }
 

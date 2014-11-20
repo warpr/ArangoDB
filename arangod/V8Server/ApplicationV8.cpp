@@ -689,7 +689,8 @@ void ApplicationV8::enableDevelopmentMode () {
 /// @brief upgrades the database
 ////////////////////////////////////////////////////////////////////////////////
 
-void ApplicationV8::upgradeDatabase (bool skip, bool perform) {
+void ApplicationV8::upgradeDatabase (bool skip,
+                                     bool perform) {
   static const string name = "STANDARD";
   LOG_TRACE("starting database init/upgrade");
 

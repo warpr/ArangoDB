@@ -937,7 +937,7 @@ static void EdgesQuery (TRI_edge_direction_e direction,
       TRI_voc_cid_t cid;
       std::unique_ptr<char[]> key;
 
-      res = TRI_ParseVertex(trx.resolver(), cid, key, vertices->Get(i));
+      res = TRI_ParseVertex(args, trx.resolver(), cid, key, vertices->Get(i));
 
       if (res != TRI_ERROR_NO_ERROR) {
         // error is just ignored
@@ -973,7 +973,7 @@ static void EdgesQuery (TRI_edge_direction_e direction,
     std::unique_ptr<char[]> key;
     TRI_voc_cid_t cid;
 
-    res = TRI_ParseVertex(trx.resolver(), cid, key, args[0]);
+    res = TRI_ParseVertex(args, trx.resolver(), cid, key, args[0]);
 
     if (res != TRI_ERROR_NO_ERROR) {
       TRI_V8_EXCEPTION(res);
