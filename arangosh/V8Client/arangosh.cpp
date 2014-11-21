@@ -1585,7 +1585,7 @@ static void RunShell (v8::Isolate* isolate, v8::Handle<v8::Context> context, boo
     promptError = false;
 
     // execute command and register its result in __LAST__
-    v8::Handle<v8::Value> v;/// TODO = TRI_ExecuteJavaScriptString(context, TRI_V8_SYMBOL(input), name, true);
+    v8::Handle<v8::Value> v = TRI_ExecuteJavaScriptString(isolate, context, TRI_V8_SYMBOL(input), name, true);
 
     if (v.IsEmpty()) {
       context->Global()->Set(TRI_V8_SYMBOL("_last"), v8::Undefined(isolate));
@@ -1655,7 +1655,7 @@ static bool RunUnitTests (v8::Isolate* isolate, v8::Handle<v8::Context> context)
   // run tests
   char const* input = "require(\"org/arangodb/testrunner\").runCommandLineTests();";
   v8::Local<v8::String> name(TRI_V8_SYMBOL("(arangosh)"));
-  /// TODO TRI_ExecuteJavaScriptString(context, TRI_V8_SYMBOL(input), name, true);
+  TRI_ExecuteJavaScriptString(isolate, context, TRI_V8_SYMBOL(input), name, true);
 
   if (tryCatch.HasCaught()) {
     isolate->ThrowException(tryCatch.Exception());
@@ -1802,7 +1802,7 @@ static bool RunJsLint (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   // run tests
   char const* input = "require(\"jslint\").runCommandLineTests({ });";
   v8::Local<v8::String> name(TRI_V8_SYMBOL("(arangosh)"));
-  /// TODO  TRI_ExecuteJavaScriptString(context, TRI_V8_SYMBOL(input), name, true);
+  TRI_ExecuteJavaScriptString(isolate, context, TRI_V8_SYMBOL(input), name, true);
 
   if (tryCatch.HasCaught()) {
     string exception;/// todo (TRI_StringifyV8Exception(&tryCatch));
@@ -2251,7 +2251,7 @@ int main (int argc, char* args[]) {
   files.push_back("client/client.js"); // needs internal
 
   for (size_t i = 0;  i < files.size();  ++i) {
-    bool ok; ///// TODO = StartupLoader.loadScript(localContext, files[i]);
+    bool ok = StartupLoader.loadScript(isolate, context, files[i]);
 
     if (ok) {
       LOG_TRACE("loaded JavaScript file '%s'", files[i].c_str());

@@ -59,10 +59,10 @@ JSLoader::JSLoader () {
 /// @brief executes a named script in the global context
 ////////////////////////////////////////////////////////////////////////////////
 
-void JSLoader::executeGlobalScript (const v8::FunctionCallbackInfo<v8::Value>& args,
-                                    v8::Handle<v8::Context> context,
-                                    string const& name) {
-  v8::Isolate* isolate = args.GetIsolate();
+v8::Handle<v8::Value> JSLoader::executeGlobalScript (v8::Isolate* isolate,
+                                                     v8::Handle<v8::Context> context,
+                                                     string const& name) {
+  v8::Handle<v8::Value> result;
   v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
 
@@ -73,19 +73,19 @@ void JSLoader::executeGlobalScript (const v8::FunctionCallbackInfo<v8::Value>& a
   if (i == _scripts.end()) {
     // correct the path/name
     LOG_ERROR("unknown script '%s'", StringUtils::correctPath(name).c_str());
-    TRI_V8_RETURN_UNDEFINED();
+    return v8::Undefined(isolate);
   }
 
-  TRI_ExecuteJavaScriptString(args,
-                              context,
-                              TRI_V8_SYMBOL_STD_STRING(i->second),
-                              TRI_V8_SYMBOL_STD_STRING(name),
-                              false);
+  result = TRI_ExecuteJavaScriptString(isolate,
+                                       context,
+                                       TRI_V8_SYMBOL_STD_STRING(i->second),
+                                       TRI_V8_SYMBOL_STD_STRING(name),
+                                       false);
 
   if (tryCatch.HasCaught()) {
     if (tryCatch.CanContinue()) {
       TRI_LogV8Exception(isolate, &tryCatch);/// TODO: could this be the place where we loose the information about parse errors of scripts?
-      TRI_V8_RETURN_UNDEFINED();
+      return v8::Undefined(isolate);
     }
     else {
       TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(v8::Isolate::GetCurrent()->GetData(V8DataSlot));
@@ -93,16 +93,16 @@ void JSLoader::executeGlobalScript (const v8::FunctionCallbackInfo<v8::Value>& a
       v8g->_canceled = true;
     }
   }
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief loads a named script
 ////////////////////////////////////////////////////////////////////////////////
 
-bool JSLoader::loadScript (const v8::FunctionCallbackInfo<v8::Value>& args,
-                           v8::Persistent<v8::Context> context,
+bool JSLoader::loadScript (v8::Isolate* isolate,
+                           v8::Persistent<v8::Context>& context,
                            string const& name) {
-  v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
 
@@ -125,7 +125,7 @@ bool JSLoader::loadScript (const v8::FunctionCallbackInfo<v8::Value>& args,
 
   context.Reset(isolate, localContext);
   
-  TRI_ExecuteJavaScriptString(args,
+  TRI_ExecuteJavaScriptString(isolate,
                               localContext,
                               TRI_V8_SYMBOL_STD_STRING(i->second),
                               TRI_V8_SYMBOL_STD_STRING(name),
@@ -151,9 +151,8 @@ bool JSLoader::loadScript (const v8::FunctionCallbackInfo<v8::Value>& args,
 /// @brief loads all scripts
 ////////////////////////////////////////////////////////////////////////////////
 
-bool JSLoader::loadAllScripts (const v8::FunctionCallbackInfo<v8::Value>& args,
+bool JSLoader::loadAllScripts (v8::Isolate* isolate,
                                v8::Persistent<v8::Context> context) {
-  v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
   if (_directory.empty()) {
@@ -175,9 +174,8 @@ bool JSLoader::loadAllScripts (const v8::FunctionCallbackInfo<v8::Value>& args,
 /// @brief loads a named script
 ////////////////////////////////////////////////////////////////////////////////
 
-bool JSLoader::executeScript (const v8::FunctionCallbackInfo<v8::Value>& args,
+bool JSLoader::executeScript (v8::Isolate* isolate,
                               v8::Persistent<v8::Context> context, string const& name) {
-  v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
 
@@ -201,7 +199,7 @@ bool JSLoader::executeScript (const v8::FunctionCallbackInfo<v8::Value>& args,
 
   context.Reset(isolate, localContext);
   
-  TRI_ExecuteJavaScriptString(args,
+  TRI_ExecuteJavaScriptString(isolate,
                               localContext,
                               TRI_V8_SYMBOL_STD_STRING(content),
                               TRI_V8_SYMBOL_STD_STRING(name),
@@ -219,9 +217,8 @@ bool JSLoader::executeScript (const v8::FunctionCallbackInfo<v8::Value>& args,
 /// @brief executes all scripts
 ////////////////////////////////////////////////////////////////////////////////
 
-bool JSLoader::executeAllScripts (const v8::FunctionCallbackInfo<v8::Value>& args,
+bool JSLoader::executeAllScripts (v8::Isolate* isolate,
                                   v8::Persistent<v8::Context> context) {
-  v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
   bool ok;

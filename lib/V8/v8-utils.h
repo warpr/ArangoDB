@@ -179,11 +179,11 @@ bool TRI_ParseJavaScriptFile (v8::Isolate* isolate, char const*);
 /// @brief executes a string within a V8 context, optionally print the result
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_ExecuteJavaScriptString (const v8::FunctionCallbackInfo<v8::Value>& args,
-                                  v8::Handle<v8::Context> context,
-                                  v8::Handle<v8::String> const source,
-                                  v8::Handle<v8::String> const name,
-                                  bool printResult);
+v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Isolate* isolate,
+                                                   v8::Handle<v8::Context> context,
+                                                   v8::Handle<v8::String> const source,
+                                                   v8::Handle<v8::String> const name,
+                                                   bool printResult);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates an error in a javascript object, based on error number only

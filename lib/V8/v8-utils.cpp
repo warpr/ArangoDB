@@ -1529,7 +1529,7 @@ static void JS_Load (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_MESSAGE(TRI_errno(), "cannot read file");
   }
 
-  TRI_ExecuteJavaScriptString(args,
+  TRI_ExecuteJavaScriptString(isolate,
                               isolate->GetCurrentContext(),
                               TRI_V8_SYMBOL_PAIR(content, length),
                               v8::Handle<v8::String>::Cast(args[0]),
@@ -3782,30 +3782,29 @@ bool TRI_ParseJavaScriptFile (v8::Isolate* isolate, char const* filename) {
 /// @brief executes a string within a V8 context, optionally print the result
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_ExecuteJavaScriptString (const v8::FunctionCallbackInfo<v8::Value>& args,
-                                  v8::Handle<v8::Context> context,
-                                  v8::Handle<v8::String> const source,
-                                  v8::Handle<v8::String> const name,
-                                  bool printResult) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
+v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Isolate* isolate,
+                                                   v8::Handle<v8::Context> context,
+                                                   v8::Handle<v8::String> const source,
+                                                   v8::Handle<v8::String> const name,
+                                                   bool printResult) {
+  /// todo ... v8::HandleScope scope(isolate);
 
   v8::Handle<v8::Value> result;
   v8::Handle<v8::Script> script = v8::Script::Compile(source, name);
 
   // compilation failed, print errors that happened during compilation
   if (script.IsEmpty()) {
-    TRI_V8_RETURN(result);
+    return result;
   }
 
   // compilation succeeded, run the script
   result = script->Run();
 
   if (result.IsEmpty()) {
-    TRI_V8_RETURN(result);
+    /// TRI_V8_RETURN(result);
+    return result;
   }
   else {
-
     // if all went well and the result wasn't undefined then print the returned value
     if (printResult && ! result->IsUndefined()) {
       v8::TryCatch tryCatch;
@@ -3821,12 +3820,13 @@ void TRI_ExecuteJavaScriptString (const v8::FunctionCallbackInfo<v8::Value>& arg
           TRI_LogV8Exception(isolate, &tryCatch);
         }
         else {
-          TRI_V8_CANCEL_FUNCTION();
+          TRI_V8_CANCEL_FUNCTION_ISOLATE();
         }
       }
     }
 
-    TRI_V8_RETURN(result);
+    return result;
+    /// TRI_V8_RETURN(result);
   }
 }
 
