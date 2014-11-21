@@ -282,26 +282,26 @@ void RestVocbaseBaseHandler::generateDocument (SingleCollectionReadOnlyTransacti
   string const&& id = DocumentHelper::assembleDocumentId(resolver->getCollectionName(cid), key);
 
   TRI_json_t augmented;
-  TRI_InitArray2Json(TRI_UNKNOWN_MEM_ZONE, &augmented, 5);
+  TRI_InitArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, 5);
 
-  TRI_json_t* idJson = TRI_CreateString2CopyJson(TRI_UNKNOWN_MEM_ZONE, id.c_str(), id.size());
+  TRI_json_t* idJson = TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, id.c_str(), id.size());
 
   if (idJson != nullptr) {
-    TRI_Insert2ArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_ID, idJson);
+    TRI_InsertArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_ID, idJson);
   }
 
   // convert rid from uint64_t to string
   string const&& rid = StringUtils::itoa(mptr._rid);
-  TRI_json_t* rev = TRI_CreateString2CopyJson(TRI_UNKNOWN_MEM_ZONE, rid.c_str(), rid.size());
+  TRI_json_t* rev = TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, rid.c_str(), rid.size());
 
   if (rev != nullptr) {
-    TRI_Insert2ArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_REV, rev);
+    TRI_InsertArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_REV, rev);
   }
 
-  TRI_json_t* keyJson = TRI_CreateString2CopyJson(TRI_UNKNOWN_MEM_ZONE, key, strlen(key));
+  TRI_json_t* keyJson = TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, key, strlen(key));
 
   if (keyJson) {
-    TRI_Insert2ArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_KEY, keyJson);
+    TRI_InsertArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_KEY, keyJson);
   }
 
   TRI_df_marker_type_t type = static_cast<TRI_df_marker_t const*>(mptr.getDataPtr())->_type;  // PROTECTED by trx passed from above
@@ -311,16 +311,16 @@ void RestVocbaseBaseHandler::generateDocument (SingleCollectionReadOnlyTransacti
     string const&& from = DocumentHelper::assembleDocumentId(resolver->getCollectionNameCluster(marker->_fromCid), string((char*) marker + marker->_offsetFromKey));
     string const&& to = DocumentHelper::assembleDocumentId(resolver->getCollectionNameCluster(marker->_toCid), string((char*) marker +  marker->_offsetToKey));
 
-    TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_FROM, TRI_CreateString2CopyJson(TRI_UNKNOWN_MEM_ZONE, from.c_str(), from.size()));
-    TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_TO, TRI_CreateString2CopyJson(TRI_UNKNOWN_MEM_ZONE, to.c_str(), to.size()));
+    TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_FROM, TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, from.c_str(), from.size()));
+    TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_TO, TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, to.c_str(), to.size()));
   }
   else if (type == TRI_WAL_MARKER_EDGE) {
     triagens::wal::edge_marker_t const* marker = static_cast<triagens::wal::edge_marker_t const*>(mptr.getDataPtr());  // PROTECTED by trx passed from above
     string const&& from = DocumentHelper::assembleDocumentId(resolver->getCollectionNameCluster(marker->_fromCid), string((char*) marker + marker->_offsetFromKey));
     string const&& to = DocumentHelper::assembleDocumentId(resolver->getCollectionNameCluster(marker->_toCid), string((char*) marker +  marker->_offsetToKey));
 
-    TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_FROM, TRI_CreateString2CopyJson(TRI_UNKNOWN_MEM_ZONE, from.c_str(), from.size()));
-    TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_TO, TRI_CreateString2CopyJson(TRI_UNKNOWN_MEM_ZONE, to.c_str(), to.size()));
+    TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_FROM, TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, from.c_str(), from.size()));
+    TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, &augmented, TRI_VOC_ATTRIBUTE_TO, TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, to.c_str(), to.size()));
   }
 
   // add document identifier to buffer

@@ -436,7 +436,7 @@ void RestReplicationHandler::handleCommandLoggerStart () {
   TRI_json_t result;
 
   TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &result);
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &result, "running", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &result, "running", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
 
   generateResult(&result);
   TRI_DestroyJson(TRI_CORE_MEM_ZONE, &result);
@@ -453,7 +453,7 @@ void RestReplicationHandler::handleCommandLoggerStop () {
   TRI_json_t result;
 
   TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &result);
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &result, "running", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &result, "running", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
 
   generateResult(&result);
   TRI_DestroyJson(TRI_CORE_MEM_ZONE, &result);
@@ -546,11 +546,11 @@ void RestReplicationHandler::handleCommandLoggerState () {
 
   triagens::wal::LogfileManagerState const&& s = triagens::wal::LogfileManager::instance()->state();
 
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, state, "running", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, true));
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, state, "lastLogTick", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, StringUtils::itoa(s.lastTick).c_str()));
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, state, "totalEvents", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, (double) s.numEvents));
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, state, "time", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, s.timeString.c_str()));
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "state", state);
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, state, "running", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, true));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, state, "lastLogTick", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, StringUtils::itoa(s.lastTick).c_str()));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, state, "totalEvents", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, (double) s.numEvents));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, state, "time", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, s.timeString.c_str()));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "state", state);
 
   // "server" part
   TRI_json_t* server = TRI_CreateArrayJson(TRI_UNKNOWN_MEM_ZONE);
@@ -561,16 +561,16 @@ void RestReplicationHandler::handleCommandLoggerState () {
     return;
   }
 
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, server, "version", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, TRI_VERSION));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, server, "version", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, TRI_VERSION));
   char* serverIdString = TRI_StringUInt64(TRI_GetIdServer());
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, server, "serverId", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, serverIdString));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, server, "serverId", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, serverIdString));
   TRI_FreeString(TRI_CORE_MEM_ZONE, serverIdString);
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "server", server);
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "server", server);
  
   // clients
   TRI_json_t* clients = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE);
   if (clients != nullptr) {
-    TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "clients", clients);
+    TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "clients", clients);
   }
 
   generateResult(json);
@@ -590,10 +590,10 @@ void RestReplicationHandler::handleCommandLoggerGetConfig () {
     return;
   }
 
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "autoStart", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, true));
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "logRemoteChanges", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, true));
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "maxEvents", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, 0));
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "maxEventsSize", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, 0));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "autoStart", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, true));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "logRemoteChanges", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, true));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "maxEvents", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, 0));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "maxEventsSize", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, 0));
 
   generateResult(json);
   TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, json);
@@ -750,7 +750,7 @@ void RestReplicationHandler::handleCommandBatch () {
 
     TRI_json_t json;
     TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &json);
-    TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &json, "id", TRI_CreateStringJson(TRI_CORE_MEM_ZONE, TRI_StringUInt64((uint64_t) id)));
+    TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &json, "id", TRI_CreateStringJson(TRI_CORE_MEM_ZONE, TRI_StringUInt64((uint64_t) id)));
 
     generateResult(&json);
     TRI_DestroyJson(TRI_CORE_MEM_ZONE, &json);
@@ -1334,7 +1334,7 @@ void RestReplicationHandler::handleCommandInventory () {
   char* tickString = TRI_StringUInt64(tick);
 
   // add collections data
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &json, "collections", collections);
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &json, "collections", collections);
 
   // "state"
   TRI_json_t* state = TRI_CreateArrayJson(TRI_CORE_MEM_ZONE);
@@ -1347,14 +1347,14 @@ void RestReplicationHandler::handleCommandInventory () {
 
   triagens::wal::LogfileManagerState const&& s = triagens::wal::LogfileManager::instance()->state();
 
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, state, "running", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, state, "running", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
   char* logTickString = TRI_StringUInt64(s.lastTick);
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, state, "lastLogTick", TRI_CreateStringJson(TRI_CORE_MEM_ZONE, logTickString));
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, state, "totalEvents", TRI_CreateNumberJson(TRI_CORE_MEM_ZONE, (double) s.numEvents));
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, state, "time", TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, s.timeString.c_str()));
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &json, "state", state);
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, state, "lastLogTick", TRI_CreateStringJson(TRI_CORE_MEM_ZONE, logTickString));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, state, "totalEvents", TRI_CreateNumberJson(TRI_CORE_MEM_ZONE, (double) s.numEvents));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, state, "time", TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, s.timeString.c_str()));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &json, "state", state);
 
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &json, "tick", TRI_CreateStringJson(TRI_CORE_MEM_ZONE, tickString));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &json, "tick", TRI_CreateStringJson(TRI_CORE_MEM_ZONE, tickString));
 
   generateResult(&json);
   TRI_DestroyJson(TRI_CORE_MEM_ZONE, &json);
@@ -1429,7 +1429,7 @@ void RestReplicationHandler::handleCommandClusterInventory () {
         else {
           map<string, AgencyCommResultEntry>::iterator it;
           TRI_json_t json;
-          TRI_InitList2Json(TRI_CORE_MEM_ZONE, &json, result._values.size());
+          TRI_InitListJson(TRI_CORE_MEM_ZONE, &json, result._values.size());
           for (it = result._values.begin();
                it != result._values.end(); ++it) {
             if (TRI_IsArrayJson(it->second._json)) {
@@ -1438,14 +1438,15 @@ void RestReplicationHandler::handleCommandClusterInventory () {
               if (includeSystem ||
                   (TRI_IsBooleanJson(sub) && ! sub->_value._boolean)) {
                 TRI_json_t coll;
-                TRI_InitArray2Json(TRI_CORE_MEM_ZONE, &coll, 2);
-                sub = TRI_LookupArrayJson( it->second._json, "indexes");
-                TRI_InsertArrayJson(TRI_CORE_MEM_ZONE,&coll,"indexes", sub);
-                TRI_DeleteArrayJson(TRI_UNKNOWN_MEM_ZONE, it->second._json,
-                                    "indexes");
+                TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &coll, 2);
+                sub = TRI_LookupArrayJson(it->second._json, "indexes");
+                TRI_json_t copy;
+                TRI_CopyToJson(TRI_CORE_MEM_ZONE, &copy, sub);
+                TRI_InsertArrayJson(TRI_CORE_MEM_ZONE, &coll, "indexes", &copy);
+                TRI_DeleteArrayJson(TRI_UNKNOWN_MEM_ZONE, it->second._json, "indexes");
                 // This makes a copy to the CORE memory zone:
-                TRI_InsertArrayJson(TRI_CORE_MEM_ZONE, &coll,
-                                     "parameters", it->second._json);
+                TRI_CopyToJson(TRI_CORE_MEM_ZONE, &copy, it->second._json);
+                TRI_InsertArrayJson(TRI_CORE_MEM_ZONE, &coll, "parameters", &copy);
                 TRI_PushBack2ListJson(&json, &coll);
               }
             }
@@ -1453,15 +1454,15 @@ void RestReplicationHandler::handleCommandClusterInventory () {
 
           // Wrap the result:
           TRI_json_t wrap;
-          TRI_InitArray2Json(TRI_CORE_MEM_ZONE, &wrap, 3);
-          TRI_Insert2ArrayJson(TRI_CORE_MEM_ZONE,&wrap,"collections", &json);
+          TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &wrap, 3);
+          TRI_InsertArrayJson(TRI_CORE_MEM_ZONE,&wrap,"collections", &json);
           TRI_voc_tick_t tick = TRI_CurrentTickServer();
           char* tickString = TRI_StringUInt64(tick);
           char const* stateStatic = "unused";
           char* state = TRI_DuplicateString2(stateStatic, strlen(stateStatic));
-          TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &wrap, "tick",
+          TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &wrap, "tick",
                       TRI_CreateStringJson(TRI_CORE_MEM_ZONE, tickString));
-          TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &wrap, "state",
+          TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &wrap, "state",
                       TRI_CreateStringJson(TRI_CORE_MEM_ZONE, state));
 
           generateResult(HttpResponse::OK, &wrap);
@@ -1664,7 +1665,7 @@ void RestReplicationHandler::handleCommandRestoreCollection () {
     TRI_json_t result;
 
     TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &result);
-    TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &result, "result", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
+    TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &result, "result", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
 
     generateResult(&result);
   }
@@ -1710,7 +1711,7 @@ void RestReplicationHandler::handleCommandRestoreIndexes () {
     TRI_json_t result;
 
     TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &result);
-    TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &result, "result", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
+    TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &result, "result", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
 
     generateResult(&result);
   }
@@ -1918,7 +1919,7 @@ int RestReplicationHandler::processRestoreCollectionCoordinator (
   TRI_voc_tick_t new_id_tick = ci->uniqid(1);
   string new_id = StringUtils::itoa(new_id_tick);
   TRI_ReplaceArrayJson(TRI_UNKNOWN_MEM_ZONE, parameters, "id",
-                       TRI_CreateString2CopyJson(TRI_UNKNOWN_MEM_ZONE,
+                       TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE,
                                               new_id.c_str(), new_id.size()));
 
   // Now put in the primary and an edge index if needed:
@@ -1941,7 +1942,7 @@ int RestReplicationHandler::processRestoreCollectionCoordinator (
   TRI_json_t* idxJson = idx->json(idx);
   TRI_FreeIndex(idx);
 
-  TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, indexes, TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, idxJson));
+  TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, indexes, TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, idxJson));
   TRI_FreeJson(TRI_CORE_MEM_ZONE, idxJson);
 
   TRI_json_t* type = TRI_LookupArrayJson(parameters, "type");
@@ -1967,11 +1968,11 @@ int RestReplicationHandler::processRestoreCollectionCoordinator (
     idxJson = idx->json(idx);
     TRI_FreeIndex(idx);
 
-    TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, indexes, TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, idxJson));
+    TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, indexes, TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, idxJson));
     TRI_FreeJson(TRI_CORE_MEM_ZONE, idxJson);
   }
 
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, parameters, "indexes", indexes);
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, parameters, "indexes", indexes);
 
   int res = ci->createCollectionCoordinator(dbName, new_id, numberOfShards,
                                             parameters, errorMsg, 0.0);
@@ -2489,7 +2490,7 @@ void RestReplicationHandler::handleCommandRestoreData () {
     TRI_json_t result;
 
     TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &result);
-    TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &result, "result", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
+    TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &result, "result", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
 
     generateResult(&result);
   }
@@ -2779,7 +2780,7 @@ void RestReplicationHandler::handleCommandRestoreDataCoordinator () {
   TRI_json_t result;
 
   TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &result);
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &result, "result", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &result, "result", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, true));
 
   generateResult(&result);
 }
@@ -3199,35 +3200,35 @@ void RestReplicationHandler::handleCommandSync () {
 
   TRI_json_t* jsonCollections = TRI_CreateListJson(TRI_CORE_MEM_ZONE);
 
-  if (jsonCollections != 0) {
+  if (jsonCollections != nullptr) {
     map<TRI_voc_cid_t, string>::const_iterator it;
     const map<TRI_voc_cid_t, string>& c = syncer.getProcessedCollections();
 
     for (it = c.begin(); it != c.end(); ++it) {
       const string cidString = StringUtils::itoa((*it).first);
 
-      TRI_json_t* ci = TRI_CreateArray2Json(TRI_CORE_MEM_ZONE, 2);
+      TRI_json_t* ci = TRI_CreateArrayJson(TRI_CORE_MEM_ZONE, 2);
 
-      if (ci != 0) {
-        TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE,
+      if (ci != nullptr) {
+        TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE,
                              ci,
                              "id",
-                             TRI_CreateString2CopyJson(TRI_CORE_MEM_ZONE, cidString.c_str(), cidString.size()));
+                             TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, cidString.c_str(), cidString.size()));
 
-        TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE,
+        TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE,
                              ci,
                              "name",
-                             TRI_CreateString2CopyJson(TRI_CORE_MEM_ZONE, (*it).second.c_str(), (*it).second.size()));
+                             TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, (*it).second.c_str(), (*it).second.size()));
 
-        TRI_PushBack3ListJson(TRI_CORE_MEM_ZONE, jsonCollections, ci);
+        TRI_PushBackAndFreeListJson(TRI_CORE_MEM_ZONE, jsonCollections, ci);
       }
     }
 
-    TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &result, "collections", jsonCollections);
+    TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &result, "collections", jsonCollections);
   }
 
   char* tickString = TRI_StringUInt64(syncer.getLastLogTick());
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &result, "lastLogTick", TRI_CreateStringJson(TRI_CORE_MEM_ZONE, tickString));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &result, "lastLogTick", TRI_CreateStringJson(TRI_CORE_MEM_ZONE, tickString));
 
   generateResult(&result);
   TRI_DestroyJson(TRI_CORE_MEM_ZONE, &result);
@@ -3269,14 +3270,13 @@ void RestReplicationHandler::handleCommandSync () {
 
 void RestReplicationHandler::handleCommandServerId () {
   TRI_json_t result;
-
   TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &result);
 
   const string serverId = StringUtils::itoa(TRI_GetIdServer());
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE,
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE,
                        &result,
                        "serverId",
-                       TRI_CreateString2CopyJson(TRI_CORE_MEM_ZONE, serverId.c_str(), serverId.size()));
+                       TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, serverId.c_str(), serverId.size()));
 
   generateResult(&result);
   TRI_DestroyJson(TRI_CORE_MEM_ZONE, &result);

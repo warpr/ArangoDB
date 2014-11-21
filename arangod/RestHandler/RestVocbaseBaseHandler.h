@@ -393,7 +393,7 @@ namespace triagens {
 /// {@inheritDoc}
 ////////////////////////////////////////////////////////////////////////////////
 
-        bool isDirect () {
+        bool isDirect () override {
           return false;
         }
 
@@ -401,7 +401,7 @@ namespace triagens {
 /// {@inheritDoc}
 ////////////////////////////////////////////////////////////////////////////////
 
-        std::string const& queue () const;
+        std::string const& queue () const override;
 
     };
   }

@@ -1340,9 +1340,9 @@ int ClusterInfo::setCollectionPropertiesCoordinator (string const& databaseName,
   TRI_DeleteArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "journalSize");
   TRI_DeleteArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "waitForSync");
 
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "doCompact", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, info->_doCompact));
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "journalSize", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, info->_maximalSize));
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "waitForSync", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, info->_waitForSync));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "doCompact", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, info->_doCompact));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "journalSize", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, info->_maximalSize));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "waitForSync", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, info->_waitForSync));
 
   res.clear();
   res = ac.setValue("Plan/Collections/" + databaseName + "/" + collectionID, copy, 0.0);
@@ -1408,7 +1408,7 @@ int ClusterInfo::setCollectionStatusCoordinator (string const& databaseName,
   }
 
   TRI_DeleteArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "status");
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "status", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, status));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, copy, "status", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, status));
 
   res.clear();
   res = ac.setValue("Plan/Collections/" + databaseName + "/" + collectionID, copy, 0.0);
@@ -1507,7 +1507,7 @@ int ClusterInfo::ensureIndexCoordinator (string const& databaseName,
           if (isSame) {
             // found an existing index...
             resultJson = TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, other);
-            TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, resultJson, "isNewlyCreated", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, false));
+            TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, resultJson, "isNewlyCreated", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, false));
             return setErrormsg(TRI_ERROR_NO_ERROR, errorMsg);
           }
         }
@@ -1556,12 +1556,12 @@ int ClusterInfo::ensureIndexCoordinator (string const& databaseName,
     }
 
     // add index id
-    TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE,
+    TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE,
                          newIndex,
                          "id",
                          TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, idString.c_str()));
 
-    TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, idx, TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, newIndex));
+    TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, idx, TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, newIndex));
 
     AgencyCommResult result = ac.setValue("Plan/Collections/" + databaseName + "/" + collectionID,
                                           collectionJson,
@@ -1641,7 +1641,7 @@ int ClusterInfo::ensureIndexCoordinator (string const& databaseName,
 
         if (found == (size_t) numberOfShards) {
           resultJson = newIndex;
-          TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, resultJson, "isNewlyCreated", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, true));
+          TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, resultJson, "isNewlyCreated", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, true));
 
           return setErrormsg(TRI_ERROR_NO_ERROR, errorMsg);
         }
@@ -1751,10 +1751,10 @@ int ClusterInfo::dropIndexCoordinator (string const& databaseName,
         continue;
       }
 
-      TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, copy, TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, v));
+      TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, copy, TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, v));
     }
 
-    TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, collectionJson, "indexes", copy);
+    TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, collectionJson, "indexes", copy);
 
     if (! found) {
       // did not find the sought index

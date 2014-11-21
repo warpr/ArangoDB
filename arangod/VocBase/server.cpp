@@ -282,13 +282,13 @@ static int WriteServerId (char const* filename) {
   TRI_ASSERT(ServerId != 0);
 
   idString = TRI_StringUInt64((uint64_t) ServerId);
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, json, "serverId", TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, idString));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, json, "serverId", TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, idString));
   TRI_FreeString(TRI_CORE_MEM_ZONE, idString);
 
   tt = time(0);
   TRI_gmtime(tt, &tb);
   len = strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", &tb);
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, json, "createdTime", TRI_CreateString2CopyJson(TRI_CORE_MEM_ZONE, buffer, len));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, json, "createdTime", TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, buffer, len));
 
   // save json info to file
   LOG_DEBUG("Writing server id to file '%s'", filename);
@@ -1094,11 +1094,11 @@ static int SaveDatabaseParameters (TRI_voc_tick_t id,
   }
   */
 
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, json, "id", TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, tickString));
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, json, "name", TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, name));
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, json, "deleted", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, deleted));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, json, "id", TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, tickString));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, json, "name", TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, name));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, json, "deleted", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, deleted));
   // TODO: save properties later when it is clear what they will be used
-  // TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, json, "properties", properties);
+  // TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, json, "properties", properties);
 
   TRI_FreeString(TRI_CORE_MEM_ZONE, tickString);
 
@@ -2192,9 +2192,9 @@ int TRI_CreateDatabaseServer (TRI_server_t* server,
   TRI_ASSERT(vocbase != nullptr);
   
   char* tickString = TRI_StringUInt64(databaseId);
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "id", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, tickString));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "id", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, tickString));
   TRI_FreeString(TRI_CORE_MEM_ZONE, tickString);
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "name", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, name));
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "name", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, name));
 
 
   // create application directories

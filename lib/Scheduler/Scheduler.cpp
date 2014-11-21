@@ -243,7 +243,7 @@ TRI_json_t* Scheduler::getUserTasks () {
         TRI_json_t* obj = task->toJson();
 
         if (obj != nullptr) {
-          TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, json, obj);
+          TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, json, obj);
         }
       }
 

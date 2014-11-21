@@ -248,6 +248,7 @@ static inline void InitNumber (TRI_json_t* result,
 static inline void InitString (TRI_json_t* result,
                                char* value,
                                size_t length) {
+  TRI_ASSERT(length != SIZE_MAX);
   result->_type = TRI_JSON_STRING;
   result->_value._string.data = value;
   result->_value._string.length = (uint32_t) length + 1;
@@ -260,6 +261,7 @@ static inline void InitString (TRI_json_t* result,
 static inline void InitStringReference (TRI_json_t* result,
                                         const char* value,
                                         size_t length) {
+  TRI_ASSERT(length != SIZE_MAX);
   result->_type = TRI_JSON_STRING_REFERENCE;
   result->_value._string.data = (char*) value;
   result->_value._string.length = (uint32_t) length + 1;
@@ -273,6 +275,7 @@ static inline void InitList (TRI_memory_zone_t* zone,
                              TRI_json_t* result,
                              size_t initialSize) {
   result->_type = TRI_JSON_LIST;
+
   if (initialSize == 0) {
     TRI_InitVector(&result->_value._objects, zone, sizeof(TRI_json_t));
   }
@@ -305,9 +308,17 @@ static inline void InitArray (TRI_memory_zone_t* zone,
 ////////////////////////////////////////////////////////////////////////////////
 
 static inline bool IsString (TRI_json_t const* json) {
-  return (json != NULL &&
+  return (json != nullptr &&
           (json->_type == TRI_JSON_STRING || json->_type == TRI_JSON_STRING_REFERENCE) &&
-          json->_value._string.data != NULL);
+          json->_value._string.data != nullptr);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief allocates memory for a JSON object
+////////////////////////////////////////////////////////////////////////////////
+
+static inline TRI_json_t* Allocate (TRI_memory_zone_t* zone) {
+  return static_cast<TRI_json_t*>(TRI_Allocate(zone, sizeof(TRI_json_t), false));
 }
 
 // -----------------------------------------------------------------------------
@@ -319,15 +330,11 @@ static inline bool IsString (TRI_json_t const* json) {
 ////////////////////////////////////////////////////////////////////////////////
 
 TRI_json_t* TRI_CreateNullJson (TRI_memory_zone_t* zone) {
-  TRI_json_t* result;
+  TRI_json_t* result = Allocate(zone);
 
-  result = (TRI_json_t*) TRI_Allocate(zone, sizeof(TRI_json_t), false);
-
-  if (result == NULL) {
-    return NULL;
+  if (result != nullptr) {
+    InitNull(result);
   }
-
-  InitNull(result);
 
   return result;
 }
@@ -345,15 +352,11 @@ void TRI_InitNullJson (TRI_json_t* result) {
 ////////////////////////////////////////////////////////////////////////////////
 
 TRI_json_t* TRI_CreateBooleanJson (TRI_memory_zone_t* zone, bool value) {
-  TRI_json_t* result;
+  TRI_json_t* result = Allocate(zone);
 
-  result = (TRI_json_t*) TRI_Allocate(zone, sizeof(TRI_json_t), false);
-
-  if (result == NULL) {
-    return NULL;
+  if (result != nullptr) {
+    InitBoolean(result, value);
   }
-
-  InitBoolean(result, value);
 
   return result;
 }
@@ -371,15 +374,11 @@ void TRI_InitBooleanJson (TRI_json_t* result, bool value) {
 ////////////////////////////////////////////////////////////////////////////////
 
 TRI_json_t* TRI_CreateNumberJson (TRI_memory_zone_t* zone, double value) {
-  TRI_json_t* result;
+  TRI_json_t* result = Allocate(zone);
 
-  result = (TRI_json_t*) TRI_Allocate(zone, sizeof(TRI_json_t), false);
-
-  if (result == NULL) {
-    return NULL;
+  if (result != nullptr) {
+    InitNumber(result, value);
   }
-
-  InitNumber(result, value);
 
   return result;
 }
@@ -393,57 +392,39 @@ void TRI_InitNumberJson (TRI_json_t* result, double value) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief creates a string object
-////////////////////////////////////////////////////////////////////////////////
-
-TRI_json_t* TRI_CreateStringJson (TRI_memory_zone_t* zone, char* value) {
-  return TRI_CreateString2Json(zone, value, strlen(value));
-}
-
-////////////////////////////////////////////////////////////////////////////////
 /// @brief creates a string object with given length
 ////////////////////////////////////////////////////////////////////////////////
 
-TRI_json_t* TRI_CreateString2Json (TRI_memory_zone_t* zone, char* value, size_t length) {
-  TRI_json_t* result;
+TRI_json_t* TRI_CreateStringJson (TRI_memory_zone_t* zone, char* value, size_t length) {
+  TRI_json_t* result = Allocate(zone);
 
-  result = (TRI_json_t*) TRI_Allocate(zone, sizeof(TRI_json_t), false);
-
-  if (result == NULL) {
-    return NULL;
+  if (result != nullptr) {
+    if (length == SIZE_MAX) {
+      length = strlen(value);
+    }
+    InitString(result, value, length);
   }
 
-  InitString(result, value, length);
-
   return result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates a string object, copying the string
-////////////////////////////////////////////////////////////////////////////////
-
-TRI_json_t* TRI_CreateStringCopyJson (TRI_memory_zone_t* zone, char const* value) {
-  return TRI_CreateString2CopyJson(zone, value, strlen(value));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates a string object with given length, copying the string
 ////////////////////////////////////////////////////////////////////////////////
 
-TRI_json_t* TRI_CreateString2CopyJson (TRI_memory_zone_t* zone, char const* value, size_t length) {
-  TRI_json_t* result;
+TRI_json_t* TRI_CreateStringCopyJson (TRI_memory_zone_t* zone, char const* value, size_t length) {
+  TRI_json_t* result = Allocate(zone);
 
-  result = (TRI_json_t*) TRI_Allocate(zone, sizeof(TRI_json_t), false);
+  if (result != nullptr) {
+    if (length == SIZE_MAX) {
+      length = strlen(value);
+    }
+    InitString(result, TRI_DuplicateString2Z(zone, value, length), length);
 
-  if (result == NULL) {
-    return NULL;
-  }
-
-  InitString(result, TRI_DuplicateString2Z(zone, value, length), length);
-
-  if (result->_value._string.data == NULL) {
-    TRI_Free(zone, result);
-    return NULL;
+    if (result->_value._string.data == nullptr) {
+      TRI_Free(zone, result);
+      return nullptr;
+    }
   }
 
   return result;
@@ -453,15 +434,10 @@ TRI_json_t* TRI_CreateString2CopyJson (TRI_memory_zone_t* zone, char const* valu
 /// @brief initialises a string object
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitStringJson (TRI_json_t* result, char* value) {
-  InitString(result, value, strlen(value));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief initialises a string object
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_InitString2Json (TRI_json_t* result, char* value, size_t length) {
+void TRI_InitStringJson (TRI_json_t* result, char* value, size_t length) {
+  if (length == SIZE_MAX) {
+    length = strlen(value);
+  }
   InitString(result, value, length);
 }
 
@@ -469,45 +445,33 @@ void TRI_InitString2Json (TRI_json_t* result, char* value, size_t length) {
 /// @brief initialises a string object
 ////////////////////////////////////////////////////////////////////////////////
 
-int TRI_InitStringCopyJson (TRI_memory_zone_t* zone, TRI_json_t* result, char const* value) {
-  return TRI_InitString2CopyJson(zone, result, value, strlen(value));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief initialises a string object
-////////////////////////////////////////////////////////////////////////////////
-
-int TRI_InitString2CopyJson (TRI_memory_zone_t* zone, TRI_json_t* result, char const* value, size_t length) {
+int TRI_InitStringCopyJson (TRI_memory_zone_t* zone, TRI_json_t* result, char const* value, size_t length) {
+  if (length == SIZE_MAX) {
+    length = strlen(value);
+  }
   char* copy = TRI_DuplicateString2Z(zone, value, length);
+
   if (copy == nullptr) {
     return TRI_ERROR_OUT_OF_MEMORY;
   }
+
   InitString(result, copy, length);
   return TRI_ERROR_NO_ERROR;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates a string reference object
-////////////////////////////////////////////////////////////////////////////////
-
-TRI_json_t* TRI_CreateStringReferenceJson (TRI_memory_zone_t* zone, const char* value) {
-  return TRI_CreateStringReference2Json(zone, value, strlen(value));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates a string reference object with given length
 ////////////////////////////////////////////////////////////////////////////////
 
-TRI_json_t* TRI_CreateStringReference2Json (TRI_memory_zone_t* zone, const char* value, size_t length) {
-  TRI_json_t* result;
+TRI_json_t* TRI_CreateStringReferenceJson (TRI_memory_zone_t* zone, char const* value, size_t length) {
+  TRI_json_t* result = Allocate(zone);
 
-  result = (TRI_json_t*) TRI_Allocate(zone, sizeof(TRI_json_t), false);
-
-  if (result == NULL) {
-    return NULL;
+  if (result != nullptr) {
+    if (length == SIZE_MAX) {
+      length = strlen(value);
+    }
+    InitStringReference(result, value, length);
   }
-
-  InitStringReference(result, value, length);
 
   return result;
 }
@@ -516,58 +480,33 @@ TRI_json_t* TRI_CreateStringReference2Json (TRI_memory_zone_t* zone, const char*
 /// @brief initialises a string reference object
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitStringReferenceJson (TRI_json_t* result, const char* value) {
-  InitStringReference(result, value, strlen(value));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief initialises a string reference object
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_InitStringReference2Json (TRI_json_t* result, const char* value, size_t length) {
+void TRI_InitStringReferenceJson (TRI_json_t* result, char const* value, size_t length) {
+  if (length == SIZE_MAX) {
+    length = strlen(value);
+  }
   InitStringReference(result, value, length);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates a list object
-////////////////////////////////////////////////////////////////////////////////
-
-TRI_json_t* TRI_CreateListJson (TRI_memory_zone_t* zone) {
-  return TRI_CreateList2Json(zone, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates a list object, with the specified initial size
 ////////////////////////////////////////////////////////////////////////////////
 
-TRI_json_t* TRI_CreateList2Json (TRI_memory_zone_t* zone,
-                                 const size_t initialSize) {
-  TRI_json_t* result;
+TRI_json_t* TRI_CreateListJson (TRI_memory_zone_t* zone,
+                                size_t initialSize) {
+  TRI_json_t* result = Allocate(zone);
 
-  result = (TRI_json_t*) TRI_Allocate(zone, sizeof(TRI_json_t), false);
-
-  if (result == NULL) {
-    return NULL;
+  if (result != nullptr) {
+    InitList(zone, result, initialSize);
   }
 
-  InitList(zone, result, initialSize);
-
   return result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief initialises a list object
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_InitListJson (TRI_memory_zone_t* zone, TRI_json_t* result) {
-  InitList(zone, result, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief initialises a list object with a given size
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitList2Json (TRI_memory_zone_t* zone, TRI_json_t* result, size_t length) {
+void TRI_InitListJson (TRI_memory_zone_t* zone, TRI_json_t* result, size_t length) {
   InitList(zone, result, length);
 }
 
@@ -575,44 +514,24 @@ void TRI_InitList2Json (TRI_memory_zone_t* zone, TRI_json_t* result, size_t leng
 /// @brief creates an object
 ////////////////////////////////////////////////////////////////////////////////
 
-TRI_json_t* TRI_CreateArrayJson (TRI_memory_zone_t* zone) {
-  return TRI_CreateArray2Json(zone, 0);
-}
+TRI_json_t* TRI_CreateArrayJson (TRI_memory_zone_t* zone,
+                                 size_t initialSize) {
+  TRI_json_t* result = Allocate(zone);
 
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates an object
-////////////////////////////////////////////////////////////////////////////////
-
-TRI_json_t* TRI_CreateArray2Json (TRI_memory_zone_t* zone,
-                                  const size_t initialSize) {
-  TRI_json_t* result;
-
-  result = (TRI_json_t*) TRI_Allocate(zone, sizeof(TRI_json_t), false);
-
-  if (result == NULL) {
-    return NULL;
+  if (result != nullptr) {
+    InitArray(zone, result, initialSize);
   }
 
-  InitArray(zone, result, initialSize);
-
   return result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief initialises an array
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_InitArrayJson (TRI_memory_zone_t* zone, TRI_json_t* result) {
-  InitArray(zone, result, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief initialises an array, using a specific initial size
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitArray2Json (TRI_memory_zone_t* zone,
-                         TRI_json_t* result,
-                         size_t initialSize) {
+void TRI_InitArrayJson (TRI_memory_zone_t* zone,
+                        TRI_json_t* result,
+                        size_t initialSize) {
   InitArray(zone, result, initialSize);
 }
 
@@ -638,11 +557,10 @@ void TRI_DestroyJson (TRI_memory_zone_t* zone, TRI_json_t* object) {
 
     case TRI_JSON_ARRAY:
     case TRI_JSON_LIST: {
-      size_t i, n;
-      n = object->_value._objects._length;
+      size_t const n = object->_value._objects._length;
 
-      for (i = 0;  i < n;  ++i) {
-        TRI_json_t* v = (TRI_json_t*) TRI_AtVector(&object->_value._objects, i);
+      for (size_t i = 0;  i < n;  ++i) {
+        TRI_json_t* v = static_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, i));
         TRI_DestroyJson(zone, v);
       }
 
@@ -669,7 +587,7 @@ void TRI_FreeJson (TRI_memory_zone_t* zone, TRI_json_t* object) {
 /// @brief returns a user printeable string
 ////////////////////////////////////////////////////////////////////////////////
 
-const char *TRI_GetTypeString(TRI_json_t* object) {
+char const* TRI_GetTypeString (TRI_json_t const* object) {
   switch (object->_type) {
     case TRI_JSON_UNUSED:
       return "unused";
@@ -696,7 +614,7 @@ const char *TRI_GetTypeString(TRI_json_t* object) {
 ////////////////////////////////////////////////////////////////////////////////
 
 size_t TRI_LengthListJson (TRI_json_t const* json) {
-  TRI_ASSERT(json != NULL && json->_type==TRI_JSON_LIST);
+  TRI_ASSERT(json != nullptr && json->_type==TRI_JSON_LIST);
   return json->_value._objects._length;
 }
 
@@ -705,7 +623,7 @@ size_t TRI_LengthListJson (TRI_json_t const* json) {
 ////////////////////////////////////////////////////////////////////////////////
 
 bool TRI_IsArrayJson (TRI_json_t const* json) {
-  return json != NULL && json->_type == TRI_JSON_ARRAY;
+  return json != nullptr && json->_type == TRI_JSON_ARRAY;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -713,7 +631,7 @@ bool TRI_IsArrayJson (TRI_json_t const* json) {
 ////////////////////////////////////////////////////////////////////////////////
 
 bool TRI_IsListJson (TRI_json_t const* json) {
-  return json != NULL && json->_type == TRI_JSON_LIST;
+  return json != nullptr && json->_type == TRI_JSON_LIST;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -729,7 +647,7 @@ bool TRI_IsStringJson (TRI_json_t const* json) {
 ////////////////////////////////////////////////////////////////////////////////
 
 bool TRI_IsNumberJson (TRI_json_t const* json) {
-  return json != NULL && json->_type == TRI_JSON_NUMBER;
+  return json != nullptr && json->_type == TRI_JSON_NUMBER;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -737,7 +655,7 @@ bool TRI_IsNumberJson (TRI_json_t const* json) {
 ////////////////////////////////////////////////////////////////////////////////
 
 bool TRI_IsBooleanJson (TRI_json_t const* json) {
-  return json != NULL && json->_type == TRI_JSON_BOOLEAN;
+  return json != nullptr && json->_type == TRI_JSON_BOOLEAN;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -745,10 +663,10 @@ bool TRI_IsBooleanJson (TRI_json_t const* json) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void TRI_PushBackListJson (TRI_memory_zone_t* zone, TRI_json_t* list, TRI_json_t const* object) {
-  TRI_json_t copy;
-
   TRI_ASSERT(list->_type == TRI_JSON_LIST);
+  TRI_ASSERT(object != nullptr);
 
+  TRI_json_t copy;
   TRI_CopyToJson(zone, &copy, object);
 
   TRI_PushBackVector(&list->_value._objects, &copy);
@@ -760,7 +678,7 @@ void TRI_PushBackListJson (TRI_memory_zone_t* zone, TRI_json_t* list, TRI_json_t
 
 int TRI_PushBack2ListJson (TRI_json_t* list, TRI_json_t const* object) {
   TRI_ASSERT(list->_type == TRI_JSON_LIST);
-  TRI_ASSERT(object);
+  TRI_ASSERT(object != nullptr);
 
   return TRI_PushBackVector(&list->_value._objects, object);
 }
@@ -769,14 +687,12 @@ int TRI_PushBack2ListJson (TRI_json_t* list, TRI_json_t const* object) {
 /// @brief adds a new sub-object, not copying it but freeing the pointer
 ////////////////////////////////////////////////////////////////////////////////
 
-int TRI_PushBack3ListJson (TRI_memory_zone_t* zone, TRI_json_t* list, TRI_json_t* object) {
-  int res;
-
-  if (object == NULL) {
+int TRI_PushBackAndFreeListJson (TRI_memory_zone_t* zone, TRI_json_t* list, TRI_json_t* object) {
+  if (object == nullptr) {
     return TRI_ERROR_INTERNAL;
   }
 
-  res = TRI_PushBack2ListJson(list, object);
+  int res = TRI_PushBack2ListJson(list, object);
   TRI_Free(zone, object);
 
   return res;
@@ -787,75 +703,29 @@ int TRI_PushBack3ListJson (TRI_memory_zone_t* zone, TRI_json_t* list, TRI_json_t
 ////////////////////////////////////////////////////////////////////////////////
 
 TRI_json_t* TRI_LookupListJson (TRI_json_t const* object, size_t pos) {
-  size_t n;
-
   TRI_ASSERT(object->_type == TRI_JSON_LIST);
 
-  n = object->_value._objects._length;
+  size_t n = object->_value._objects._length;
 
   if (pos >= n) {
     // out of bounds
-    return NULL;
+    return nullptr;
   }
 
-  return (TRI_json_t*) TRI_AtVector(&object->_value._objects, pos);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief adds a new attribute to an object, using copy
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_InsertArrayJson (TRI_memory_zone_t* zone,
-                          TRI_json_t* object,
-                          char const* name,
-                          TRI_json_t const* subobject) {
-  TRI_json_t copy;
-  char* att;
-  size_t length;
-
-  TRI_ASSERT(object->_type == TRI_JSON_ARRAY);
-
-  if (subobject == NULL) {
-    return;
-  }
-
-  if (TRI_ReserveVector(&object->_value._objects, 2) != TRI_ERROR_NO_ERROR) {
-    // TODO: signal OOM here
-    return;
-  }
-
-  // attribute name
-  length = strlen(name);
-  att = TRI_DuplicateString2Z(zone, name, length);
-
-  if (att == NULL) {
-    // TODO: signal OOM here
-    return;
-  }
-
-  InitString(&copy, att, length);
-  TRI_PushBackVector(&object->_value._objects, &copy);
-
-  // attribute value
-  TRI_CopyToJson(zone, &copy, subobject);
-  TRI_PushBackVector(&object->_value._objects, &copy);
+  return static_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, pos));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief adds a new attribute to an object, not copying it
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_Insert2ArrayJson (TRI_memory_zone_t* zone,
-                           TRI_json_t* object,
-                           char const* name,
-                           TRI_json_t* subobject) {
-  TRI_json_t copy;
-  char* att;
-  size_t length;
-
+void TRI_InsertArrayJson (TRI_memory_zone_t* zone,
+                          TRI_json_t* object,
+                          char const* name,
+                          TRI_json_t const* subobject) {
   TRI_ASSERT(object->_type == TRI_JSON_ARRAY);
 
-  if (subobject == NULL) {
+  if (subobject == nullptr) {
     return;
   }
 
@@ -864,15 +734,16 @@ void TRI_Insert2ArrayJson (TRI_memory_zone_t* zone,
     return;
   }
 
-  length = strlen(name);
-  att = TRI_DuplicateString2Z(zone, name, length);
+  // attribute name
+  size_t length = strlen(name);
+  char* att = TRI_DuplicateString2Z(zone, name, length);
 
-  if (att == NULL) {
+  if (att == nullptr) {
     // TODO: signal OOM here
     return;
   }
 
-  // attribute name
+  TRI_json_t copy;
   InitString(&copy, att, length);
   TRI_PushBackVector(&object->_value._objects, &copy);
 
@@ -884,9 +755,9 @@ void TRI_Insert2ArrayJson (TRI_memory_zone_t* zone,
 /// @brief adds a new attribute, not copying it but freeing the pointer
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_Insert3ArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char const* name, TRI_json_t* subobject) {
-  if (object != NULL && subobject != NULL) {
-    TRI_Insert2ArrayJson(zone, object, name, subobject);
+void TRI_InsertAndFreeArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char const* name, TRI_json_t* subobject) {
+  if (object != nullptr && subobject != nullptr) {
+    TRI_InsertArrayJson(zone, object, name, subobject);
     TRI_Free(zone, subobject);
   }
 }
@@ -895,18 +766,12 @@ void TRI_Insert3ArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char con
 /// @brief adds a new attribute name and value
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_Insert4ArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char* name, size_t nameLength, TRI_json_t* subobject, bool asReference) {
+void TRI_Insert4ArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char* name, size_t nameLength, TRI_json_t* subobject) {
+  TRI_ASSERT(name != nullptr);
   TRI_json_t copy;
 
-  TRI_ASSERT(name != NULL);
-
   // attribute name
-  if (asReference) {
-    InitStringReference(&copy, name, nameLength);
-  }
-  else {
-    InitString(&copy, name, nameLength);
-  }
+  InitString(&copy, name, nameLength);
 
   if (TRI_ReserveVector(&object->_value._objects, 2) != TRI_ERROR_NO_ERROR) {
     // TODO: signal OOM here
@@ -920,36 +785,32 @@ void TRI_Insert4ArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char* na
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief looks up an attribute in an json array
+/// @brief looks up an attribute in a json array
 ////////////////////////////////////////////////////////////////////////////////
 
-TRI_json_t* TRI_LookupArrayJson (const TRI_json_t* const object, char const* name) {
-  size_t i, n;
-
-  if (object == NULL) {
-    return NULL;
+TRI_json_t* TRI_LookupArrayJson (TRI_json_t const* object, char const* name) {
+  if (object == nullptr) {
+    return nullptr;
   }
 
   TRI_ASSERT(object->_type == TRI_JSON_ARRAY);
-  TRI_ASSERT(name != NULL);
+  TRI_ASSERT(name != nullptr);
 
-  n = object->_value._objects._length;
+  size_t const n = object->_value._objects._length;
 
-  for (i = 0;  i < n;  i += 2) {
-    TRI_json_t* key;
-
-    key = (TRI_json_t*) TRI_AtVector(&object->_value._objects, i);
+  for (size_t i = 0;  i < n;  i += 2) {
+    TRI_json_t const* key = static_cast<TRI_json_t const*>(TRI_AtVector(&object->_value._objects, i));
 
     if (! IsString(key)) {
       continue;
     }
 
     if (TRI_EqualString(key->_value._string.data, name)) {
-      return (TRI_json_t*) TRI_AtVector(&object->_value._objects, i + 1);
+      return static_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, i + 1));
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -957,36 +818,29 @@ TRI_json_t* TRI_LookupArrayJson (const TRI_json_t* const object, char const* nam
 ////////////////////////////////////////////////////////////////////////////////
 
 bool TRI_DeleteArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char const* name) {
-  size_t n;
-  size_t i;
-
   TRI_ASSERT(object->_type == TRI_JSON_ARRAY);
-  TRI_ASSERT(name);
+  TRI_ASSERT(name != nullptr);
 
-  n = object->_value._objects._length;
+  size_t const n = object->_value._objects._length;
 
-  for (i = 0;  i < n;  i += 2) {
-    TRI_json_t* key;
-
-    key = (TRI_json_t*) TRI_AtVector(&object->_value._objects, i);
+  for (size_t i = 0;  i < n;  i += 2) {
+    TRI_json_t const* key = static_cast<TRI_json_t const*>(TRI_AtVector(&object->_value._objects, i));
 
     if (! IsString(key)) {
       continue;
     }
 
     if (TRI_EqualString(key->_value._string.data, name)) {
-      TRI_json_t* old;
-
       // remove key
-      old = (TRI_json_t*) TRI_AtVector(&object->_value._objects, i);
-      if (old != NULL) {
+      TRI_json_t* old = static_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, i));
+      if (old != nullptr) {
         TRI_DestroyJson(zone, old);
       }
       TRI_RemoveVector(&object->_value._objects, i);
 
       // remove value
-      old = (TRI_json_t*) TRI_AtVector(&object->_value._objects, i);
-      if (old != NULL) {
+      old = static_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, i));
+      if (old != nullptr) {
         TRI_DestroyJson(zone, old);
       }
       TRI_RemoveVector(&object->_value._objects, i);
@@ -1003,32 +857,27 @@ bool TRI_DeleteArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char cons
 ////////////////////////////////////////////////////////////////////////////////
 
 bool TRI_ReplaceArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char const* name, TRI_json_t* replacement) {
-  size_t n;
-  size_t i;
-
   TRI_ASSERT(object->_type == TRI_JSON_ARRAY);
-  TRI_ASSERT(name);
+  TRI_ASSERT(name != nullptr);
 
-  n = object->_value._objects._length;
+  size_t const n = object->_value._objects._length;
 
-  for (i = 0;  i < n;  i += 2) {
-    TRI_json_t* key;
-
-    key = (TRI_json_t*) TRI_AtVector(&object->_value._objects, i);
+  for (size_t i = 0;  i < n;  i += 2) {
+    TRI_json_t const* key = static_cast<TRI_json_t const*>(TRI_AtVector(&object->_value._objects, i));
 
     if (! IsString(key)) {
       continue;
     }
 
     if (TRI_EqualString(key->_value._string.data, name)) {
-      TRI_json_t copy;
-
       // retrieve the old element
-      TRI_json_t* old = (TRI_json_t*) TRI_AtVector(&object->_value._objects, i + 1);
-      if (old != NULL) {
+      TRI_json_t* old = static_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, i + 1));
+
+      if (old != nullptr) {
         TRI_DestroyJson(zone, old);
       }
 
+      TRI_json_t copy;
       TRI_CopyToJson(zone, &copy, replacement);
       TRI_SetVector(&object->_value._objects, i + 1, &copy);
       return true;
@@ -1036,7 +885,7 @@ bool TRI_ReplaceArrayJson (TRI_memory_zone_t* zone, TRI_json_t* object, char con
   }
 
   // object not found in array, now simply add it
-  TRI_Insert2ArrayJson(zone, object, name, replacement);
+  TRI_InsertArrayJson(zone, object, name, replacement);
 
   return false;
 }
@@ -1064,15 +913,12 @@ int TRI_Stringify2Json (TRI_string_buffer_t* buffer, TRI_json_t const* object) {
 bool TRI_PrintJson (int fd, 
                     TRI_json_t const* object,
                     bool appendNewline) {
-  TRI_string_buffer_t buffer;
-  char const* p;
-  size_t n;
-
-  if (object == NULL) {
+  if (object == nullptr) {
     // sanity check
     return false;
   }
 
+  TRI_string_buffer_t buffer;
   TRI_InitStringBuffer(&buffer, TRI_UNKNOWN_MEM_ZONE);
   if (StringifyJson(buffer._memoryZone, &buffer, object, true) != TRI_ERROR_NO_ERROR) {
     TRI_AnnihilateStringBuffer(&buffer);
@@ -1089,8 +935,8 @@ bool TRI_PrintJson (int fd,
     TRI_AppendCharStringBuffer(&buffer, '\n');
   }
 
-  p = TRI_BeginStringBuffer(&buffer);
-  n = TRI_LengthStringBuffer(&buffer);
+  char const* p = TRI_BeginStringBuffer(&buffer);
+  size_t n = TRI_LengthStringBuffer(&buffer);
 
   while (0 < n) {
     ssize_t m = TRI_WRITE(fd, p, (TRI_write_t) n);
@@ -1115,13 +961,9 @@ bool TRI_PrintJson (int fd,
 bool TRI_SaveJson (char const* filename,
                    TRI_json_t const* object,
                    bool syncFile) {
-  char* tmp;
-  int fd;
-  int res;
+  char* tmp = TRI_Concatenate2String(filename, ".tmp");
 
-  tmp = TRI_Concatenate2String(filename, ".tmp");
-
-  if (tmp == NULL) {
+  if (tmp == nullptr) {
     return false;
   }
 
@@ -1130,7 +972,7 @@ bool TRI_SaveJson (char const* filename,
     TRI_UnlinkFile(tmp);
   }
 
-  fd = TRI_CREATE(tmp, O_CREAT | O_TRUNC | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
+  int fd = TRI_CREATE(tmp, O_CREAT | O_TRUNC | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
 
   if (fd < 0) {
     TRI_set_errno(TRI_ERROR_SYS_ERROR);
@@ -1161,7 +1003,7 @@ bool TRI_SaveJson (char const* filename,
     }
   }
 
-  res = TRI_CLOSE(fd);
+  int res = TRI_CLOSE(fd);
 
   if (res < 0) {
     TRI_set_errno(TRI_ERROR_SYS_ERROR);
@@ -1253,36 +1095,30 @@ int TRI_CopyToJson (TRI_memory_zone_t* zone,
 
 TRI_json_t* TRI_CopyJson (TRI_memory_zone_t* zone, 
                           TRI_json_t const* src) {
-  TRI_json_t* dst;
-  int res;
+  TRI_json_t* dst = Allocate(zone);
 
-  dst = (TRI_json_t*) TRI_Allocate(zone, sizeof(TRI_json_t), false);
+  if (dst != nullptr) {
+    int res = TRI_CopyToJson(zone, dst, src);
 
-  if (dst == NULL) {
-    return NULL;
-  }
-
-  res = TRI_CopyToJson(zone, dst, src);
-
-  if (res != TRI_ERROR_NO_ERROR) {
-    TRI_Free(zone, dst);
-    return NULL;
+    if (res != TRI_ERROR_NO_ERROR) {
+      TRI_Free(zone, dst);
+      return nullptr;
+    }
   }
 
   return dst;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief determines whether or not two json objects are equal
 ////////////////////////////////////////////////////////////////////////////////
 
-bool TRI_EqualJsonJson (TRI_json_t* left, TRI_json_t* right) {
-  if (left == NULL && right == NULL) {
+bool TRI_EqualJsonJson (TRI_json_t const* left, TRI_json_t const* right) {
+  if (left == nullptr && right == nullptr) {
     return true;
   }
 
-  if (left == NULL || right == NULL) {
+  if (left == nullptr || right == nullptr) {
     return false;
   }
 
@@ -1314,24 +1150,18 @@ bool TRI_EqualJsonJson (TRI_json_t* left, TRI_json_t* right) {
     }
 
     case TRI_JSON_ARRAY: {
-      size_t j;
-
       if (left->_value._objects._length != right->_value._objects._length) {
         return false;
       }
 
-      for (j = 0;  j < (left->_value._objects._length / 2);  ++j) {
-        TRI_json_t* leftName;
-        TRI_json_t* leftValue;
-        TRI_json_t* rightValue;
-
-        leftName = (TRI_json_t*)(TRI_AtVector(&(left->_value._objects), 2 * j));
-        if (leftName == NULL) {
+      for (size_t j = 0;  j < (left->_value._objects._length / 2);  ++j) {
+        TRI_json_t const* leftName = static_cast<TRI_json_t const*>(TRI_AtVector(&(left->_value._objects), 2 * j));
+        if (leftName == nullptr) {
           return false;
         }
 
-        leftValue  = (TRI_json_t*)(TRI_AtVector(&(left->_value._objects), (2 * j) + 1));
-        rightValue = TRI_LookupArrayJson(right, leftName->_value._string.data);
+        TRI_json_t const* leftValue = static_cast<TRI_json_t const*>(TRI_AtVector(&(left->_value._objects), (2 * j) + 1));
+        TRI_json_t const* rightValue = static_cast<TRI_json_t const*>(TRI_LookupArrayJson(right, leftName->_value._string.data));
 
         if (TRI_EqualJsonJson(leftValue, rightValue)) {
           continue;
@@ -1343,17 +1173,13 @@ bool TRI_EqualJsonJson (TRI_json_t* left, TRI_json_t* right) {
     }
 
     case TRI_JSON_LIST: {
-      size_t j;
-
       if (left->_value._objects._length != right->_value._objects._length) {
         return false;
       }
 
-      for (j = 0; j < left->_value._objects._length; ++j) {
-        TRI_json_t* subLeft;
-        TRI_json_t* subRight;
-        subLeft  = (TRI_json_t*)(TRI_AtVector(&(left->_value._objects),j));
-        subRight = (TRI_json_t*)(TRI_AtVector(&(right->_value._objects),j));
+      for (size_t j = 0; j < left->_value._objects._length; ++j) {
+        TRI_json_t const* subLeft = static_cast<TRI_json_t const*>(TRI_AtVector(&(left->_value._objects), j));
+        TRI_json_t const* subRight = static_cast<TRI_json_t const*>(TRI_AtVector(&(right->_value._objects), j));
         if (TRI_EqualJsonJson(subLeft, subRight)) {
           continue;
         }
@@ -1374,7 +1200,7 @@ bool TRI_EqualJsonJson (TRI_json_t* left, TRI_json_t* right) {
 /// @brief converts a json object into a number
 ////////////////////////////////////////////////////////////////////////////////
 
-int64_t TRI_ToInt64Json (TRI_json_t* json) {
+int64_t TRI_ToInt64Json (TRI_json_t const* json) {
   switch (json->_type) {
     case TRI_JSON_UNUSED:
     case TRI_JSON_NULL:
@@ -1416,7 +1242,7 @@ int64_t TRI_ToInt64Json (TRI_json_t* json) {
 /// @brief converts a json object into a number
 ////////////////////////////////////////////////////////////////////////////////
 
-double TRI_ToDoubleJson (TRI_json_t* json) {
+double TRI_ToDoubleJson (TRI_json_t const* json) {
   switch (json->_type) {
     case TRI_JSON_UNUSED:
     case TRI_JSON_NULL:

@@ -1229,10 +1229,10 @@ void RestImportHandler::generateDocumentsCreated (RestImportResult const& result
   TRI_json_t json;
 
   TRI_InitArrayJson(TRI_CORE_MEM_ZONE, &json);
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &json, "error", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, false));
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &json, "created", TRI_CreateNumberJson(TRI_CORE_MEM_ZONE, (double) result._numCreated));
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &json, "errors", TRI_CreateNumberJson(TRI_CORE_MEM_ZONE, (double) result._numErrors));
-  TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &json, "empty", TRI_CreateNumberJson(TRI_CORE_MEM_ZONE, (double) result._numEmpty));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &json, "error", TRI_CreateBooleanJson(TRI_CORE_MEM_ZONE, false));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &json, "created", TRI_CreateNumberJson(TRI_CORE_MEM_ZONE, (double) result._numCreated));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &json, "errors", TRI_CreateNumberJson(TRI_CORE_MEM_ZONE, (double) result._numErrors));
+  TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &json, "empty", TRI_CreateNumberJson(TRI_CORE_MEM_ZONE, (double) result._numEmpty));
 
   bool found;
   char const* detailsStr = _request->value("details", found);
@@ -1243,9 +1243,9 @@ void RestImportHandler::generateDocumentsCreated (RestImportResult const& result
 
     for (size_t i = 0, n = result._errors.size(); i < n; ++i) {
       string const& msg = result._errors[i];
-      TRI_PushBack3ListJson(TRI_CORE_MEM_ZONE, messages, TRI_CreateString2CopyJson(TRI_CORE_MEM_ZONE, msg.c_str(), msg.size()));
+      TRI_PushBackAndFreeListJson(TRI_CORE_MEM_ZONE, messages, TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, msg.c_str(), msg.size()));
     }
-    TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, &json, "details", messages);
+    TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, &json, "details", messages);
   }
 
   generateResult(HttpResponse::CREATED, &json);
@@ -1297,7 +1297,7 @@ TRI_json_t* RestImportHandler::createJsonObject (TRI_json_t const* keys,
     return nullptr;
   }
 
-  TRI_json_t* result = TRI_CreateArray2Json(TRI_UNKNOWN_MEM_ZONE, n);
+  TRI_json_t* result = TRI_CreateArrayJson(TRI_UNKNOWN_MEM_ZONE, n);
 
   if (result == nullptr) {
     LOG_ERROR("out of memory");
@@ -1305,12 +1305,13 @@ TRI_json_t* RestImportHandler::createJsonObject (TRI_json_t const* keys,
   }
 
   for (size_t i = 0;  i < n;  ++i) {
-
     TRI_json_t const* key   = static_cast<TRI_json_t const*>(TRI_AtVector(&keys->_value._objects, i));
     TRI_json_t const* value = static_cast<TRI_json_t const*>(TRI_AtVector(&values->_value._objects, i));
 
     if (JsonHelper::isString(key) && value->_type > TRI_JSON_NULL) {
-      TRI_InsertArrayJson(TRI_UNKNOWN_MEM_ZONE, result, key->_value._string.data, value);
+      TRI_json_t copy;
+      TRI_CopyToJson(TRI_UNKNOWN_MEM_ZONE, &copy, value);
+      TRI_InsertArrayJson(TRI_UNKNOWN_MEM_ZONE, result, key->_value._string.data, &copy);
     }
   }
 

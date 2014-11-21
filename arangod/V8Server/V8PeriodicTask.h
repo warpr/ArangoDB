@@ -89,13 +89,13 @@ namespace triagens {
 /// @brief get a task specific description in JSON format
 ////////////////////////////////////////////////////////////////////////////////
 
-        virtual void getDescription (struct TRI_json_t*);
+        void getDescription (struct TRI_json_t*) override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief whether or not the task is user-defined
 ////////////////////////////////////////////////////////////////////////////////
 
-        bool isUserDefined () const {
+        bool isUserDefined () const override final {
           return true;
         }
 
@@ -109,7 +109,7 @@ namespace triagens {
 /// @brief handles the next tick
 ////////////////////////////////////////////////////////////////////////////////
 
-        bool handlePeriod ();
+        bool handlePeriod () override final;
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                 private variables

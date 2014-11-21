@@ -644,7 +644,7 @@ static int ProcessInputDirectory (string& errorMsg) {
         }
       }
 
-      TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, collections, json);
+      TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, collections, json);
     }
   }
 

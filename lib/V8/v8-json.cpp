@@ -46,7 +46,7 @@
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 5
-#define YY_FLEX_SUBMINOR_VERSION 37
+#define YY_FLEX_SUBMINOR_VERSION 39
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -196,7 +196,15 @@ typedef void* yyscan_t;
 
 /* Size of default input buffer. */
 #ifndef YY_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k.
+ * Moreover, YY_BUF_SIZE is 2*YY_READ_BUF_SIZE in the general case.
+ * Ditto for the __ia64__ case accordingly.
+ */
+#define YY_BUF_SIZE 32768
+#else
 #define YY_BUF_SIZE 16384
+#endif /* __ia64__ */
 #endif
 
 /* The state buf must be large enough to hold one state per character in the main buffer.
@@ -218,6 +226,7 @@ typedef size_t yy_size_t;
 #define EOB_ACT_LAST_MATCH 2
 
     #define YY_LESS_LINENO(n)
+    #define YY_LINENO_REWIND_TO(ptr)
     
 /* Return all but the first "n" matched characters back to the input stream. */
 #define yyless(n) \
@@ -652,7 +661,12 @@ static int input (yyscan_t yyscanner );
 
 /* Amount of stuff to slurp up with each read. */
 #ifndef YY_READ_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k */
+#define YY_READ_BUF_SIZE 16384
+#else
 #define YY_READ_BUF_SIZE 8192
+#endif /* __ia64__ */
 #endif
 
 /* Copy whatever the last rule matched to the standard output. */
@@ -754,10 +768,6 @@ YY_DECL
 	int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
- /* -----------------------------------------------------------------------------
-  * keywords
-  * ----------------------------------------------------------------------------- */
-
 	if ( !yyg->yy_init )
 		{
 		yyg->yy_init = 1;
@@ -784,6 +794,12 @@ YY_DECL
 		tri_v8__load_buffer_state(yyscanner );
 		}
 
+	{
+
+ /* -----------------------------------------------------------------------------
+  * keywords
+  * ----------------------------------------------------------------------------- */
+
 	while ( 1 )		/* loops until end-of-file is reached */
 		{
 		yy_cp = yyg->yy_c_buf_p;
@@ -800,7 +816,7 @@ YY_DECL
 yy_match:
 		do
 			{
-			YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)];
+			YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)] ;
 			if ( yy_accept[yy_current_state] )
 				{
 				yyg->yy_last_accepting_state = yy_current_state;
@@ -1062,6 +1078,7 @@ case YY_STATE_EOF(INITIAL):
 			"fatal flex scanner internal error--no action found" );
 	} /* end of action switch */
 		} /* end of scanning one token */
+	} /* end of user's declarations */
 } /* end of tri_v8_lex */
 
 /* yy_get_next_buffer - try to read in a new buffer
@@ -1672,7 +1689,7 @@ YY_BUFFER_STATE tri_v8__scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	int i;
+	yy_size_t i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;

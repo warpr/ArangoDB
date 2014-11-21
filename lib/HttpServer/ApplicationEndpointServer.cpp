@@ -498,10 +498,10 @@ bool ApplicationEndpointServer::saveEndpoints () {
     for (size_t i = 0; i < (*it).second.size(); ++i) {
       const string e = (*it).second.at(i);
 
-      TRI_PushBack3ListJson(TRI_CORE_MEM_ZONE, list, TRI_CreateString2CopyJson(TRI_CORE_MEM_ZONE, e.c_str(), e.size()));
+      TRI_PushBackAndFreeListJson(TRI_CORE_MEM_ZONE, list, TRI_CreateStringCopyJson(TRI_CORE_MEM_ZONE, e.c_str(), e.size()));
     }
 
-    TRI_Insert3ArrayJson(TRI_CORE_MEM_ZONE, json, (*it).first.c_str(), list);
+    TRI_InsertAndFreeArrayJson(TRI_CORE_MEM_ZONE, json, (*it).first.c_str(), list);
   }
 
   const string filename = getEndpointsFilename();
@@ -548,7 +548,7 @@ bool ApplicationEndpointServer::prepare () {
                                            _setContext,
                                            _contextData);
 
-  LOG_INFO("using default API compatibility: %ld", (long int) _defaultApiCompatibility);
+  LOG_DEBUG("using default API compatibility: %ld", (long int) _defaultApiCompatibility);
 
   return true;
 }

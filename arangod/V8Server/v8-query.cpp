@@ -344,7 +344,7 @@ static TRI_index_operator_t* SetupConditionsSkiplist (TRI_index_t* idx,
           goto MEM_ERROR;
         }
 
-        TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, parameters, json);
+        TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, parameters, json);
         // creation of equality operator is deferred until it is finally needed
         ++numEq;
         break;
@@ -385,7 +385,7 @@ static TRI_index_operator_t* SetupConditionsSkiplist (TRI_index_t* idx,
           goto MEM_ERROR;
         }
 
-        TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, cloned, json);
+        TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, cloned, json);
 
         if (numEq) {
           // create equality operator if one is in queue
@@ -511,7 +511,7 @@ static TRI_index_operator_t* SetupExampleSkiplist (TRI_index_t* idx,
       return nullptr;
     }
 
-    TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, parameters, json);
+    TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, parameters, json);
   }
 
   if (parameters->_value._objects._length > 0) {

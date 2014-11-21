@@ -33,6 +33,7 @@
 
 #include "Basics/Common.h"
 
+#include "Basics/associative.h"
 #include "Basics/json.h"
 #include "ShapedJson/shaped-json.h"
 

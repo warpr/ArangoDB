@@ -329,7 +329,7 @@ void TRI_DestroyAuthInfo (TRI_vocbase_t* vocbase) {
 ////////////////////////////////////////////////////////////////////////////////
 
 bool TRI_InsertInitialAuthInfo (TRI_vocbase_t* vocbase) {
-  TRI_json_t* json = TRI_CreateList2Json(TRI_UNKNOWN_MEM_ZONE, 1);
+  TRI_json_t* json = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE, 1);
 
   if (json == nullptr) {
     return false;
@@ -343,7 +343,7 @@ bool TRI_InsertInitialAuthInfo (TRI_vocbase_t* vocbase) {
   }
 
   // username
-  TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE,
+  TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE,
                        user,
                        "user",
                        TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, "root"));
@@ -355,34 +355,34 @@ bool TRI_InsertInitialAuthInfo (TRI_vocbase_t* vocbase) {
     TRI_json_t* simple = TRI_CreateArrayJson(TRI_UNKNOWN_MEM_ZONE);
 
     if (simple != nullptr) {
-      TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE,
+      TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE,
                            simple,
                            "method",
                            TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, "sha256"));
 
-      TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE,
+      TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE,
                            simple,
                            "salt",
                            TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, "c776f5f4"));
 
-      TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE,
+      TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE,
                            simple,
                            "hash",
                            TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, "ef74bc6fd59ac713bf5929c5ac2f42233e50d4d58748178132ea46dec433bd5b"));
 
-      TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, authData, "simple", simple);
+      TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, authData, "simple", simple);
     }
 
     // active
-    TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE,
+    TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE,
                          authData,
                          "active",
                          TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, true));
 
-    TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, user, "authData", authData);
+    TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, user, "authData", authData);
   }
 
-  TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, json, user);
+  TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, json, user);
 
   TRI_PopulateAuthInfo(vocbase, json);
 

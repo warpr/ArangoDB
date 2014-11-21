@@ -656,7 +656,7 @@ TRI_json_t* AstNode::toJsonValue (TRI_memory_zone_t* zone) const {
   
   if (type == NODE_TYPE_LIST) {
     size_t const n = numMembers();
-    TRI_json_t* list = TRI_CreateList2Json(zone, n);
+    TRI_json_t* list = TRI_CreateListJson(zone, n);
 
     if (list == nullptr) {
       return nullptr;
@@ -669,7 +669,7 @@ TRI_json_t* AstNode::toJsonValue (TRI_memory_zone_t* zone) const {
         TRI_json_t* j = member->toJsonValue(zone);
 
         if (j != nullptr) {
-          TRI_PushBack3ListJson(zone, list, j);
+          TRI_PushBackAndFreeListJson(zone, list, j);
         }
       }
     }
@@ -678,7 +678,7 @@ TRI_json_t* AstNode::toJsonValue (TRI_memory_zone_t* zone) const {
   
   if (type == NODE_TYPE_ARRAY) {
     size_t const n = numMembers();
-    TRI_json_t* array = TRI_CreateArray2Json(zone, n);
+    TRI_json_t* array = TRI_CreateArrayJson(zone, n);
 
     for (size_t i = 0; i < n; ++i) {
       auto member = getMember(i);
@@ -687,7 +687,7 @@ TRI_json_t* AstNode::toJsonValue (TRI_memory_zone_t* zone) const {
         TRI_json_t* j = member->getMember(0)->toJsonValue(zone);
 
         if (j != nullptr) {
-          TRI_Insert3ArrayJson(zone, array, member->getStringValue(), j);
+          TRI_InsertAndFreeArrayJson(zone, array, member->getStringValue(), j);
         }
       }
     }
@@ -731,16 +731,16 @@ TRI_json_t* AstNode::toJson (TRI_memory_zone_t* zone,
   // dump node type
   auto&& typeString = getTypeString();
   TRI_json_t json;
-  if (TRI_InitString2CopyJson(zone, &json, typeString.c_str(), typeString.size()) != TRI_ERROR_NO_ERROR) {
+  if (TRI_InitStringCopyJson(zone, &json, typeString.c_str(), typeString.size()) != TRI_ERROR_NO_ERROR) {
     TRI_FreeJson(zone, node);
     THROW_ARANGO_EXCEPTION(TRI_ERROR_OUT_OF_MEMORY);
   }
 
-  TRI_Insert2ArrayJson(zone, node, "type", &json); 
+  TRI_InsertArrayJson(zone, node, "type", &json); 
 
   // add typeId
   if (verbose) {
-    TRI_Insert3ArrayJson(zone, node, "typeID", TRI_CreateNumberJson(zone, static_cast<int>(type)));
+    TRI_InsertAndFreeArrayJson(zone, node, "typeID", TRI_CreateNumberJson(zone, static_cast<int>(type)));
   }
 
   if (type == NODE_TYPE_COLLECTION ||
@@ -753,12 +753,12 @@ TRI_json_t* AstNode::toJson (TRI_memory_zone_t* zone,
       TRI_FreeJson(zone, node);
       THROW_ARANGO_EXCEPTION(TRI_ERROR_OUT_OF_MEMORY);
     }
-    TRI_Insert2ArrayJson(zone, node, "name", &json);
+    TRI_InsertArrayJson(zone, node, "name", &json);
   }
 
   if (type == NODE_TYPE_FCALL) {
     auto func = static_cast<Function*>(getData());
-    TRI_Insert3ArrayJson(zone, node, "name", TRI_CreateStringCopyJson(zone, func->externalName.c_str()));
+    TRI_InsertAndFreeArrayJson(zone, node, "name", TRI_CreateStringCopyJson(zone, func->externalName.c_str()));
     // arguments are exported via node members
   }
 
@@ -771,11 +771,11 @@ TRI_json_t* AstNode::toJson (TRI_memory_zone_t* zone,
       THROW_ARANGO_EXCEPTION(TRI_ERROR_OUT_OF_MEMORY);
     }
     
-    TRI_Insert3ArrayJson(zone, node, "value", v);
+    TRI_InsertAndFreeArrayJson(zone, node, "value", v);
 
     if (verbose) {
-      TRI_Insert3ArrayJson(zone, node, "vType", TRI_CreateStringCopyJson(zone, getValueTypeString().c_str()));
-      TRI_Insert3ArrayJson(zone, node, "vTypeID", TRI_CreateNumberJson(zone, static_cast<int>(value.type)));
+      TRI_InsertAndFreeArrayJson(zone, node, "vType", TRI_CreateStringCopyJson(zone, getValueTypeString().c_str()));
+      TRI_InsertAndFreeArrayJson(zone, node, "vTypeID", TRI_CreateNumberJson(zone, static_cast<int>(value.type)));
     }
   }
 
@@ -785,15 +785,15 @@ TRI_json_t* AstNode::toJson (TRI_memory_zone_t* zone,
 
     TRI_ASSERT(variable != nullptr);
 
-    TRI_Insert3ArrayJson(zone, node, "name", TRI_CreateStringCopyJson(zone, variable->name.c_str()));
-    TRI_Insert3ArrayJson(zone, node, "id", TRI_CreateNumberJson(zone, static_cast<double>(variable->id)));
+    TRI_InsertAndFreeArrayJson(zone, node, "name", TRI_CreateStringCopyJson(zone, variable->name.c_str()));
+    TRI_InsertAndFreeArrayJson(zone, node, "id", TRI_CreateNumberJson(zone, static_cast<double>(variable->id)));
   }
   
   // dump sub-nodes 
   size_t const n = members._length;
 
   if (n > 0) {
-    TRI_json_t* subNodes = TRI_CreateList2Json(zone, n);
+    TRI_json_t* subNodes = TRI_CreateListJson(zone, n);
 
     if (subNodes == nullptr) {
       TRI_FreeJson(zone, node);
@@ -814,7 +814,7 @@ TRI_json_t* AstNode::toJson (TRI_memory_zone_t* zone,
       THROW_ARANGO_EXCEPTION(TRI_ERROR_OUT_OF_MEMORY);
     }
     
-    TRI_Insert3ArrayJson(zone, node, "subNodes", subNodes);
+    TRI_InsertAndFreeArrayJson(zone, node, "subNodes", subNodes);
   }
 
   return node;
@@ -963,7 +963,7 @@ void AstNode::toJson (TRI_json_t* json,
     THROW_ARANGO_EXCEPTION(TRI_ERROR_OUT_OF_MEMORY);
   }
 
-  TRI_PushBack3ListJson(zone, json, node);
+  TRI_PushBackAndFreeListJson(zone, json, node);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

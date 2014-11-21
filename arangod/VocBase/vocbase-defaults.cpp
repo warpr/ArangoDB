@@ -61,12 +61,12 @@ TRI_json_t* TRI_JsonVocBaseDefaults (TRI_memory_zone_t* zone,
     return nullptr;
   }
 
-  TRI_Insert3ArrayJson(zone, json, "waitForSync", TRI_CreateBooleanJson(zone, defaults->defaultWaitForSync));
-  TRI_Insert3ArrayJson(zone, json, "requireAuthentication", TRI_CreateBooleanJson(zone, defaults->requireAuthentication));
-  TRI_Insert3ArrayJson(zone, json, "requireAuthenticationUnixSockets", TRI_CreateBooleanJson(zone, defaults->requireAuthenticationUnixSockets));
-  TRI_Insert3ArrayJson(zone, json, "authenticateSystemOnly", TRI_CreateBooleanJson(zone, defaults->authenticateSystemOnly));
-  TRI_Insert3ArrayJson(zone, json, "forceSyncProperties", TRI_CreateBooleanJson(zone, defaults->forceSyncProperties));
-  TRI_Insert3ArrayJson(zone, json, "defaultMaximalSize", TRI_CreateNumberJson(zone, (double) defaults->defaultMaximalSize));
+  TRI_InsertAndFreeArrayJson(zone, json, "waitForSync", TRI_CreateBooleanJson(zone, defaults->defaultWaitForSync));
+  TRI_InsertAndFreeArrayJson(zone, json, "requireAuthentication", TRI_CreateBooleanJson(zone, defaults->requireAuthentication));
+  TRI_InsertAndFreeArrayJson(zone, json, "requireAuthenticationUnixSockets", TRI_CreateBooleanJson(zone, defaults->requireAuthenticationUnixSockets));
+  TRI_InsertAndFreeArrayJson(zone, json, "authenticateSystemOnly", TRI_CreateBooleanJson(zone, defaults->authenticateSystemOnly));
+  TRI_InsertAndFreeArrayJson(zone, json, "forceSyncProperties", TRI_CreateBooleanJson(zone, defaults->forceSyncProperties));
+  TRI_InsertAndFreeArrayJson(zone, json, "defaultMaximalSize", TRI_CreateNumberJson(zone, (double) defaults->defaultMaximalSize));
 
   return json;
 }

@@ -359,13 +359,13 @@ namespace triagens {
               _json = TRI_CreateNumberJson(_zone, 0.0);
               break;
             case String:
-              _json = TRI_CreateString2CopyJson(_zone, "", 0);
+              _json = TRI_CreateStringCopyJson(_zone, "", 0);
               break;
             case List:
-              _json = TRI_CreateList2Json(_zone, size_hint);
+              _json = TRI_CreateListJson(_zone, size_hint);
               break;
             case Array:
-              _json = TRI_CreateArray2Json(_zone, 2 * size_hint);
+              _json = TRI_CreateArrayJson(_zone, 2 * size_hint);
               break;
           }
           if (_json == nullptr) {
@@ -520,7 +520,9 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         explicit Json (TRI_memory_zone_t* z, char const* x, autofree_e autofree = AUTOFREE) 
-          : _zone(z), _json(nullptr), _autofree(autofree) {
+          : _zone(z), 
+            _json(nullptr), 
+            _autofree(autofree) {
           _json = TRI_CreateStringCopyJson(_zone, x);
 
           if (_json == nullptr) {
@@ -533,8 +535,10 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         explicit Json (std::string const x, autofree_e autofree = AUTOFREE) 
-          : _zone(TRI_UNKNOWN_MEM_ZONE), _json(nullptr), _autofree(autofree) {
-          _json = TRI_CreateString2CopyJson(_zone, x.c_str(), x.size());
+          : _zone(TRI_UNKNOWN_MEM_ZONE), 
+            _json(nullptr), 
+            _autofree(autofree) {
+          _json = TRI_CreateStringCopyJson(_zone, x.c_str(), x.size());
 
           if (_json == nullptr) {
             throw JsonException("Json: out of memory");
@@ -546,8 +550,10 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         explicit Json (TRI_memory_zone_t* z, std::string const& x, autofree_e autofree = AUTOFREE) 
-          : _zone(z), _json(nullptr), _autofree(autofree) {
-          _json = TRI_CreateString2CopyJson(_zone, x.c_str(), x.size());
+          : _zone(z), 
+            _json(nullptr), 
+            _autofree(autofree) {
+          _json = TRI_CreateStringCopyJson(_zone, x.c_str(), x.size());
 
           if (_json == nullptr) {
             throw JsonException("Json: out of memory");
@@ -559,7 +565,9 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         explicit Json (TRI_memory_zone_t* z, TRI_json_t* j, autofree_e autofree = AUTOFREE)
-          : _zone(z), _json(j), _autofree(autofree) {
+          : _zone(z), 
+            _json(j), 
+            _autofree(autofree) {
         }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -567,7 +575,9 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         explicit Json (TRI_memory_zone_t* z, TRI_json_t const* j, autofree_e autofree = NOFREE)
-          : _zone(z), _json(const_cast<TRI_json_t*>(j)), _autofree(autofree) {
+          : _zone(z), 
+            _json(const_cast<TRI_json_t*>(j)), 
+            _autofree(autofree) {
         }
 
         explicit Json (TRI_json_t* j) = delete;
@@ -699,7 +709,23 @@ namespace triagens {
           if (! TRI_IsArrayJson(_json)) {
             throw JsonException("Json is no array");
           }
-          TRI_Insert3ArrayJson(_zone, _json, name, sub.steal());
+          TRI_InsertAndFreeArrayJson(_zone, _json, name, sub.steal());
+          return *this;
+        }
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief set an attribute value in an array, an exception is thrown
+/// if *this is not a Json array. The pointer managed by sub is
+/// stolen. The purpose of this method is that you can do
+///   Json(Json::Array).set("a",Json(12)).set("b",Json(true))
+/// and that this is both legal and efficient.
+////////////////////////////////////////////////////////////////////////////////
+
+        Json& set (std::string const& name, Json sub) {
+          if (! TRI_IsArrayJson(_json)) {
+            throw JsonException("Json is no array");
+          }
+          TRI_InsertAndFreeArrayJson(_zone, _json, name.c_str(), sub.steal());
           return *this;
         }
 
@@ -721,7 +747,7 @@ namespace triagens {
           if (! TRI_IsArrayJson(_json)) {
             throw JsonException("Json is no array");
           }
-          TRI_Insert3ArrayJson(_zone, _json, name, sub);
+          TRI_InsertAndFreeArrayJson(_zone, _json, name, sub);
           return *this;
         }
 
@@ -745,7 +771,7 @@ namespace triagens {
           if (! TRI_IsListJson(_json)) {
             throw JsonException("Json is no list");
           }
-          TRI_PushBack3ListJson(_zone, _json, sub.steal());
+          TRI_PushBackAndFreeListJson(_zone, _json, sub.steal());
           return *this;
         }
 
@@ -783,7 +809,7 @@ namespace triagens {
           if (! TRI_IsListJson(_json)) {
             throw JsonException("Json is no list");
           }
-          TRI_PushBack3ListJson(_zone, _json, sub);
+          TRI_PushBackAndFreeListJson(_zone, _json, sub);
           return *this;
         }
 

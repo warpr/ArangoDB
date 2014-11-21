@@ -119,7 +119,6 @@ void ConsoleThread::run () {
 void ConsoleThread::inner () {
   v8::HandleScope globalScope;
 
-  // run the shell
   std::cout << "ArangoDB JavaScript emergency console (" << rest::Version::getVerboseVersionString() << ")" << std::endl;
 
   v8::Local<v8::String> name(v8::String::New("(arango)"));

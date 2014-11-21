@@ -464,13 +464,13 @@ class KeySpace {
       auto found = static_cast<KeySpaceElement*>(TRI_LookupByKeyAssociativePointer(&_hash, key.c_str()));
 
       if (found == nullptr) {
-        TRI_json_t* list = TRI_CreateList2Json(TRI_UNKNOWN_MEM_ZONE, 1);
+        TRI_json_t* list = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE, 1);
 
         if (list == nullptr) {
           return TRI_ERROR_OUT_OF_MEMORY;
         }
 
-        if (TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, list, TRI_ObjectToJson(value)) != TRI_ERROR_NO_ERROR) {
+        if (TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, list, TRI_ObjectToJson(value)) != TRI_ERROR_NO_ERROR) {
           TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, list);
           return TRI_ERROR_OUT_OF_MEMORY;
         }
@@ -490,7 +490,7 @@ class KeySpace {
           return TRI_ERROR_INTERNAL;
         }
 
-        if (TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, current, TRI_ObjectToJson(value)) != TRI_ERROR_NO_ERROR) {
+        if (TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, current, TRI_ObjectToJson(value)) != TRI_ERROR_NO_ERROR) {
           return TRI_ERROR_OUT_OF_MEMORY;
         }
       }
@@ -563,7 +563,7 @@ class KeySpace {
       auto dest = static_cast<KeySpaceElement*>(TRI_LookupByKeyAssociativePointer(&_hash, keyTo.c_str()));
 
       if (dest == nullptr) {
-        TRI_json_t* list = TRI_CreateList2Json(TRI_UNKNOWN_MEM_ZONE, 1);
+        TRI_json_t* list = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE, 1);
 
         if (list == nullptr) {
           TRI_V8_EXCEPTION_MEMORY(scope);

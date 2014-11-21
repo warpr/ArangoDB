@@ -1105,7 +1105,7 @@ static TRI_json_t* JsonShapeDataShortString (TRI_shaper_t* shaper,
   l = * (TRI_shape_length_short_string_t const*) data;
   data += sizeof(TRI_shape_length_short_string_t);
 
-  return TRI_CreateString2CopyJson(shaper->_memoryZone, data, (size_t) (l - 1));
+  return TRI_CreateStringCopyJson(shaper->_memoryZone, data, (size_t) (l - 1));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1121,7 +1121,7 @@ static TRI_json_t* JsonShapeDataLongString (TRI_shaper_t* shaper,
   l = * (TRI_shape_length_long_string_t const*) data;
   data += sizeof(TRI_shape_length_long_string_t);
 
-  return TRI_CreateString2CopyJson(shaper->_memoryZone, data, l - 1);
+  return TRI_CreateStringCopyJson(shaper->_memoryZone, data, l - 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1154,7 +1154,7 @@ static TRI_json_t* JsonShapeDataArray (TRI_shaper_t* shaper,
   n = f + v;
 
   // create an array with the appropriate size
-  array = TRI_CreateArray2Json(shaper->_memoryZone, (size_t) n);
+  array = TRI_CreateArrayJson(shaper->_memoryZone, (size_t) n);
 
   if (array == nullptr) {
     return nullptr;
@@ -1212,7 +1212,7 @@ static TRI_json_t* JsonShapeDataArray (TRI_shaper_t* shaper,
       continue;
     }
 
-    TRI_Insert2ArrayJson(shaper->_memoryZone, array, name, element);
+    TRI_InsertArrayJson(shaper->_memoryZone, array, name, element);
     TRI_Free(shaper->_memoryZone, element);
   }
 
@@ -1256,7 +1256,7 @@ static TRI_json_t* JsonShapeDataArray (TRI_shaper_t* shaper,
       continue;
     }
 
-    TRI_Insert2ArrayJson(shaper->_memoryZone, array, name, element);
+    TRI_InsertArrayJson(shaper->_memoryZone, array, name, element);
     TRI_Free(shaper->_memoryZone, element);
   }
 
@@ -1288,7 +1288,7 @@ static TRI_json_t* JsonShapeDataList (TRI_shaper_t* shaper,
   l = * (TRI_shape_length_list_t const*) ptr;
 
   // create a list with the appropriate size
-  TRI_json_t* list = TRI_CreateList2Json(shaper->_memoryZone, (size_t) l);
+  TRI_json_t* list = TRI_CreateListJson(shaper->_memoryZone, (size_t) l);
 
   if (list == nullptr) {
     return nullptr;
@@ -1375,7 +1375,7 @@ static TRI_json_t* JsonShapeDataHomogeneousList (TRI_shaper_t* shaper,
   l = * (TRI_shape_length_list_t const*) ptr;
 
   // create a list with the appropriate size
-  TRI_json_t* list = TRI_CreateList2Json(shaper->_memoryZone, (size_t) l);
+  TRI_json_t* list = TRI_CreateListJson(shaper->_memoryZone, (size_t) l);
 
   if (list == nullptr) {
     return nullptr;
@@ -1441,7 +1441,7 @@ static TRI_json_t* JsonShapeDataHomogeneousSizedList (TRI_shaper_t* shaper,
   l = * (TRI_shape_length_list_t const*) ptr;
 
   // create a list with the appropriate size
-  TRI_json_t* list = TRI_CreateList2Json(shaper->_memoryZone, (size_t) l);
+  TRI_json_t* list = TRI_CreateListJson(shaper->_memoryZone, (size_t) l);
 
   if (list == nullptr) {
     return nullptr;

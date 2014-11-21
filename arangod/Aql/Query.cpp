@@ -976,17 +976,17 @@ TRI_json_t* Query::warningsToJson () const {
   }
 
   size_t const n = _warnings.size();
-  TRI_json_t* json = TRI_CreateList2Json(TRI_UNKNOWN_MEM_ZONE, n);
+  TRI_json_t* json = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE, n);
 
   if (json != nullptr) {
     for (size_t i = 0; i < n; ++i) {
-      TRI_json_t* error = TRI_CreateArray2Json(TRI_UNKNOWN_MEM_ZONE, 2);
+      TRI_json_t* error = TRI_CreateArrayJson(TRI_UNKNOWN_MEM_ZONE, 2);
 
       if (error != nullptr) {
-        TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, error, "code", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, static_cast<double>(_warnings[i].first)));
-        TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, error, "message", TRI_CreateString2CopyJson(TRI_UNKNOWN_MEM_ZONE, _warnings[i].second.c_str(), _warnings[i].second.size()));
+        TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, error, "code", TRI_CreateNumberJson(TRI_UNKNOWN_MEM_ZONE, static_cast<double>(_warnings[i].first)));
+        TRI_InsertAndFreeArrayJson(TRI_UNKNOWN_MEM_ZONE, error, "message", TRI_CreateStringCopyJson(TRI_UNKNOWN_MEM_ZONE, _warnings[i].second.c_str(), _warnings[i].second.size()));
 
-        TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, json, error);
+        TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, json, error);
       }
     }
   }

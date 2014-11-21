@@ -29,9 +29,10 @@
 
 #include "Basics/json-utilities.h"
 
-#include "Basics/utf8-helper.h"
-#include "Basics/string-buffer.h"
+#include "Basics/associative.h"
 #include "Basics/hashes.h"
+#include "Basics/string-buffer.h"
+#include "Basics/utf8-helper.h"
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                 private functions
@@ -50,8 +51,8 @@ static TRI_json_t* MergeRecursive (TRI_memory_zone_t* zone,
   size_t const n = rhs->_value._objects._length;
   for (size_t i = 0; i < n; i += 2) {
     // enumerate all the replacement values
-    auto key = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&rhs->_value._objects, i));
-    auto value = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&rhs->_value._objects, i + 1));
+    auto key = static_cast<TRI_json_t*>(TRI_AtVector(&rhs->_value._objects, i));
+    auto value = static_cast<TRI_json_t*>(TRI_AtVector(&rhs->_value._objects, i + 1));
 
     if (value->_type == TRI_JSON_NULL && nullMeansRemove) {
       // replacement value is a null and we don't want to store nulls => delete attribute from the result
@@ -66,12 +67,12 @@ static TRI_json_t* MergeRecursive (TRI_memory_zone_t* zone,
         if (value->_type == TRI_JSON_ARRAY) {
           TRI_json_t* empty = TRI_CreateArrayJson(zone);
           TRI_json_t* merged = MergeRecursive(zone, empty, value, nullMeansRemove);
-          TRI_Insert3ArrayJson(zone, result, key->_value._string.data, merged);
+          TRI_InsertAndFreeArrayJson(zone, result, key->_value._string.data, merged);
 
           TRI_FreeJson(zone, empty);
         }
         else {
-          TRI_Insert3ArrayJson(zone, result, key->_value._string.data, TRI_CopyJson(zone, value));
+          TRI_InsertAndFreeArrayJson(zone, result, key->_value._string.data, TRI_CopyJson(zone, value));
         }
       }
       else {
@@ -136,24 +137,21 @@ static int CompareJson (void const* lhs,
 
 static TRI_json_t* GetMergedKeyList (TRI_json_t const* lhs,
                                      TRI_json_t const* rhs) {
-  TRI_json_t* keys;
-  TRI_json_t* unique;
-  size_t i, n;
-
   TRI_ASSERT(lhs->_type == TRI_JSON_ARRAY);
   TRI_ASSERT(rhs->_type == TRI_JSON_ARRAY);
 
-  keys = TRI_CreateList2Json(TRI_UNKNOWN_MEM_ZONE,
-                             lhs->_value._objects._length + rhs->_value._objects._length);
+  TRI_json_t* keys = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE,
+                                        lhs->_value._objects._length + rhs->_value._objects._length);
 
   if (keys == nullptr) {
     return nullptr;
   }
 
+  size_t n;
   n = lhs->_value._objects._length;
 
-  for (i = 0 ; i < n; i += 2) {
-    auto key = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&lhs->_value._objects, i));
+  for (size_t i = 0 ; i < n; i += 2) {
+    auto key = static_cast<TRI_json_t*>(TRI_AtVector(&lhs->_value._objects, i));
 
     TRI_ASSERT(TRI_IsStringJson(key));
     TRI_PushBackListJson(TRI_UNKNOWN_MEM_ZONE, keys, key);
@@ -162,8 +160,8 @@ static TRI_json_t* GetMergedKeyList (TRI_json_t const* lhs,
 
   n = rhs->_value._objects._length;
 
-  for (i = 0 ; i < n; i += 2) {
-    auto key = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&rhs->_value._objects, i));
+  for (size_t i = 0 ; i < n; i += 2) {
+    auto key = static_cast<TRI_json_t*>(TRI_AtVector(&rhs->_value._objects, i));
 
     TRI_ASSERT(TRI_IsStringJson(key));
     TRI_PushBackListJson(TRI_UNKNOWN_MEM_ZONE, keys, key);
@@ -173,7 +171,7 @@ static TRI_json_t* GetMergedKeyList (TRI_json_t const* lhs,
   TRI_SortListJson(keys);
 
   // list is now sorted
-  unique = TRI_UniquifyListJson(keys);
+  TRI_json_t* unique = TRI_UniquifyListJson(keys);
 
   TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, keys);
 
@@ -261,9 +259,9 @@ int TRI_CompareValuesJson (TRI_json_t const* lhs,
       }
 
     case TRI_JSON_LIST: {
-      size_t nl = lhs->_value._objects._length;
-      size_t nr = rhs->_value._objects._length;
-      size_t i, n;
+      size_t const nl = lhs->_value._objects._length;
+      size_t const nr = rhs->_value._objects._length;
+      size_t n;
 
       if (nl > nr) {
         n = nl;
@@ -272,14 +270,10 @@ int TRI_CompareValuesJson (TRI_json_t const* lhs,
         n = nr;
       }
 
-      for (i = 0; i < n; ++i) {
-        TRI_json_t* lhsValue;
-        TRI_json_t* rhsValue;
-        int result;
-
-        lhsValue = (i >= nl) ? nullptr : reinterpret_cast<TRI_json_t*>(TRI_AtVector(&lhs->_value._objects, i));
-        rhsValue = (i >= nr) ? nullptr : reinterpret_cast<TRI_json_t*>(TRI_AtVector(&rhs->_value._objects, i));
-        result = TRI_CompareValuesJson(lhsValue, rhsValue, useUTF8);
+      for (size_t i = 0; i < n; ++i) {
+        TRI_json_t* lhsValue = (i >= nl) ? nullptr : static_cast<TRI_json_t*>(TRI_AtVector(&lhs->_value._objects, i));
+        TRI_json_t* rhsValue = (i >= nr) ? nullptr : static_cast<TRI_json_t*>(TRI_AtVector(&rhs->_value._objects, i));
+        int result = TRI_CompareValuesJson(lhsValue, rhsValue, useUTF8);
         if (result != 0) {
           return result;
         }
@@ -289,24 +283,20 @@ int TRI_CompareValuesJson (TRI_json_t const* lhs,
     }
 
     case TRI_JSON_ARRAY: {
-      TRI_json_t* keys;
-
       TRI_ASSERT(lhs->_type == TRI_JSON_ARRAY);
       TRI_ASSERT(rhs->_type == TRI_JSON_ARRAY);
 
-      keys = GetMergedKeyList(lhs, rhs);
+      TRI_json_t* keys = GetMergedKeyList(lhs, rhs);
 
       if (keys != nullptr) {
-        size_t i, n;
-
-        n = keys->_value._objects._length;
-        for (i = 0; i < n; ++i) {
+        size_t const n = keys->_value._objects._length;
+        for (size_t i = 0; i < n; ++i) {
           TRI_json_t* keyElement;
           TRI_json_t* lhsValue;
           TRI_json_t* rhsValue;
           int result;
 
-          keyElement = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&keys->_value._objects, i));
+          keyElement = static_cast<TRI_json_t*>(TRI_AtVector(&keys->_value._objects, i));
           TRI_ASSERT(TRI_IsStringJson(keyElement));
 
           lhsValue = TRI_LookupArrayJson((TRI_json_t*) lhs, keyElement->_value._string.data); // may be NULL
@@ -375,24 +365,21 @@ TRI_json_t* TRI_BetweenListJson (TRI_json_t const* list,
                                  bool includeLower,
                                  TRI_json_t const* upper,
                                  bool includeUpper) {
-  TRI_json_t* result;
-  size_t i, n;
-
   TRI_ASSERT(list);
   TRI_ASSERT(list->_type == TRI_JSON_LIST);
   TRI_ASSERT(lower || upper);
 
   // create result list
-  result = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE);
+  TRI_json_t* result = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE);
 
   if (result == nullptr) {
     return nullptr;
   }
 
-  n = list->_value._objects._length;
+  size_t const n = list->_value._objects._length;
 
-  for (i = 0; i < n; ++i) {
-    auto p = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&list->_value._objects, i));
+  for (size_t i = 0; i < n; ++i) {
+    auto p = static_cast<TRI_json_t*>(TRI_AtVector(&list->_value._objects, i));
 
     if (lower) {
       // lower bound is set
@@ -425,24 +412,21 @@ TRI_json_t* TRI_BetweenListJson (TRI_json_t const* list,
 ////////////////////////////////////////////////////////////////////////////////
 
 TRI_json_t* TRI_UniquifyListJson (TRI_json_t const* list) {
-  TRI_json_t* last = nullptr;
-  TRI_json_t* result;
-  size_t i, n;
-
   TRI_ASSERT(list);
   TRI_ASSERT(list->_type == TRI_JSON_LIST);
 
   // create result list
-  result = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE);
+  TRI_json_t* result = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE);
 
   if (result == nullptr) {
     return nullptr;
   }
 
-  n = list->_value._objects._length;
+  TRI_json_t* last = nullptr;
+  size_t const n = list->_value._objects._length;
 
-  for (i = 0; i < n; ++i) {
-    auto p = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&list->_value._objects, i));
+  for (size_t i = 0; i < n; ++i) {
+    auto p = static_cast<TRI_json_t*>(TRI_AtVector(&list->_value._objects, i));
 
     // don't push value if it is the same as the last value
     if (last == nullptr || TRI_CompareValuesJson(p, last, true) > 0) {
@@ -463,8 +447,6 @@ TRI_json_t* TRI_UniquifyListJson (TRI_json_t const* list) {
 TRI_json_t* TRI_UnionizeListsJson (TRI_json_t const* list1,
                                    TRI_json_t const* list2,
                                    bool unique) {
-  TRI_json_t* last = nullptr;
-  TRI_json_t* result;
   size_t i1, i2;
   size_t n1, n2;
 
@@ -486,13 +468,14 @@ TRI_json_t* TRI_UnionizeListsJson (TRI_json_t const* list1,
   }
 
   // create result list
-  result = TRI_CreateList2Json(TRI_UNKNOWN_MEM_ZONE, n1 > n2 ? n1 : n2);
+  TRI_json_t* result = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE, n1 > n2 ? n1 : n2);
 
   if (result == nullptr) {
     return nullptr;
   }
 
   // reset positions
+  TRI_json_t* last = nullptr;
   i1 = 0;
   i2 = 0;
 
@@ -506,8 +489,8 @@ TRI_json_t* TRI_UnionizeListsJson (TRI_json_t const* list1,
       int compareResult;
 
       // both lists not yet exhausted
-      p1 = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&list1->_value._objects, i1));
-      p2 = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&list2->_value._objects, i2));
+      p1 = static_cast<TRI_json_t*>(TRI_AtVector(&list1->_value._objects, i1));
+      p2 = static_cast<TRI_json_t*>(TRI_AtVector(&list2->_value._objects, i2));
       compareResult = TRI_CompareValuesJson(p1, p2, true);
 
       if (compareResult < 0) {
@@ -542,7 +525,7 @@ TRI_json_t* TRI_UnionizeListsJson (TRI_json_t const* list1,
     }
     else if (i1 < n1 && i2 >= n2) {
       // only right list is exhausted
-      p1 = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&list1->_value._objects, i1));
+      p1 = static_cast<TRI_json_t*>(TRI_AtVector(&list1->_value._objects, i1));
 
       if (! unique || last == nullptr || TRI_CompareValuesJson(p1, last, true) > 0) {
         TRI_PushBackListJson(TRI_UNKNOWN_MEM_ZONE, result, p1);
@@ -552,7 +535,7 @@ TRI_json_t* TRI_UnionizeListsJson (TRI_json_t const* list1,
     }
     else if (i1 >= n1 && i2 < n2) {
       // only left list is exhausted
-      p2 = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&list2->_value._objects, i2));
+      p2 = static_cast<TRI_json_t*>(TRI_AtVector(&list2->_value._objects, i2));
 
       if (! unique || last == nullptr || TRI_CompareValuesJson(p2, last, true) > 0) {
         TRI_PushBackListJson(TRI_UNKNOWN_MEM_ZONE, result, p2);
@@ -576,8 +559,6 @@ TRI_json_t* TRI_UnionizeListsJson (TRI_json_t const* list1,
 TRI_json_t* TRI_IntersectListsJson (TRI_json_t const* list1,
                                     TRI_json_t const* list2,
                                     bool unique) {
-  TRI_json_t* last = nullptr;
-  TRI_json_t* result;
   size_t i1, i2;
   size_t n1, n2;
 
@@ -590,7 +571,7 @@ TRI_json_t* TRI_IntersectListsJson (TRI_json_t const* list1,
   n2 = list2->_value._objects._length;
 
   // create result list
-  result = TRI_CreateList2Json(TRI_UNKNOWN_MEM_ZONE, n1 > n2 ? n1 : n2);
+  TRI_json_t* result = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE, n1 > n2 ? n1 : n2);
 
   if (result == nullptr) {
     return nullptr;
@@ -602,14 +583,15 @@ TRI_json_t* TRI_IntersectListsJson (TRI_json_t const* list1,
   }
 
   // reset positions
+  TRI_json_t* last = nullptr;
   i1 = 0;
   i2 = 0;
 
   // iterate over lists
   while (i1 < n1 && i2 < n2) {
     // pointers to elements in both lists
-    auto p1 = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&list1->_value._objects, i1));
-    auto p2 = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&list2->_value._objects, i2));
+    auto p1 = static_cast<TRI_json_t*>(TRI_AtVector(&list1->_value._objects, i1));
+    auto p2 = static_cast<TRI_json_t*>(TRI_AtVector(&list2->_value._objects, i2));
 
     int compareResult = TRI_CompareValuesJson(p1, p2, true);
 
@@ -685,13 +667,13 @@ bool TRI_HasDuplicateKeyJson (TRI_json_t const* object) {
         TRI_json_t* key;
         TRI_json_t* value;
 
-        key = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, i));
+        key = static_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, i));
 
         if (! TRI_IsStringJson(key)) {
           continue;
         }
 
-        value = reinterpret_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, i + 1));
+        value = static_cast<TRI_json_t*>(TRI_AtVector(&object->_value._objects, i + 1));
 
         // recursively check sub-array elements
         if (value->_type == TRI_JSON_ARRAY && TRI_HasDuplicateKeyJson(value)) {
@@ -733,14 +715,10 @@ TRI_json_t* TRI_MergeJson (TRI_memory_zone_t* zone,
                            TRI_json_t const* lhs,
                            TRI_json_t const* rhs,
                            bool nullMeansRemove) {
-  TRI_json_t* result;
-
   TRI_ASSERT(lhs->_type == TRI_JSON_ARRAY);
   TRI_ASSERT(rhs->_type == TRI_JSON_ARRAY);
 
-  result = MergeRecursive(zone, lhs, rhs, nullMeansRemove);
-
-  return result;
+  return MergeRecursive(zone, lhs, rhs, nullMeansRemove);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -750,12 +728,9 @@ TRI_json_t* TRI_MergeJson (TRI_memory_zone_t* zone,
 ////////////////////////////////////////////////////////////////////////////////
 
 static uint64_t HashBlock (uint64_t hash, char const* buffer, size_t length) {
-  uint64_t nMagicPrime;
-  size_t   j;
+  static uint64_t const nMagicPrime = 0x00000100000001b3ULL;
 
-  nMagicPrime = 0x00000100000001b3ULL;
-
-  for (j = 0; j < length; ++j) {
+  for (size_t j = 0; j < length; ++j) {
     hash ^= buffer[j];
     hash *= nMagicPrime;
   }
@@ -864,17 +839,15 @@ uint64_t TRI_HashJsonByAttributes (TRI_json_t const* json,
                                    int* error) {
   uint64_t hash;
 
-  if (NULL != error) {
+  if (nullptr != error) {
     *error = TRI_ERROR_NO_ERROR;
   }
   hash = TRI_FnvHashBlockInitial();
   if (TRI_IsArrayJson(json)) {
-    int i;
-
-    for (i = 0; i < nrAttributes; i++) {
+    for (int i = 0; i < nrAttributes; i++) {
       TRI_json_t const* subjson = TRI_LookupArrayJson(json, attributes[i]);
 
-      if (NULL == subjson && !docComplete && NULL != error) {
+      if (nullptr == subjson && !docComplete && nullptr != error) {
         *error = TRI_ERROR_CLUSTER_NOT_ALL_SHARDING_ATTRIBUTES_GIVEN;
       }
       hash = HashJsonRecursive(hash, subjson);

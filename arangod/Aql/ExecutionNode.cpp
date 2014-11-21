@@ -1542,7 +1542,8 @@ double LimitNode::estimateCost (size_t& nrItems) const {
     // We will actually only ask for _offset + _limit and hand 
     // on _limit:
     nrItems = _limit;
-    return depCost * (_offset + _limit) / incoming + _limit;
+//    return depCost * (_offset + _limit) / incoming + _limit; 
+    return depCost + (_offset + _limit); 
   }
   else {
     // We will only get less than we need, but at the full cost

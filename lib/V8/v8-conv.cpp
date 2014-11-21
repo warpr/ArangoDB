@@ -1739,7 +1739,7 @@ static bool ShapedJsonToJson (TRI_json_t* dst,
   if (parameter->IsString() || parameter->IsStringObject()) {
     v8::Handle<v8::String> stringParameter = parameter->ToString();
     if (converter.assign(stringParameter)) {
-      TRI_InitString2Json(dst, converter.steal(), converter.length());
+      TRI_InitStringJson(dst, converter.steal(), converter.length());
       // this passes ownership for the utf8 string to the JSON object
       // so the converter dtor won't free the string now
       return true;
@@ -1754,7 +1754,7 @@ static bool ShapedJsonToJson (TRI_json_t* dst,
     v8::Handle<v8::Array> arrayParameter = v8::Handle<v8::Array>::Cast(parameter);
     uint32_t const n = arrayParameter->Length();
 
-    TRI_InitList2Json(TRI_UNKNOWN_MEM_ZONE, dst, static_cast<size_t const>(n));
+    TRI_InitListJson(TRI_UNKNOWN_MEM_ZONE, dst, static_cast<size_t const>(n));
     if (n > 0) {
       if (dst->_value._objects._capacity < n) {
         // initialisation failed
@@ -1778,7 +1778,7 @@ static bool ShapedJsonToJson (TRI_json_t* dst,
     uint32_t const n = names->Length();
 
     if (n > 0) {
-      TRI_InitArray2Json(TRI_UNKNOWN_MEM_ZONE, dst, static_cast<size_t const>(n));
+      TRI_InitArrayJson(TRI_UNKNOWN_MEM_ZONE, dst, static_cast<size_t const>(n));
       if (dst->_value._objects._capacity < n * 2) {
         // initialisation failed
         return false;
@@ -1795,7 +1795,7 @@ static bool ShapedJsonToJson (TRI_json_t* dst,
 
         if (converter.assign(key)) {
           // move the string pointer into the JSON object
-          TRI_InitString2Json(&keyElement, converter.steal(), converter.length());
+          TRI_InitStringJson(&keyElement, converter.steal(), converter.length());
 
           TRI_PushBackVector(&dst->_value._objects, &keyElement);
           TRI_PushBackVector(&dst->_value._objects, &valueElement);
@@ -1846,7 +1846,7 @@ static TRI_json_t* ObjectToJson (v8::Handle<v8::Value> const parameter,
     TRI_Utf8ValueNFC str(TRI_UNKNOWN_MEM_ZONE, stringParameter);
     // move the string pointer into the JSON object
     if (*str != 0) {
-      TRI_json_t* j = TRI_CreateString2Json(TRI_UNKNOWN_MEM_ZONE, *str, str.length());
+      TRI_json_t* j = TRI_CreateStringJson(TRI_UNKNOWN_MEM_ZONE, *str, str.length());
       // this passes ownership for the utf8 string to the JSON object
       str.steal();
 
@@ -1861,14 +1861,14 @@ static TRI_json_t* ObjectToJson (v8::Handle<v8::Value> const parameter,
     v8::Handle<v8::Array> arrayParameter = v8::Handle<v8::Array>::Cast(parameter);
     uint32_t const n = arrayParameter->Length();
 
-    TRI_json_t* listJson = TRI_CreateList2Json(TRI_UNKNOWN_MEM_ZONE, static_cast<size_t const>(n));
+    TRI_json_t* listJson = TRI_CreateListJson(TRI_UNKNOWN_MEM_ZONE, static_cast<size_t const>(n));
 
     if (listJson != nullptr) {
       for (uint32_t j = 0; j < n; ++j) {
         TRI_json_t* result = ObjectToJson(arrayParameter->Get(j), seenHashes, seenObjects);
 
         if (result != nullptr) {
-          TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, listJson, result);
+          TRI_PushBackAndFreeListJson(TRI_UNKNOWN_MEM_ZONE, listJson, result);
         }
       }
     }
@@ -1901,7 +1901,7 @@ static TRI_json_t* ObjectToJson (v8::Handle<v8::Value> const parameter,
           TRI_Utf8ValueNFC str(TRI_UNKNOWN_MEM_ZONE, result->ToString());
           // move the string pointer into the JSON object
           if (*str != 0) {
-            TRI_json_t* j = TRI_CreateString2Json(TRI_UNKNOWN_MEM_ZONE, *str, str.length());
+            TRI_json_t* j = TRI_CreateStringJson(TRI_UNKNOWN_MEM_ZONE, *str, str.length());
             // this passes ownership for the utf8 string to the JSON object
             str.steal();
 
@@ -1936,7 +1936,7 @@ static TRI_json_t* ObjectToJson (v8::Handle<v8::Value> const parameter,
     v8::Handle<v8::Array> names = arrayParameter->GetOwnPropertyNames();
     uint32_t const n = names->Length();
 
-    TRI_json_t* arrayJson = TRI_CreateArray2Json(TRI_UNKNOWN_MEM_ZONE, static_cast<size_t const>(n));
+    TRI_json_t* arrayJson = TRI_CreateArrayJson(TRI_UNKNOWN_MEM_ZONE, static_cast<size_t const>(n));
 
     if (arrayJson != nullptr && n > 0) {
       for (uint32_t j = 0; j < n; ++j) {
@@ -1948,7 +1948,7 @@ static TRI_json_t* ObjectToJson (v8::Handle<v8::Value> const parameter,
 
           if (*str != 0) {
             // move the string pointer into the JSON object
-            TRI_Insert4ArrayJson(TRI_UNKNOWN_MEM_ZONE, arrayJson, *str, str.length(), result, false);
+            TRI_Insert4ArrayJson(TRI_UNKNOWN_MEM_ZONE, arrayJson, *str, str.length(), result);
             // this passes ownership for the utf8 string to the JSON object
             str.steal();
           }
