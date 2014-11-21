@@ -59,7 +59,7 @@ static void JS_StateLoggerReplication (const v8::FunctionCallbackInfo<v8::Value>
 
   v8::Handle<v8::Object> state = v8::Object::New(isolate);
   state->Set(TRI_V8_STRING("running"),     v8::True(isolate));
-  state->Set(TRI_V8_STRING("lastLogTick"), V8TickId(s.lastTick));
+  state->Set(TRI_V8_STRING("lastLogTick"), V8TickId(isolate, s.lastTick));
   state->Set(TRI_V8_STRING("totalEvents"), v8::Number::New(isolate, (double) s.numEvents));
   state->Set(TRI_V8_STRING("time"),        TRI_V8_SYMBOL_STD_STRING(s.timeString));
   result->Set(TRI_V8_STRING("state"),      state);
@@ -103,7 +103,7 @@ static void JS_LastLoggerReplication (const v8::FunctionCallbackInfo<v8::Value>&
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
   
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -148,7 +148,7 @@ static void JS_SynchroniseReplication (const v8::FunctionCallbackInfo<v8::Value>
     TRI_V8_EXCEPTION_USAGE("REPLICATION_SYNCHRONISE(<config>)");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -238,7 +238,7 @@ static void JS_SynchroniseReplication (const v8::FunctionCallbackInfo<v8::Value>
   try {
     res = syncer.run(errorMsg);
 
-    result->Set(TRI_V8_SYMBOL("lastLogTick"), V8TickId(syncer.getLastLogTick()));
+    result->Set(TRI_V8_SYMBOL("lastLogTick"), V8TickId(isolate, syncer.getLastLogTick()));
 
     map<TRI_voc_cid_t, string>::const_iterator it;
     map<TRI_voc_cid_t, string> const& c = syncer.getProcessedCollections();
@@ -287,7 +287,7 @@ static void JS_ConfigureApplierReplication (const v8::FunctionCallbackInfo<v8::V
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -468,7 +468,7 @@ static void JS_StartApplierReplication (const v8::FunctionCallbackInfo<v8::Value
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -513,7 +513,7 @@ static void JS_ShutdownApplierReplication (const v8::FunctionCallbackInfo<v8::Va
     TRI_V8_EXCEPTION_USAGE("REPLICATION_APPLIER_SHUTDOWN()");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -544,7 +544,7 @@ static void JS_StateApplierReplication (const v8::FunctionCallbackInfo<v8::Value
     TRI_V8_EXCEPTION_USAGE("REPLICATION_APPLIER_STATE()");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -578,7 +578,7 @@ static void JS_ForgetApplierReplication (const v8::FunctionCallbackInfo<v8::Valu
     TRI_V8_EXCEPTION_USAGE("REPLICATION_APPLIER_FORGET()");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);

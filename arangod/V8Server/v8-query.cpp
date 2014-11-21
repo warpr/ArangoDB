@@ -60,7 +60,7 @@ using namespace triagens::arango;
 /// @brief shortcut to wrap a shaped-json object in a read-only transaction
 ////////////////////////////////////////////////////////////////////////////////
 
-#define WRAP_SHAPED_JSON(...) TRI_WrapShapedJson<SingleCollectionReadOnlyTransaction>(__VA_ARGS__)
+#define WRAP_SHAPED_JSON(...) TRI_WrapShapedJson<SingleCollectionReadOnlyTransaction>(isolate, __VA_ARGS__)
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                  HELPER FUNCTIONS
@@ -680,7 +680,7 @@ static void ExecuteSkiplistQuery (const v8::FunctionCallbackInfo<v8::Value>& arg
 
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(trx.resolver(), col, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), col, args[0], false, args);
 
   if (idx == nullptr) {
     return;
@@ -1569,7 +1569,7 @@ static void ByExampleHashIndexQuery (SingleCollectionReadOnlyTransaction& trx,
   result->Set(TRI_V8_SYMBOL("documents"), documents);
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(trx.resolver(), collection, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false, args);
 
   if (idx == nullptr) {
     return;
@@ -2044,7 +2044,7 @@ static void FulltextQuery (SingleCollectionReadOnlyTransaction& trx,
   }
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(trx.resolver(), collection, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false, args);
 
   if (idx == nullptr) {
     return;
@@ -2281,7 +2281,7 @@ static void NearQuery (SingleCollectionReadOnlyTransaction& trx,
   }
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(trx.resolver(), collection, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false, args);
 
   if (idx == nullptr) {
     return;
@@ -2408,7 +2408,7 @@ static void WithinQuery (SingleCollectionReadOnlyTransaction& trx,
   }
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(trx.resolver(), collection, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false, args);
 
   if (idx == nullptr) {
     return;

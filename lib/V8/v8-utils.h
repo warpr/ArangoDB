@@ -236,7 +236,8 @@ void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
 /// @brief normalize a v8 object
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Value> TRI_normalize_V8_Obj (v8::Handle<v8::Value> obj);
+void TRI_normalize_V8_Obj (const v8::FunctionCallbackInfo<v8::Value>& args,
+                           v8::Handle<v8::Value> obj);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates the path list
@@ -252,7 +253,8 @@ v8::Handle<v8::Array> TRI_V8PathList (v8::Isolate* isolate, std::string const&);
 /// @brief stores the V8 utils function inside the global variable
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitV8Utils (v8::Handle<v8::Context>,
+void TRI_InitV8Utils (v8::Isolate* isolate,
+                      v8::Handle<v8::Context>,
                       std::string const& startupPath,
                       std::string const& modules);
 

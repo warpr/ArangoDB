@@ -153,14 +153,12 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesJs (v8::Isolate* isolate
 /// object
 ////////////////////////////////////////////////////////////////////////////////
 
-static void SetBasicDocumentAttributesShaped (const v8::FunctionCallbackInfo<v8::Value>& args,
-                                              CollectionNameResolver const* resolver,
-                                              TRI_v8_global_t* v8g,
-                                              TRI_voc_cid_t cid,
-                                              TRI_df_marker_t const* marker,
-                                              v8::Handle<v8::Object>& result) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
+static v8::Handle<v8::Object> SetBasicDocumentAttributesShaped (v8::Isolate* isolate,
+                                                                CollectionNameResolver const* resolver,
+                                                                TRI_v8_global_t* v8g,
+                                                                TRI_voc_cid_t cid,
+                                                                TRI_df_marker_t const* marker,
+                                                                v8::Handle<v8::Object>& result) {
   TRI_ASSERT(marker != nullptr);
 
   // buffer that we'll use for generating _id, _key, _rev, _from and _to values
@@ -224,7 +222,7 @@ static void SetBasicDocumentAttributesShaped (const v8::FunctionCallbackInfo<v8:
     TRI_GET_GLOBAL_STR(_ToKey);
     result->ForceSet(_ToKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
   }
-  TRI_V8_RETURN(result);
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -267,14 +265,12 @@ static void WeakBarrierCallback (v8::Isolate* isolate,
 /// @brief wraps a TRI_shaped_json_t
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_WrapShapedJson (const v8::FunctionCallbackInfo<v8::Value>& args,
-                         triagens::arango::CollectionNameResolver const* resolver,
-                         TRI_barrier_t* barrier,
-                         TRI_voc_cid_t cid,
-                         TRI_document_collection_t* collection,
-                         void const* data) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
+v8::Handle<v8::Value> TRI_WrapShapedJson (v8::Isolate* isolate,
+                                          triagens::arango::CollectionNameResolver const* resolver,
+                                          TRI_barrier_t* barrier,
+                                          TRI_voc_cid_t cid,
+                                          TRI_document_collection_t* collection,
+                                          void const* data) {
   TRI_df_marker_t const* marker = static_cast<TRI_df_marker_t const*>(data);
   TRI_ASSERT(marker != nullptr);
   TRI_ASSERT(barrier != nullptr);
@@ -293,12 +289,12 @@ void TRI_WrapShapedJson (const v8::FunctionCallbackInfo<v8::Value>& args,
     TRI_shape_t const* shape = shaper->lookupShapeId(shaper, json._sid);
 
     if (shape == nullptr) {
-      TRI_V8_RETURN(v8::Object::New(isolate));
+      return v8::Object::New(isolate);
     }
 
     v8::Handle<v8::Object> result = SetBasicDocumentAttributesJs(isolate, resolver, v8g, cid, marker);
 
-    TRI_V8_RETURN(TRI_JsonShapeData(isolate, result, shaper, shape, json._data.data, json._data.length));
+    return TRI_JsonShapeData(isolate, result, shaper, shape, json._data.data, json._data.length);
   }
 
   // we'll create a document stub, with a pointer into the datafile
@@ -309,7 +305,7 @@ void TRI_WrapShapedJson (const v8::FunctionCallbackInfo<v8::Value>& args,
 
   if (result.IsEmpty()) {
     // error
-    TRI_V8_RETURN(result);
+    return result;
   }
 
   // point the 0 index Field to the c++ pointer for unwrapping later
@@ -338,7 +334,7 @@ void TRI_WrapShapedJson (const v8::FunctionCallbackInfo<v8::Value>& args,
     //// TODO result->SetInternalField(SLOT_BARRIER, (*it).second);
   }
 
-  SetBasicDocumentAttributesShaped(args, resolver, v8g, cid, marker, result);
+  return SetBasicDocumentAttributesShaped(isolate, resolver, v8g, cid, marker, result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

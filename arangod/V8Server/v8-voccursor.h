@@ -34,13 +34,6 @@
 #include "VocBase/server.h"
 #include "v8-vocbase.h"
 
-void TRI_InitV8indexArangoDB (v8::Handle<v8::Context> context,
-                              TRI_server_t* server,
-                              TRI_vocbase_t* vocbase,
-                              triagens::arango::JSLoader* loader,
-                              const size_t threadNumber,
-                              TRI_v8_global_t* v8g,
-                              v8::Handle<v8::ObjectTemplate>  ArangoDBNS);
 
 extern void TRI_InitV8cursor (v8::Handle<v8::Context> context,
                               TRI_server_t* server,
@@ -49,6 +42,7 @@ extern void TRI_InitV8cursor (v8::Handle<v8::Context> context,
                               const size_t threadNumber,
                               TRI_v8_global_t* v8g);
 
-v8::Handle<v8::Value> TRI_WrapGeneralCursor (void* cursor);
+void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,
+                            void* cursor);
 
 #endif

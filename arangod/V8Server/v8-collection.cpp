@@ -205,7 +205,7 @@ static void ParseDocumentOrDocumentHandle (TRI_vocbase_t* vocbase,
   rid = 0;
 
   // try to extract the collection name, key, and revision from the object passed
-  if (! ExtractDocumentHandle(val, collectionName, key, rid)) {
+  if (! ExtractDocumentHandle(isolate, val, collectionName, key, rid)) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD);
   }
 
@@ -440,7 +440,7 @@ static void DocumentVocbaseCol (bool useCollection,
   }
   else {
     // called as db._document()
-    vocbase = GetContextVocBase();
+    vocbase = GetContextVocBase(isolate);
   }
 
   if (vocbase == nullptr) {
@@ -490,7 +490,7 @@ static void DocumentVocbaseCol (bool useCollection,
   TRI_ASSERT(trx.hasBarrier());
 
   if (res == TRI_ERROR_NO_ERROR) {
-    result = TRI_WrapShapedJson<SingleCollectionReadOnlyTransaction>(trx, col->_cid, document.getDataPtr());
+    result = TRI_WrapShapedJson<SingleCollectionReadOnlyTransaction>(isolate, trx, col->_cid, document.getDataPtr());
   }
 
   if (res != TRI_ERROR_NO_ERROR || document.getDataPtr() == nullptr) {  // PROTECTED by trx here
@@ -617,7 +617,7 @@ static void ExistsVocbaseCol (bool useCollection,
   }
   else {
     // called as db._exists()
-    vocbase = GetContextVocBase();
+    vocbase = GetContextVocBase(isolate);
   }
 
   if (vocbase == nullptr) {
@@ -857,7 +857,7 @@ void ReplaceVocbaseCol (bool useCollection,
   }
   else {
     // called as db._replace()
-    vocbase = GetContextVocBase();
+    vocbase = GetContextVocBase(isolate);
   }
 
   if (vocbase == nullptr) {
@@ -979,9 +979,9 @@ void ReplaceVocbaseCol (bool useCollection,
     TRI_GET_GLOBAL_STR(_RevKey);
     TRI_GET_GLOBAL_STR(_OldRevKey);
     TRI_GET_GLOBAL_STR(_KeyKey);
-    result->Set(_IdKey, V8DocumentId(trx.resolver()->getCollectionName(col->_cid), docKey));
-    result->Set(_RevKey, V8RevisionId(mptr._rid));
-    result->Set(_OldRevKey, V8RevisionId(actualRevision));
+    result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
+    result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
+    result->Set(_OldRevKey, V8RevisionId(isolate, actualRevision));
     result->Set(_KeyKey, TRI_V8_SYMBOL(docKey));
 
     TRI_V8_RETURN(result);
@@ -1081,8 +1081,8 @@ static void InsertVocbaseCol (TRI_vocbase_col_t* col,
     TRI_GET_GLOBAL_STR(_IdKey);
     TRI_GET_GLOBAL_STR(_RevKey);
     TRI_GET_GLOBAL_STR(_KeyKey);
-    result->Set(_IdKey, V8DocumentId(trx.resolver()->getCollectionName(col->_cid), docKey));
-    result->Set(_RevKey, V8RevisionId(mptr._rid));
+    result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
+    result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
     result->Set(_KeyKey, TRI_V8_SYMBOL(docKey));
 
     TRI_V8_RETURN(result);
@@ -1160,7 +1160,7 @@ static void UpdateVocbaseCol (bool useCollection,
   }
   else {
     // called as db._update()
-    vocbase = GetContextVocBase();
+    vocbase = GetContextVocBase(isolate);
   }
 
   if (vocbase == nullptr) {
@@ -1289,9 +1289,9 @@ static void UpdateVocbaseCol (bool useCollection,
     TRI_GET_GLOBAL_STR(_RevKey);
     TRI_GET_GLOBAL_STR(_OldRevKey);
     TRI_GET_GLOBAL_STR(_KeyKey);
-    result->Set(_IdKey, V8DocumentId(trx.resolver()->getCollectionName(col->_cid), docKey));
-    result->Set(_RevKey, V8RevisionId(mptr._rid));
-    result->Set(_OldRevKey, V8RevisionId(actualRevision));
+    result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
+    result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
+    result->Set(_OldRevKey, V8RevisionId(isolate, actualRevision));
     result->Set(_KeyKey, TRI_V8_SYMBOL(docKey));
 
     TRI_V8_RETURN(result);
@@ -1433,7 +1433,7 @@ static void RemoveVocbaseCol (bool useCollection,
   }
   else {
     // called as db._remove()
-    vocbase = GetContextVocBase();
+    vocbase = GetContextVocBase(isolate);
   }
 
   if (vocbase == nullptr) {
@@ -1879,7 +1879,7 @@ static void JS_FiguresVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& arg
   indexes->Set(TRI_V8_SYMBOL("count"), v8::Number::New(isolate, (double) info->_numberIndexes));
   indexes->Set(TRI_V8_SYMBOL("size"), v8::Number::New(isolate, (double) info->_sizeIndexes));
 
-  result->Set(TRI_V8_SYMBOL("lastTick"), V8TickId(info->_tickMax));
+  result->Set(TRI_V8_SYMBOL("lastTick"), V8TickId(isolate, info->_tickMax));
   result->Set(TRI_V8_SYMBOL("uncollectedLogfileEntries"), v8::Number::New(isolate, (double) info->_uncollectedLogfileEntries));
 
   TRI_Free(TRI_UNKNOWN_MEM_ZONE, info);
@@ -1911,7 +1911,7 @@ static void JS_LoadVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& args) 
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -2619,7 +2619,7 @@ static void JS_RevisionVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& ar
     TRI_V8_EXCEPTION(res);
   }
 
-  TRI_V8_RETURN(V8RevisionId(rid));
+  TRI_V8_RETURN(V8RevisionId(isolate, rid));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3050,8 +3050,8 @@ static void InsertEdgeCol (TRI_vocbase_col_t* col,
     TRI_GET_GLOBAL_STR(_IdKey);
     TRI_GET_GLOBAL_STR(_RevKey);
     TRI_GET_GLOBAL_STR(_KeyKey);
-    result->Set(_IdKey, V8DocumentId(trx.resolver()->getCollectionName(col->_cid), docKey));
-    result->Set(_RevKey, V8RevisionId(mptr._rid));
+    result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
+    result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
     result->Set(_KeyKey, TRI_V8_SYMBOL(docKey));
 
     TRI_V8_RETURN(result); 
@@ -3642,7 +3642,7 @@ static void JS_CollectionVocbase (const v8::FunctionCallbackInfo<v8::Value>& arg
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -3676,7 +3676,7 @@ static void JS_CollectionVocbase (const v8::FunctionCallbackInfo<v8::Value>& arg
     TRI_V8_RETURN_NULL();
   }
 
-  v8::Handle<v8::Value> result = WrapCollection(collection);
+  v8::Handle<v8::Value> result = WrapCollection(isolate, collection);
 
   if (result.IsEmpty()) {
     TRI_V8_EXCEPTION_MEMORY();
@@ -3707,7 +3707,7 @@ static void JS_CollectionsVocbase (const v8::FunctionCallbackInfo<v8::Value>& ar
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -3731,7 +3731,7 @@ static void JS_CollectionsVocbase (const v8::FunctionCallbackInfo<v8::Value>& ar
   for (uint32_t i = 0;  i < n;  ++i) {
     TRI_vocbase_col_t const* collection = (TRI_vocbase_col_t const*) colls._buffer[i];
 
-    v8::Handle<v8::Value> c = WrapCollection(collection);
+    v8::Handle<v8::Value> c = WrapCollection(isolate, collection);
 
     if (c.IsEmpty()) {
       error = true;
@@ -3758,7 +3758,7 @@ static void JS_CompletionsVocbase (const v8::FunctionCallbackInfo<v8::Value>& ar
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_RETURN(v8::Array::New(isolate));
@@ -4303,7 +4303,7 @@ static void JS_DatafileScanVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>
     o->Set(TRI_V8_SYMBOL("position"), v8::Number::New(isolate, entry->_position));
     o->Set(TRI_V8_SYMBOL("size"),     v8::Number::New(isolate, entry->_size));
     o->Set(TRI_V8_SYMBOL("realSize"), v8::Number::New(isolate, entry->_realSize));
-    o->Set(TRI_V8_SYMBOL("tick"),     V8TickId(entry->_tick));
+    o->Set(TRI_V8_SYMBOL("tick"),     V8TickId(isolate, entry->_tick));
     o->Set(TRI_V8_SYMBOL("type"),     v8::Number::New(isolate, (int) entry->_type));
     o->Set(TRI_V8_SYMBOL("status"),   v8::Number::New(isolate, (int) entry->_status));
 
@@ -4380,7 +4380,7 @@ void TRI_InitV8collection (v8::Handle<v8::Context> context,
   TRI_AddMethodVocbase(isolate, rt, "update", JS_UpdateVocbaseCol);
   TRI_AddMethodVocbase(isolate, rt, "version", JS_VersionVocbaseCol);
 
-  TRI_InitV8indexCollection(context, server, vocbase, loader, threadNumber, v8g, rt);
+  TRI_InitV8indexCollection(isolate, context, server, vocbase, threadNumber, v8g, rt);
 
   v8g->VocbaseColTempl.Reset(isolate, rt);
   TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoCollection", ft->GetFunction());

@@ -1097,7 +1097,7 @@ static void CreateCollectionCoordinator (const v8::FunctionCallbackInfo<v8::Valu
 
   shared_ptr<CollectionInfo> const& c = ci->getCollection(databaseName, cid);
   TRI_vocbase_col_t* newcoll = CoordinatorCollection(vocbase, *c);
-  TRI_V8_RETURN(WrapCollection(newcoll));
+  TRI_V8_RETURN(WrapCollection(isolate, newcoll));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1290,7 +1290,7 @@ static void JS_DropIndexVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& a
 
   TRI_document_collection_t* document = trx.documentCollection();
 
-  TRI_index_t* idx = TRI_LookupIndexByHandle(trx.resolver(), collection, args[0], true, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], true, args);
 
   if (idx == nullptr) {
     return;
@@ -1532,7 +1532,7 @@ static void CreateVocBase (const v8::FunctionCallbackInfo<v8::Value>& args,
   v8::HandleScope scope(isolate);
 
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -1667,7 +1667,7 @@ static void CreateVocBase (const v8::FunctionCallbackInfo<v8::Value>& args,
     TRI_V8_EXCEPTION_MESSAGE(TRI_errno(), "cannot create collection");
   }
 
-  v8::Handle<v8::Value> result = WrapCollection(collection);
+  v8::Handle<v8::Value> result = WrapCollection(isolate, collection);
 
   if (result.IsEmpty()) {
     TRI_V8_EXCEPTION_MEMORY();
@@ -1851,7 +1851,6 @@ void TRI_InitV8indexArangoDB (v8::Isolate* isolate,
                               v8::Handle<v8::Context> context,
                               TRI_server_t* server,
                               TRI_vocbase_t* vocbase,
-                              JSLoader* loader,
                               const size_t threadNumber,
                               TRI_v8_global_t* v8g,
                               v8::Handle<v8::ObjectTemplate> rt){
@@ -1867,7 +1866,6 @@ void TRI_InitV8indexCollection (v8::Isolate* isolate,
                                 v8::Handle<v8::Context> context,
                                 TRI_server_t* server,
                                 TRI_vocbase_t* vocbase,
-                                JSLoader* loader,
                                 const size_t threadNumber,
                                 TRI_v8_global_t* v8g,
                                 v8::Handle<v8::ObjectTemplate> rt){

@@ -142,7 +142,7 @@ static void JS_CreateCursor (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::HandleScope scope(isolate);
 
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -206,13 +206,7 @@ static void JS_CreateCursor (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_MEMORY();
   }
 
-  v8::Handle<v8::Value> cursorObject = TRI_WrapGeneralCursor(cursor);
-
-  if (cursorObject.IsEmpty()) {
-    TRI_V8_EXCEPTION_MEMORY();
-  }
-
-  TRI_V8_RETURN(cursorObject);
+  TRI_WrapGeneralCursor(args, cursor);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -254,7 +248,7 @@ static void JS_IdGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args)
   TRI_voc_tick_t id = TRI_IdGeneralCursor(UnwrapGeneralCursor(args.Holder()));
 
   if (id != 0) {
-    TRI_V8_RETURN(V8TickId(id));
+    TRI_V8_RETURN(V8TickId(isolate, id));
   }
 
   TRI_V8_EXCEPTION(TRI_ERROR_CURSOR_NOT_FOUND);
@@ -361,7 +355,7 @@ static void JS_PersistGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& 
     TRI_V8_EXCEPTION_USAGE("persist()");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   TRI_PersistGeneralCursor(vocbase, UnwrapGeneralCursor(args.Holder()));
   TRI_V8_RETURN_TRUE();
@@ -581,7 +575,7 @@ static void JS_Cursor (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_USAGE("CURSOR(<cursor-identifier>)");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -603,13 +597,7 @@ static void JS_Cursor (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION(TRI_ERROR_CURSOR_NOT_FOUND);
   }
 
-  v8::Handle<v8::Value> cursorObject = TRI_WrapGeneralCursor(cursor);
-
-  if (cursorObject.IsEmpty()) {
-    TRI_V8_EXCEPTION_MEMORY();
-  }
-
-  TRI_V8_RETURN(cursorObject);
+  TRI_WrapGeneralCursor(args, cursor);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -625,7 +613,7 @@ static void JS_DeleteCursor (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_USAGE("DELETE_CURSOR(<cursor-identifier>)");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);

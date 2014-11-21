@@ -1846,8 +1846,8 @@ void TRI_FreeUserStructuresVocBase (TRI_vocbase_t* vocbase) {
 /// @brief creates the user structures functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitV8UserStructures (v8::Handle<v8::Context> context) {
-  ISOLATE;
+void TRI_InitV8UserStructures (v8::Isolate* isolate,
+                               v8::Handle<v8::Context> context) {
   v8::HandleScope scope(isolate);
 
 

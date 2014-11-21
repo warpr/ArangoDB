@@ -31,6 +31,7 @@
 #include "v8-wrapshapedjson.h"
 #include "v8-replication.h"
 #include "v8-voccursor.h"
+#include "v8-vocindex.h"
 #include "v8-collection.h"
 
 #include "VocBase/general-cursor.h"
@@ -149,7 +150,7 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_USAGE("TRANSACTION(<object>)");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -535,7 +536,7 @@ static void JS_normalize_string (const v8::FunctionCallbackInfo<v8::Value>& args
     TRI_V8_EXCEPTION_USAGE("NORMALIZE_STRING(<string>)");
   }
 
-  TRI_V8_RETURN(TRI_normalize_V8_Obj(args[0]));
+  TRI_normalize_V8_Obj(args, args[0]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -793,7 +794,7 @@ static void JS_ReloadAuth (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == 0) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -831,7 +832,7 @@ static void JS_ParseAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -932,7 +933,7 @@ static void JS_ExplainAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -1016,7 +1017,7 @@ static void JS_ExecuteAqlJson (const v8::FunctionCallbackInfo<v8::Value>& args) 
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -1143,13 +1144,7 @@ static void JS_ExecuteAqlJson (const v8::FunctionCallbackInfo<v8::Value>& args) 
   }
   TRI_ASSERT(cursor != nullptr);
   
-  v8::Handle<v8::Value> cursorObject = TRI_WrapGeneralCursor(cursor);
-
-  if (cursorObject.IsEmpty()) {
-    TRI_V8_EXCEPTION_MEMORY();
-  }
-
-  TRI_V8_RETURN(cursorObject);
+  TRI_WrapGeneralCursor(args, cursor);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1161,7 +1156,7 @@ static void JS_ExecuteAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -1288,7 +1283,7 @@ static void JS_ExecuteAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
     queryResult.profile = nullptr;
   }
 
-  TRI_general_cursor_result_t* cursorResult = TRI_CreateResultGeneralCursor(queryResult.result);
+  TRI_general_cursor_result_t* cursorResult = TRI_CreateResultGeneralCursor(isolate, queryResult.result);
   
   if (cursorResult == nullptr) {
     if (extra != nullptr) {
@@ -1310,13 +1305,7 @@ static void JS_ExecuteAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   TRI_ASSERT(cursor != nullptr);
   
-  v8::Handle<v8::Value> cursorObject = TRI_WrapGeneralCursor(cursor);
-
-  if (cursorObject.IsEmpty()) {
-    TRI_V8_EXCEPTION_MEMORY();
-  }
-
-  TRI_V8_RETURN(cursorObject);
+  TRI_WrapGeneralCursor(args, cursor);
 }
 
 // -----------------------------------------------------------------------------
@@ -1370,7 +1359,7 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -1495,7 +1484,7 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
     TRI_V8_RETURN_FALSE();
   }
 
-  v8::Handle<v8::Value> result = WrapCollection(collection);
+  v8::Handle<v8::Value> result = WrapCollection(isolate, collection);
 
   if (result.IsEmpty()) {
     TRI_V8_RETURN_FALSE();
@@ -1538,7 +1527,7 @@ static void JS_PathDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -1560,13 +1549,13 @@ static void JS_IdDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
   }
 
-  TRI_V8_RETURN(V8TickId(vocbase->_id));
+  TRI_V8_RETURN(V8TickId(isolate, vocbase->_id));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1582,7 +1571,7 @@ static void JS_NameDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -1608,7 +1597,7 @@ static void JS_IsSystemDatabase (const v8::FunctionCallbackInfo<v8::Value>& args
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -1654,7 +1643,7 @@ static void JS_UseDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   string const name = TRI_ObjectToString(args[0]);
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_INTERNAL);
@@ -1781,7 +1770,7 @@ static void JS_ListDatabases (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_USAGE("db._listDatabases()");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -1997,7 +1986,7 @@ static void JS_CreateDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) 
     TRI_V8_EXCEPTION_USAGE("db._createDatabase(<name>, <options>, <users>)");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -2183,7 +2172,7 @@ static void JS_DropDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_USAGE("db._dropDatabase(<name>)");
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -2235,7 +2224,7 @@ static void JS_ConfigureEndpoint (const v8::FunctionCallbackInfo<v8::Value>& arg
     TRI_V8_EXCEPTION(TRI_ERROR_NOT_IMPLEMENTED);
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == 0) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -2308,7 +2297,7 @@ static void JS_RemoveEndpoint (const v8::FunctionCallbackInfo<v8::Value>& args) 
     TRI_V8_EXCEPTION(TRI_ERROR_NOT_IMPLEMENTED);
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -2350,7 +2339,7 @@ static void JS_ListEndpoints (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION(TRI_ERROR_NOT_IMPLEMENTED);
   }
 
-  TRI_vocbase_t* vocbase = GetContextVocBase();
+  TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 
   if (vocbase == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -2407,7 +2396,7 @@ int TRI_ParseVertex (const v8::FunctionCallbackInfo<v8::Value>& args,
   TRI_voc_rid_t rid = 0;
 
   // try to extract the collection name, key, and revision from the object passed
-  if (! ExtractDocumentHandle(val, collectionName, key, rid)) {
+  if (! ExtractDocumentHandle(isolate, val, collectionName, key, rid)) {
     return TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD;
   }
 
@@ -2570,15 +2559,15 @@ void TRI_InitV8VocBridge (triagens::arango::ApplicationV8* applicationV8,
   TRI_AddMethodVocbase(isolate, ArangoNS, "_listDatabases", JS_ListDatabases);
   TRI_AddMethodVocbase(isolate, ArangoNS, "_useDatabase", JS_UseDatabase);
 
-  TRI_InitV8indexArangoDB(context, server, vocbase, loader, threadNumber, v8g, ArangoNS);
+  TRI_InitV8indexArangoDB(isolate, context, server, vocbase, threadNumber, v8g, ArangoNS);
 
   TRI_InitV8collection(context, server, vocbase, loader, threadNumber, v8g, isolate, ArangoNS);
 
   v8g->VocbaseTempl.Reset(isolate, ArangoNS);
   TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoDatabase", ft->GetFunction());
-
-  TRI_InitV8ShapedJson(context, server, vocbase, loader, threadNumber, v8g);
-
+  /* TODO
+  TRI_InitV8ShapedJson(args, context, server, vocbase, loader, threadNumber, v8g);
+  */
   TRI_InitV8cursor(context, server, vocbase, loader, threadNumber, v8g);
 
   // .............................................................................
@@ -2592,7 +2581,7 @@ void TRI_InitV8VocBridge (triagens::arango::ApplicationV8* applicationV8,
   TRI_AddGlobalFunctionVocbase(isolate, context, "AQL_PARSE", JS_ParseAql, true);
   TRI_AddGlobalFunctionVocbase(isolate, context, "AQL_WARNING", JS_WarningAql, true);
 
-  TRI_InitV8replication(context, server, vocbase, loader, threadNumber, v8g);
+  TRI_InitV8replication(isolate, context, server, vocbase, loader, threadNumber, v8g);
 
   TRI_AddGlobalFunctionVocbase(isolate, context, "COMPARE_STRING", JS_compare_string);
   TRI_AddGlobalFunctionVocbase(isolate, context, "NORMALIZE_STRING", JS_normalize_string);

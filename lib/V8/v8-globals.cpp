@@ -302,12 +302,12 @@ void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
   // all global functions are read-only
   if (isHidden) {
     context->Global()->ForceSet(TRI_V8_SYMBOL(name),
-                                v8::FunctionTemplate::New(isolate, func)->GetFunction(),
+                                func,
                                 static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontEnum));
   }
   else {
     context->Global()->ForceSet(TRI_V8_SYMBOL(name),
-                                v8::FunctionTemplate::New(isolate, func)->GetFunction(),
+                                func,
                                 v8::ReadOnly);
   }
 }

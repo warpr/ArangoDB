@@ -413,7 +413,7 @@ v8::Handle<v8::Value> AqlValue::toV8 (v8::Isolate* isolate,
     case SHAPED: {
       TRI_ASSERT(document != nullptr);
       TRI_ASSERT(_marker != nullptr);
-      return TRI_WrapShapedJson<triagens::arango::AqlTransaction>(*trx, document->_info._cid, _marker);
+      return TRI_WrapShapedJson<triagens::arango::AqlTransaction>(isolate, *trx, document->_info._cid, _marker);
     }
 
     case DOCVEC: {

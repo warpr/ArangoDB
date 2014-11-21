@@ -1279,17 +1279,17 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
   localContext->Enter();
 
   TRI_InitV8VocBridge(this, localContext, _queryRegistry, _server, _vocbase, &_startupLoader, i);
-  TRI_InitV8Queries(localContext);
-  TRI_InitV8UserStructures(localContext);
+  TRI_InitV8Queries(isolate, localContext);
+  TRI_InitV8UserStructures(isolate, localContext);
 
-  TRI_InitV8Cluster(localContext);
+  TRI_InitV8Cluster(isolate, localContext);
   if (_dispatcher->dispatcher() != nullptr) {
     // don't initialise dispatcher if there is no scheduler (server started with --no-server option)
-    TRI_InitV8Dispatcher(localContext, _vocbase, _scheduler, _dispatcher, this);
+    TRI_InitV8Dispatcher(isolate, localContext, _vocbase, _scheduler, _dispatcher, this);
   }
 
   if (useActions) {
-    TRI_InitV8Actions(localContext, _vocbase, this);
+    TRI_InitV8Actions(isolate, localContext, _vocbase, this);
   }
 
   string modulesPath = _startupPath + TRI_DIR_SEPARATOR_STR + "server" + TRI_DIR_SEPARATOR_STR + "modules;" +
@@ -1298,7 +1298,7 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
 
   TRI_InitV8Buffer(isolate, localContext);
   TRI_InitV8Conversions(localContext);
-  TRI_InitV8Utils(localContext, _startupPath, modulesPath);
+  TRI_InitV8Utils(isolate, localContext, _startupPath, modulesPath);
   TRI_InitV8Shell(isolate, localContext);
 
   {

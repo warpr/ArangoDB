@@ -3938,8 +3938,9 @@ void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
 ////////////////////////////////////////////////////////////////////////////////
 
  void TRI_normalize_V8_Obj (const v8::FunctionCallbackInfo<v8::Value>& args,
-                            v8::Isolate* isolate, v8::Handle<v8::Value> obj) {
-   v8::HandleScope scope(isolate);
+                            v8::Handle<v8::Value> obj) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
 
   v8::String::Value str(obj);
   size_t str_len = str.length();
@@ -4132,7 +4133,7 @@ void TRI_InitV8Utils (v8::Isolate* isolate,
 
   TRI_AddGlobalVariableVocbase(isolate, context, "HOME", TRI_V8_SYMBOL_STD_STRING(FileUtils::homeDirectory()));
 
-  TRI_AddGlobalVariableVocbase(isolate, context, "MODULES_PATH", TRI_V8PathList(modules));
+  TRI_AddGlobalVariableVocbase(isolate, context, "MODULES_PATH", TRI_V8PathList(isolate, modules));
   TRI_AddGlobalVariableVocbase(isolate, context, "STARTUP_PATH", TRI_V8_SYMBOL_STD_STRING(startupPath));
   TRI_AddGlobalVariableVocbase(isolate, context, "PATH_SEPARATOR", TRI_V8_SYMBOL(TRI_DIR_SEPARATOR_STR));
   TRI_AddGlobalVariableVocbase(isolate, context, "VALGRIND", RUNNING_ON_VALGRIND > 0 ? v8::True(isolate) : v8::False(isolate));
