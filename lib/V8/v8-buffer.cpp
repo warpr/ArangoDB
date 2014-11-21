@@ -1653,7 +1653,6 @@ static void JS_SetFastBufferConstructor (const v8::FunctionCallbackInfo<v8::Valu
 void TRI_InitV8Buffer (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   v8::HandleScope scope(isolate);
 
-  TRI_GET_GLOBALS();
 
   // sanity checks
   TRI_ASSERT(unbase64('/') == 63);
@@ -1666,6 +1665,7 @@ void TRI_InitV8Buffer (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   TRI_ASSERT(unbase64('\n') == -2);
   TRI_ASSERT(unbase64('\r') == -2);
 
+  TRI_v8_global_t* v8g = TRI_GetV8Globals(isolate);
   // .............................................................................
   // generate the general SlowBuffer template
   // .............................................................................

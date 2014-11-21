@@ -201,6 +201,24 @@ class V8Wrapper {
 // --SECTION--                                                 protected methods
 // -----------------------------------------------------------------------------
 
+  private:
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief weak callback
+////////////////////////////////////////////////////////////////////////////////
+
+    static void weakCallback (const v8::WeakCallbackData<v8::Object, v8::Persistent<v8::Object>>& data) {
+      auto isolate      = data.GetIsolate();
+      auto persistent   = data.GetParameter();
+      auto myPointer    = v8::Local<v8::Object>::New(isolate, *persistent);
+      auto obj          = static_cast<V8Wrapper*>(myPointer->GetAlignedPointerFromInternalField(0))->_object;
+        
+      TRI_ASSERT(persistent == &obj->_handle);
+      TRI_ASSERT(! obj->_refs);
+      TRI_ASSERT(persistent->IsNearDeath());
+      delete obj;
+    }
+
   protected:
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -208,8 +226,7 @@ class V8Wrapper {
 ////////////////////////////////////////////////////////////////////////////////
 
     void makeWeak () {
-      //_handle.MakeWeak(_isolate, this, weakCallback);
-      //_handle.MarkIndependent(_isolate);
+      _handle.SetWeak(&_handle, weakCallback);
     }
 
 // -----------------------------------------------------------------------------
@@ -246,22 +263,6 @@ class V8Wrapper {
 // --SECTION--                                            static private methods
 // -----------------------------------------------------------------------------
 
-  private:
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief weak callback
-////////////////////////////////////////////////////////////////////////////////
-
-    static void weakCallback (v8::Isolate* isolate,
-                              v8::Persistent<v8::Value> value,
-                              void* data) {
-      V8Wrapper* obj = static_cast<V8Wrapper*>(data);
-
-      TRI_ASSERT(value == obj->_handle);
-      TRI_ASSERT(! obj->_refs);
-      TRI_ASSERT(value.IsNearDeath());
-      delete obj;
-    }
 };
 
 #endif

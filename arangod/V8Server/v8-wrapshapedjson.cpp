@@ -229,11 +229,14 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesShaped (v8::Isolate* iso
 /// @brief weak reference callback for a barrier
 ////////////////////////////////////////////////////////////////////////////////
 
-static void WeakBarrierCallback (v8::Isolate* isolate,
-                                 v8::Persistent<v8::Value> object,
-                                 void* parameter) {
+static void WeakBarrierCallback (const v8::WeakCallbackData<v8::External, v8::Persistent<v8::External>>& data) {
+  auto isolate      = data.GetIsolate();
+  auto persistent   = data.GetParameter();
+  auto myBarrier    = v8::Local<v8::External>::New(isolate, *persistent);
+
+  TRI_barrier_blocker_t* barrier = static_cast<TRI_barrier_blocker_t*>(myBarrier->Value());
+
   TRI_GET_GLOBALS();
-  TRI_barrier_blocker_t* barrier = static_cast<TRI_barrier_blocker_t*>(parameter);
 
   TRI_ASSERT(barrier != nullptr);
 
@@ -242,12 +245,8 @@ static void WeakBarrierCallback (v8::Isolate* isolate,
   LOG_TRACE("weak-callback for barrier called");
 
   // find the persistent handle
-  v8::Persistent<v8::Value> persistent;
-  persistent.Reset(isolate, v8g->JSBarriers[barrier]);
+  v8g->JSBarriers[barrier].Reset();
   v8g->JSBarriers.erase(barrier);
-
-  // dispose and clear the persistent handle
-  persistent.Reset();
 
   // get the vocbase pointer from the barrier
   TRI_vocbase_t* vocbase = barrier->base._container->_collection->_vocbase;
@@ -322,16 +321,17 @@ v8::Handle<v8::Value> TRI_WrapShapedJson (v8::Isolate* isolate,
     TRI_ASSERT(barrier->_container != nullptr);
     TRI_ASSERT(barrier->_container->_collection != nullptr);
     TRI_UseVocBase(barrier->_container->_collection->_vocbase);
+    auto externalBarrier = v8::External::New(isolate, barrier);
 
-    v8::Persistent<v8::Value> persistentBarier;
-    persistentBarier.Reset(isolate, v8::External::New(isolate, barrier));
-    //// TODO    result->SetInternalField(SLOT_BARRIER, persistentBarier);
+    v8g->JSBarriers[barrier].Reset(isolate, externalBarrier);
+    result->SetInternalField(SLOT_BARRIER, externalBarrier);
 
-    /// TODO v8g->JSBarriers.emplace(make_pair(barrier, persistentBarier));
-    /// TODO persistentBarier.MakeWeak(isolate, barrier, WeakBarrierCallback);
+    v8g->JSBarriers[barrier].SetWeak(&v8g->JSBarriers[barrier], WeakBarrierCallback);
   }
   else {
-    //// TODO result->SetInternalField(SLOT_BARRIER, (*it).second);
+    auto myBarrier = v8::Local<v8::External>::New(isolate, it->second);
+      
+    result->SetInternalField(SLOT_BARRIER, myBarrier);
   }
 
   return SetBasicDocumentAttributesShaped(isolate, resolver, v8g, cid, marker, result);
