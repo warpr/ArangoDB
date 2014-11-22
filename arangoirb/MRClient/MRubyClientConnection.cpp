@@ -73,7 +73,7 @@ MRubyClientConnection::MRubyClientConnection (mrb_state* mrb,
 
   _connection = GeneralClientConnection::factory(endpoint, connectionTimeout, requestTimeout, numRetries, 0);
 
-  if (_connection == 0) {
+  if (_connection == nullptr) {
     throw "out of memory";
   }
 
@@ -82,7 +82,7 @@ MRubyClientConnection::MRubyClientConnection (mrb_state* mrb,
 
   // connect to server and get version number
   map<string, string> headerFields;
-  SimpleHttpResult* result = _client->request(HttpRequest::HTTP_REQUEST_GET, "/_api/version", 0, 0, headerFields);
+  SimpleHttpResult* result = _client->request(HttpRequest::HTTP_REQUEST_GET, "/_api/version", nullptr, 0, headerFields);
 
   if (!result->isComplete()) {
     // save error message

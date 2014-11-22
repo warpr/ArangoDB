@@ -560,14 +560,6 @@ TRI_json_t* RestVocbaseBaseHandler::parseJsonBody () {
 
   TRI_ASSERT(errmsg == nullptr);
 
-  if (TRI_HasDuplicateKeyJson(json)) {
-    generateError(HttpResponse::BAD,
-                  TRI_ERROR_HTTP_CORRUPTED_JSON,
-                  "cannot parse json object");
-    TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, json);
-    return nullptr;
-  }
-
   return json;
 }
 

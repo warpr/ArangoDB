@@ -91,7 +91,7 @@ V8ClientConnection::V8ClientConnection (Endpoint* endpoint,
 
   // connect to server and get version number
   map<string, string> headerFields;
-  SimpleHttpResult* result = _client->request(HttpRequest::HTTP_REQUEST_GET, "/_api/version", 0, 0, headerFields);
+  SimpleHttpResult* result = _client->request(HttpRequest::HTTP_REQUEST_GET, "/_api/version", nullptr, 0, headerFields);
 
   if (! result || ! result->isComplete()) {
     // save error message
@@ -521,7 +521,7 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (HttpRequest::HttpReque
   }
 
   if (body.empty()) {
-    _httpResult = _client->request(method, location, 0, 0, headerFields);
+    _httpResult = _client->request(method, location, nullptr, 0, headerFields);
   }
   else {
     _httpResult = _client->request(method, location, body.c_str(), body.length(), headerFields);

@@ -734,7 +734,7 @@ static v8::Handle<v8::Value> JS_Download (v8::Arguments const& argv) {
 
         delete response;
         delete connection;
-        connection = 0;
+        connection = nullptr;
         delete ep;
 
         if (! found) {

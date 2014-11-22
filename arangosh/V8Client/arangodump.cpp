@@ -304,12 +304,12 @@ static string GetArangoVersion () {
 
   SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_GET,
                                                "/_api/version",
-                                               0,
+                                               nullptr,
                                                0,
                                                headers);
 
-  if (response == 0 || ! response->isComplete()) {
-    if (response != 0) {
+  if (response == nullptr || ! response->isComplete()) {
+    if (response != nullptr) {
       delete response;
     }
 
@@ -364,8 +364,8 @@ static bool GetArangoIsCluster () {
                                         0,
                                         headers);
 
-  if (response == 0 || ! response->isComplete()) {
-    if (response != 0) {
+  if (response == nullptr || ! response->isComplete()) {
+    if (response != nullptr) {
       delete response;
     }
 
@@ -419,10 +419,10 @@ static int StartBatch (string DBserver, string& errorMsg) {
                                                body.size(),
                                                headers);
 
-  if (response == 0 || ! response->isComplete()) {
+  if (response == nullptr || ! response->isComplete()) {
     errorMsg = "got invalid response from server: " + Client->getErrorMessage();
 
-    if (response != 0) {
+    if (response != nullptr) {
       delete response;
     }
 
@@ -483,7 +483,7 @@ static void ExtendBatch (string DBserver) {
                                                headers);
 
   // ignore any return value
-  if (response != 0) {
+  if (response != nullptr) {
     delete response;
   }
 }
@@ -506,12 +506,12 @@ static void EndBatch (string DBserver) {
 
   SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_DELETE,
                                                url + urlExt,
-                                               0,
+                                               nullptr,
                                                0,
                                                headers);
 
   // ignore any return value
-  if (response != 0) {
+  if (response != nullptr) {
     delete response;
   }
 }
@@ -546,14 +546,14 @@ static int DumpCollection (int fd,
 
     SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_GET,
                                                  url,
-                                                 0,
+                                                 nullptr,
                                                  0,
                                                  headers);
 
-    if (response == 0 || ! response->isComplete()) {
+    if (response == nullptr || ! response->isComplete()) {
       errorMsg = "got invalid response from server: " + Client->getErrorMessage();
 
-      if (response != 0) {
+      if (response != nullptr) {
         delete response;
       }
 
@@ -664,14 +664,14 @@ static int RunDump (string& errorMsg) {
 
   SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_GET,
                                                url,
-                                               0,
+                                               nullptr,
                                                0,
                                                headers);
 
-  if (response == 0 || ! response->isComplete()) {
+  if (response == nullptr || ! response->isComplete()) {
     errorMsg = "got invalid response from server: " + Client->getErrorMessage();
 
-    if (response != 0) {
+    if (response != nullptr) {
       delete response;
     }
 
@@ -903,14 +903,14 @@ static int DumpShard (int fd,
 
     SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_GET,
                                                  url,
-                                                 0,
+                                                 nullptr,
                                                  0,
                                                  headers);
 
-    if (response == 0 || ! response->isComplete()) {
+    if (response == nullptr || ! response->isComplete()) {
       errorMsg = "got invalid response from server: " + Client->getErrorMessage();
 
-      if (response != 0) {
+      if (response != nullptr) {
         delete response;
       }
 
@@ -1001,14 +1001,14 @@ static int RunClusterDump (string& errorMsg) {
 
   SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_GET,
                                                url,
-                                               0,
+                                               nullptr,
                                                0,
                                                headers);
 
-  if (response == 0 || ! response->isComplete()) {
+  if (response == nullptr || ! response->isComplete()) {
     errorMsg = "got invalid response from server: " + Client->getErrorMessage();
 
-    if (response != 0) {
+    if (response != nullptr) {
       delete response;
     }
 

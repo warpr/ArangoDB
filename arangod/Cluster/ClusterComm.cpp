@@ -1032,7 +1032,7 @@ void ClusterCommThread::run () {
                 = httpclient::ConnectionManager::instance();
             httpclient::ConnectionManager::SingleServerConnection* connection
                 = cm->leaseConnection(endpoint);
-            if (0 == connection) {
+            if (nullptr == connection) {
               op->status = CL_COMM_ERROR;
               if (cc->logConnectionErrors()) {
                 LOG_ERROR("cannot create connection to server '%s'", op->serverID.c_str());
@@ -1042,7 +1042,7 @@ void ClusterCommThread::run () {
               }
             }
             else {
-              if (0 != op->body) {
+              if (nullptr != op->body) {
                 LOG_DEBUG("sending %s request to DB server '%s': %s",
                    triagens::rest::HttpRequest::translateMethod(op->reqtype)
                      .c_str(), op->serverID.c_str(), op->body->c_str());

@@ -83,25 +83,25 @@ namespace triagens {
 /// @brief connect the endpoint
 ////////////////////////////////////////////////////////////////////////////////
 
-        TRI_socket_t connect (double, double);
+        TRI_socket_t connect (double, double) override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief disconnect the endpoint
 ////////////////////////////////////////////////////////////////////////////////
 
-        virtual void disconnect ();
+        void disconnect () override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief init an incoming connection
 ////////////////////////////////////////////////////////////////////////////////
 
-        virtual bool initIncoming (TRI_socket_t);
+        bool initIncoming (TRI_socket_t) override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief get endpoint domain
 ////////////////////////////////////////////////////////////////////////////////
 
-        int getDomain () const {
+        int getDomain () const override final{
           return AF_UNIX;
         }
 
@@ -109,7 +109,7 @@ namespace triagens {
 /// @brief get port
 ////////////////////////////////////////////////////////////////////////////////
 
-        int getPort () const {
+        int getPort () const override final {
           return 0;
         }
 
@@ -117,7 +117,7 @@ namespace triagens {
 /// @brief get host name
 ////////////////////////////////////////////////////////////////////////////////
 
-        std::string getHost () const {
+        std::string getHost () const override final {
           return "localhost";
         }
 
@@ -125,7 +125,7 @@ namespace triagens {
 /// @brief get host string for HTTP requests
 ////////////////////////////////////////////////////////////////////////////////
 
-        std::string getHostString () const {
+        std::string getHostString () const override final {
           return "localhost";
         }
 

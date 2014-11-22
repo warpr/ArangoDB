@@ -128,39 +128,5 @@ describe ArangoDB do
       doc.parsed_response['b'].should eq({ "b" => "2", "a" => "3", "_key" => "moetoer", "_from" => "5", "_lol" => false, "c" => 6 })
     end
 
-################################################################################
-## duplicate attribute names
-################################################################################
-
-    it "creates a document with duplicate attribute names" do
-      cmd = api + "?collection=" + @cn
-      body = "{ \"a\" : \"1\", \"b\" : \"2\", \"a\" : \"3\" }"
-      doc = ArangoDB.log_post("#{prefix}-create-duplicate-names", cmd, :body => body)
-
-      doc.code.should eq(400)
-      doc.headers['content-type'].should eq("application/json; charset=utf-8")
-
-      doc.parsed_response['error'].should eq(true)
-      doc.parsed_response['code'].should eq(400)
-      doc.parsed_response['errorNum'].should eq(600)
-    end
-
-################################################################################
-## nested duplicate attribute names
-################################################################################
-
-    it "creates a document with nested duplicate attribute names" do
-      cmd = api + "?collection=" + @cn
-      body = "{ \"a\" : \"1\", \"b\" : { \"b\" : \"2\" , \"c\" : \"3\", \"b\": \"4\" } }"
-      doc = ArangoDB.log_post("#{prefix}-create-duplicate-names-nested", cmd, :body => body)
-
-      doc.code.should eq(400)
-      doc.headers['content-type'].should eq("application/json; charset=utf-8")
-
-      doc.parsed_response['error'].should eq(true)
-      doc.parsed_response['code'].should eq(400)
-      doc.parsed_response['errorNum'].should eq(600)
-    end
-
   end
 end

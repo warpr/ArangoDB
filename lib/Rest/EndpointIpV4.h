@@ -77,7 +77,7 @@ namespace triagens {
 /// @brief get endpoint domain
 ////////////////////////////////////////////////////////////////////////////////
 
-        int getDomain () const {
+        int getDomain () const override final {
           return AF_INET;
         }
 
@@ -85,7 +85,7 @@ namespace triagens {
 /// @brief get host string for HTTP requests
 ////////////////////////////////////////////////////////////////////////////////
 
-        std::string getHostString  () const {
+        std::string getHostString () const override final {
           return getHost() + ':' + triagens::basics::StringUtils::itoa(getPort());
         }
     };

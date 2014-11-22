@@ -162,8 +162,8 @@ bool ClientConnection::prepare (const double timeout, const bool isWrite) const 
   FD_ZERO(&fdset);
   FD_SET(TRI_get_fd_or_handle_of_socket(_socket), &fdset);
 
-  fd_set* readFds = NULL;
-  fd_set* writeFds = NULL;
+  fd_set* readFds = nullptr;
+  fd_set* writeFds = nullptr;
 
   if (isWrite) {
     writeFds = &fdset;
@@ -173,7 +173,7 @@ bool ClientConnection::prepare (const double timeout, const bool isWrite) const 
   }
 
   int sockn = (int) (TRI_get_fd_or_handle_of_socket(_socket) + 1);
-  int res = select(sockn, readFds, writeFds, NULL, &tv);
+  int res = select(sockn, readFds, writeFds, nullptr, &tv);
 
   if (res > 0) {
     return true;
