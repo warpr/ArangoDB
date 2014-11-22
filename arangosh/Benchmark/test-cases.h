@@ -1422,15 +1422,15 @@ struct AqlInsertTest : public BenchmarkOperation {
 /// @brief delete a collection
 ////////////////////////////////////////////////////////////////////////////////
 
-static bool DeleteCollection (SimpleHttpClient* client, const std::string& name) {
-  std::map<std::string, std::string> headerFields;
+static bool DeleteCollection (SimpleHttpClient* client, 
+                              std::string const& name) {
   SimpleHttpResult* result = nullptr;
 
   result = client->request(HttpRequest::HTTP_REQUEST_DELETE,
-                           "/_api/collection/" + name,
-                           "",
+                           "/_api/collection/" + StringUtils::urlEncode(name),
+                           nullptr,
                            0,
-                           headerFields);
+                           nullptr);
 
   bool failed = true;
   if (result != nullptr) {
@@ -1450,9 +1450,8 @@ static bool DeleteCollection (SimpleHttpClient* client, const std::string& name)
 ////////////////////////////////////////////////////////////////////////////////
 
 static bool CreateCollection (SimpleHttpClient* client,
-                              const std::string& name,
-                              const int type) {
-  std::map<std::string, std::string> headerFields;
+                              std::string const& name,
+                              int type) {
   SimpleHttpResult* result = nullptr;
 
   std::string payload = "{\"name\":\"" + name + "\",\"type\":" + StringUtils::itoa(type) + "}";
@@ -1460,7 +1459,7 @@ static bool CreateCollection (SimpleHttpClient* client,
                            "/_api/collection",
                            payload.c_str(),
                            payload.size(),
-                           headerFields);
+                           nullptr);
 
   bool failed = true;
 
@@ -1481,18 +1480,17 @@ static bool CreateCollection (SimpleHttpClient* client,
 ////////////////////////////////////////////////////////////////////////////////
 
 static bool CreateIndex (SimpleHttpClient* client,
-                         const std::string& name,
-                         const std::string& type,
-                         const std::string& fields) {
-  std::map<std::string, std::string> headerFields;
+                         std::string const& name,
+                         std::string const& type,
+                         std::string const& fields) {
   SimpleHttpResult* result = nullptr;
 
   std::string payload = "{\"type\":\"" + type + "\",\"fields\":" + fields + ",\"unique\":false}";
   result = client->request(HttpRequest::HTTP_REQUEST_POST,
-                           "/_api/index?collection=" + name,
+                           "/_api/index?collection=" + StringUtils::urlEncode(name),
                            payload.c_str(),
                            payload.size(),
-                           headerFields);
+                           nullptr);
 
   bool failed = true;
 
@@ -1512,16 +1510,15 @@ static bool CreateIndex (SimpleHttpClient* client,
 ////////////////////////////////////////////////////////////////////////////////
 
 static bool CreateDocument (SimpleHttpClient* client,
-                            const std::string& collection,
-                            const std::string& payload) {
-  std::map<std::string, std::string> headerFields;
+                            std::string const& collection,
+                            std::string const& payload) {
   SimpleHttpResult* result = nullptr;
 
   result = client->request(HttpRequest::HTTP_REQUEST_POST,
-                           "/_api/document?collection=" + collection,
+                           "/_api/document?collection=" + StringUtils::urlEncode(collection),
                            payload.c_str(),
                            payload.size(),
-                           headerFields);
+                           nullptr);
 
   bool failed = true;
 
@@ -1542,7 +1539,7 @@ static bool CreateDocument (SimpleHttpClient* client,
 /// @brief return the test case for a name
 ////////////////////////////////////////////////////////////////////////////////
 
-static BenchmarkOperation* GetTestCase (const std::string& name) {
+static BenchmarkOperation* GetTestCase (std::string const& name) {
   if (name == "version") {
     return new VersionTest();
   }

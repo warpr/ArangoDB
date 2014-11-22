@@ -359,7 +359,7 @@ ClusterCommResult* ClusterComm::syncRequest (
 #endif
 #endif
       res->result = client->request(reqtype, path, body.c_str(), body.size(),
-                                    headersCopy);
+                                    &headersCopy);
 
       if (res->result == nullptr || ! res->result->isComplete()) {
         if (client->getErrorMessage() == "Request timeout reached") {
@@ -771,7 +771,7 @@ void ClusterComm::asyncAnswer (string& coordinatorHeader,
   // a lock, since we know that only we do such a thing:
   httpclient::SimpleHttpResult* result =
                  client->request(rest::HttpRequest::HTTP_REQUEST_PUT,
-                                 "/_api/shard-comm", body, len, headers);
+                                 "/_api/shard-comm", body, len, &headers);
   if (result == nullptr || ! result->isComplete()) {
     cm->brokenConnection(connection);
     client->invalidateConnection();
@@ -1064,11 +1064,11 @@ void ClusterCommThread::run () {
               if (nullptr != op->body) {
                 op->result = client->request(op->reqtype, op->path,
                              op->body->c_str(), op->body->size(),
-                             *(op->headerFields));
+                             op->headerFields);
               }
               else {
                 op->result = client->request(op->reqtype, op->path,
-                             nullptr, 0, *(op->headerFields));
+                             nullptr, 0, op->headerFields);
               }
 
               if (op->result == nullptr || ! op->result->isComplete()) {

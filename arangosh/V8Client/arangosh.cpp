@@ -762,13 +762,13 @@ static v8::Handle<v8::Value> ClientConnection_httpGetAny (v8::Arguments const& a
 
   TRI_Utf8ValueNFC url(TRI_UNKNOWN_MEM_ZONE, argv[0]);
   // check header fields
-  map<string, string> headerFields;
-
   if (argv.Length() > 1) {
+    map<string, string> headerFields;
     objectToMap(headerFields, argv[1]);
+    return scope.Close(connection->getData(*url, &headerFields, raw));
   }
 
-  return scope.Close(connection->getData(*url, headerFields, raw));
+  return scope.Close(connection->getData(*url, nullptr, raw));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -809,13 +809,13 @@ static v8::Handle<v8::Value> ClientConnection_httpHeadAny (v8::Arguments const& 
   TRI_Utf8ValueNFC url(TRI_UNKNOWN_MEM_ZONE, argv[0]);
 
   // check header fields
-  map<string, string> headerFields;
-
   if (argv.Length() > 1) {
+    map<string, string> headerFields;
     objectToMap(headerFields, argv[1]);
+    return scope.Close(connection->headData(*url, &headerFields, raw));
   }
 
-  return scope.Close(connection->headData(*url, headerFields, raw));
+  return scope.Close(connection->headData(*url, nullptr, raw));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -856,12 +856,13 @@ static v8::Handle<v8::Value> ClientConnection_httpDeleteAny (v8::Arguments const
   TRI_Utf8ValueNFC url(TRI_UNKNOWN_MEM_ZONE, argv[0]);
 
   // check header fields
-  map<string, string> headerFields;
   if (argv.Length() > 1) {
+    map<string, string> headerFields;
     objectToMap(headerFields, argv[1]);
+    return scope.Close(connection->deleteData(*url, &headerFields, raw));
   }
 
-  return scope.Close(connection->deleteData(*url, headerFields, raw));
+  return scope.Close(connection->deleteData(*url, nullptr, raw));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -903,12 +904,13 @@ static v8::Handle<v8::Value> ClientConnection_httpOptionsAny (v8::Arguments cons
   v8::String::Utf8Value body(argv[1]);
 
   // check header fields
-  map<string, string> headerFields;
   if (argv.Length() > 2) {
+    map<string, string> headerFields;
     objectToMap(headerFields, argv[2]);
+    return scope.Close(connection->optionsData(*url, *body, body.length(), &headerFields, raw));
   }
 
-  return scope.Close(connection->optionsData(*url, *body, headerFields, raw));
+  return scope.Close(connection->optionsData(*url, *body, body.length(), nullptr, raw));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -950,12 +952,13 @@ static v8::Handle<v8::Value> ClientConnection_httpPostAny (v8::Arguments const& 
   v8::String::Utf8Value body(argv[1]);
 
   // check header fields
-  map<string, string> headerFields;
   if (argv.Length() > 2) {
+    map<string, string> headerFields;
     objectToMap(headerFields, argv[2]);
+    return scope.Close(connection->postData(*url, *body, body.length(), &headerFields, raw));
   }
 
-  return scope.Close(connection->postData(*url, *body, headerFields, raw));
+  return scope.Close(connection->postData(*url, *body, body.length(), nullptr, raw));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -997,12 +1000,13 @@ static v8::Handle<v8::Value> ClientConnection_httpPutAny (v8::Arguments const& a
   v8::String::Utf8Value body(argv[1]);
 
   // check header fields
-  map<string, string> headerFields;
   if (argv.Length() > 2) {
+    map<string, string> headerFields;
     objectToMap(headerFields, argv[2]);
+    return scope.Close(connection->putData(*url, *body, body.length(), &headerFields, raw));
   }
 
-  return scope.Close(connection->putData(*url, *body, headerFields, raw));
+  return scope.Close(connection->putData(*url, *body, body.length(), nullptr, raw));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1044,12 +1048,13 @@ static v8::Handle<v8::Value> ClientConnection_httpPatchAny (v8::Arguments const&
   v8::String::Utf8Value body(argv[1]);
 
   // check header fields
-  map<string, string> headerFields;
   if (argv.Length() > 2) {
+    map<string, string> headerFields;
     objectToMap(headerFields, argv[2]);
+    return scope.Close(connection->patchData(*url, *body, body.length(), &headerFields, raw));
   }
 
-  return scope.Close(connection->patchData(*url, *body, headerFields, raw));
+  return scope.Close(connection->patchData(*url, *body, body.length(), nullptr, raw));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1104,10 +1109,7 @@ static v8::Handle<v8::Value> ClientConnection_httpSendFile (v8::Arguments const&
 
   v8::TryCatch tryCatch;
 
-  // check header fields
-  map<string, string> headerFields;
-
-  v8::Handle<v8::Value> result = connection->postData(*url, body, bodySize, headerFields);
+  v8::Handle<v8::Value> result = connection->postData(*url, body, bodySize, nullptr, true);
   TRI_Free(TRI_UNKNOWN_MEM_ZONE, body);
 
   if (tryCatch.HasCaught()) {

@@ -119,7 +119,7 @@ namespace triagens {
                                  std::string const&,
                                  char const*,
                                  size_t,
-                                 std::map<std::string, std::string> const&);
+                                 std::map<std::string, std::string> const*);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief sets username and password
@@ -247,7 +247,7 @@ namespace triagens {
                        std::string const& location,
                        char const* body,
                        size_t bodyLength,
-                       std::map<std::string, std::string> const& headerFields);
+                       std::map<std::string, std::string> const* headerFields);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief process (a part of) the http header, the data is

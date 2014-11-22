@@ -885,7 +885,6 @@ int ContinuousSyncer::followMasterLog (string& errorMsg,
                                        bool& masterActive) {
   string const baseUrl = BaseUrl + "/logger-follow?chunkSize=" + _chunkSize;
 
-  map<string, string> headers;
   worked = false;
 
   string const tickString = StringUtils::itoa(fromTick);
@@ -903,7 +902,7 @@ int ContinuousSyncer::followMasterLog (string& errorMsg,
                                                 url,
                                                 nullptr,
                                                 0,
-                                                headers);
+                                                nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     errorMsg = "got invalid response from master at " + string(_masterInfo._endpoint) +

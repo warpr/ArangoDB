@@ -81,8 +81,7 @@ MRubyClientConnection::MRubyClientConnection (mrb_state* mrb,
   _client->setUserNamePassword("/", username, password);
 
   // connect to server and get version number
-  map<string, string> headerFields;
-  SimpleHttpResult* result = _client->request(HttpRequest::HTTP_REQUEST_GET, "/_api/version", nullptr, 0, headerFields);
+  SimpleHttpResult* result = _client->request(HttpRequest::HTTP_REQUEST_GET, "/_api/version", nullptr, 0, nullptr);
 
   if (!result->isComplete()) {
     // save error message
@@ -254,10 +253,10 @@ mrb_value MRubyClientConnection::requestData (HttpRequest::HttpRequestType metho
   }
 
   if (body.empty()) {
-    _httpResult = _client->request(method, location, 0, 0, headerFields);
+    _httpResult = _client->request(method, location, 0, 0, &headerFields);
   }
   else {
-    _httpResult = _client->request(method, location, body.c_str(), body.length(), headerFields);
+    _httpResult = _client->request(method, location, body.c_str(), body.length(), &headerFields);
   }
 
   if (!_httpResult->isComplete()) {

@@ -1776,7 +1776,7 @@ bool AgencyComm::send (triagens::httpclient::GeneralClientConnection* connection
                                                                     url,
                                                                     body.c_str(),
                                                                     body.size(),
-                                                                    headers);
+                                                                    &headers);
 
   if (response == nullptr) {
     result._message = "could not send request to agency";
@@ -1792,7 +1792,7 @@ bool AgencyComm::send (triagens::httpclient::GeneralClientConnection* connection
     return false;
   }
 
-  result._connected  = true;
+  result._connected = true;
 
   if (response->getHttpReturnCode() == (int) triagens::rest::HttpResponse::TEMPORARY_REDIRECT) {
     // temporary redirect. now save location header

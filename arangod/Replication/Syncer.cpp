@@ -555,14 +555,13 @@ int Syncer::dropIndex (TRI_json_t const* json) {
 ////////////////////////////////////////////////////////////////////////////////
 
 int Syncer::getMasterState (string& errorMsg) {
-  map<string, string> headers;
   string const url = BaseUrl + "/logger-state?serverId=" + _localServerIdString;
 
   SimpleHttpResult* response = _client->request(HttpRequest::HTTP_REQUEST_GET,
                                                 url,
                                                 nullptr,
                                                 0,
-                                                headers);
+                                                nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     errorMsg = "could not connect to master at " + string(_masterInfo._endpoint) +

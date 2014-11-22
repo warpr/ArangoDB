@@ -293,13 +293,11 @@ static string GetHttpErrorMessage (SimpleHttpResult* result) {
 ////////////////////////////////////////////////////////////////////////////////
 
 static string GetArangoVersion () {
-  map<string, string> headers;
-
   SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_GET,
                                                "/_api/version",
                                                nullptr,
                                                0,
-                                               headers);
+                                               nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     if (response != nullptr) {
@@ -350,12 +348,11 @@ static string GetArangoVersion () {
 ////////////////////////////////////////////////////////////////////////////////
 
 static bool GetArangoIsCluster () {
-  map<string, string> headers;
   SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_GET,
                                         "/_admin/server/role",
-                                        "",
+                                        nullptr,
                                         0,
-                                        headers);
+                                        nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     if (response != nullptr) {
@@ -398,8 +395,6 @@ static bool GetArangoIsCluster () {
 
 static int SendRestoreCollection (TRI_json_t const* json,
                                   string& errorMsg) {
-  map<string, string> headers;
-
   const string url = "/_api/replication/restore-collection"
                      "?overwrite=" + string(Overwrite ? "true" : "false") +
                      "&recycleIds=" + string(RecycleIds ? "true" : "false") +
@@ -411,7 +406,7 @@ static int SendRestoreCollection (TRI_json_t const* json,
                                                url,
                                                body.c_str(),
                                                body.size(),
-                                               headers);
+                                               nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     errorMsg = "got invalid response from server: " + Client->getErrorMessage();
@@ -441,8 +436,6 @@ static int SendRestoreCollection (TRI_json_t const* json,
 
 static int SendRestoreIndexes (TRI_json_t const* json,
                                string& errorMsg) {
-  map<string, string> headers;
-
   const string url = "/_api/replication/restore-indexes?force=" + string(Force ? "true" : "false");
   const string body = JsonHelper::toString(json);
 
@@ -450,7 +443,7 @@ static int SendRestoreIndexes (TRI_json_t const* json,
                                                url,
                                                body.c_str(),
                                                body.size(),
-                                               headers);
+                                               nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     errorMsg = "got invalid response from server: " + Client->getErrorMessage();
@@ -482,8 +475,6 @@ static int SendRestoreData (string const& cname,
                             char const* buffer,
                             size_t bufferSize,
                             string& errorMsg) {
-  map<string, string> headers;
-
   const string url = "/_api/replication/restore-data?collection=" +
                      StringUtils::urlEncode(cname) +
                      "&recycleIds=" + (RecycleIds ? "true" : "false") +
@@ -493,7 +484,7 @@ static int SendRestoreData (string const& cname,
                                                url,
                                                buffer,
                                                bufferSize,
-                                               headers);
+                                               nullptr);
 
 
   if (response == nullptr || ! response->isComplete()) {

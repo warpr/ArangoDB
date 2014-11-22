@@ -704,7 +704,7 @@ static v8::Handle<v8::Value> JS_Download (v8::Arguments const& argv) {
                                                 relative,
                                                 (body.size() > 0 ? body.c_str() : 0),
                                                 body.size(),
-                                                headerFields);
+                                                &headerFields);
 
     int returnCode;
     string returnMessage;

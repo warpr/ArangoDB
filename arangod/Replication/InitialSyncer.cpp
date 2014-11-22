@@ -144,7 +144,6 @@ int InitialSyncer::run (string& errorMsg) {
   }
 
 
-  map<string, string> headers;
   string const url = BaseUrl + "/inventory?serverId=" + _localServerIdString;
 
   // send request
@@ -155,7 +154,7 @@ int InitialSyncer::run (string& errorMsg) {
                                                 url,
                                                 nullptr,
                                                 0,
-                                                headers);
+                                                nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     errorMsg = "could not connect to master at " + string(_masterInfo._endpoint) +
@@ -212,8 +211,6 @@ int InitialSyncer::run (string& errorMsg) {
 int InitialSyncer::sendStartBatch (string& errorMsg) {
   _batchId = 0;
 
-  map<string, string> const headers;
-
   string const url = BaseUrl + "/batch";
   string const body = "{\"ttl\":" + StringUtils::itoa(_batchTtl) + "}";
 
@@ -225,7 +222,7 @@ int InitialSyncer::sendStartBatch (string& errorMsg) {
                                                 url,
                                                 body.c_str(),
                                                 body.size(),
-                                                headers);
+                                                nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     errorMsg = "could not connect to master at " + string(_masterInfo._endpoint) +
@@ -291,8 +288,6 @@ int InitialSyncer::sendExtendBatch () {
     return TRI_ERROR_NO_ERROR;
   }
 
-  map<string, string> const headers;
-
   string const url = BaseUrl + "/batch/" + StringUtils::itoa(_batchId);
   string const body = "{\"ttl\":" + StringUtils::itoa(_batchTtl) + "}";
 
@@ -304,7 +299,7 @@ int InitialSyncer::sendExtendBatch () {
                                                 url,
                                                 body.c_str(),
                                                 body.size(),
-                                                headers);
+                                                nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     if (response != nullptr) {
@@ -337,7 +332,6 @@ int InitialSyncer::sendFinishBatch () {
     return TRI_ERROR_NO_ERROR;
   }
 
-  map<string, string> const headers;
   string const url = BaseUrl + "/batch/" + StringUtils::itoa(_batchId);
 
   // send request
@@ -348,7 +342,7 @@ int InitialSyncer::sendFinishBatch () {
                                                 url,
                                                 nullptr,
                                                 0,
-                                                headers);
+                                                nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     if (response != nullptr) {
@@ -482,12 +476,9 @@ int InitialSyncer::handleCollectionDump (TRI_transaction_collection_t* trxCollec
                                          string& errorMsg) {
 
   string const cid = StringUtils::itoa(trxCollection->_cid);
-
   string const baseUrl = BaseUrl +
                          "/dump?collection=" + cid +
                          "&chunkSize=" + _chunkSize;
-
-  map<string, string> headers;
 
   TRI_voc_tick_t fromTick = 0;
   int batch = 1;
@@ -513,7 +504,7 @@ int InitialSyncer::handleCollectionDump (TRI_transaction_collection_t* trxCollec
                                                   url,
                                                   nullptr,
                                                   0,
-                                                  headers);
+                                                  nullptr);
 
     if (response == nullptr || ! response->isComplete()) {
       errorMsg = "could not connect to master at " + string(_masterInfo._endpoint) +

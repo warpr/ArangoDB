@@ -65,8 +65,8 @@ namespace triagens {
 
     class V8ClientConnection {
       private:
-        V8ClientConnection (V8ClientConnection const&);
-        V8ClientConnection& operator= (V8ClientConnection const&);
+        V8ClientConnection (V8ClientConnection const&) = delete;
+        V8ClientConnection& operator= (V8ClientConnection const&) = delete;
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                      constructors and destructors
@@ -80,8 +80,8 @@ namespace triagens {
 
         V8ClientConnection (triagens::rest::Endpoint*,
                             std::string,
-                            const std::string&,
-                            const std::string&,
+                            std::string const&,
+                            std::string const&,
                             double,
                             double,
                             size_t,
@@ -104,7 +104,7 @@ namespace triagens {
 /// @brief request location rewriter (injects database name)
 ////////////////////////////////////////////////////////////////////////////////
 
-        static std::string rewriteLocation (void*, const std::string&);
+        static std::string rewriteLocation (void*, std::string const&);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief returns true if it is connected
@@ -122,7 +122,7 @@ namespace triagens {
 /// @brief set the current database name
 ////////////////////////////////////////////////////////////////////////////////
 
-        void setDatabaseName (const std::string&);
+        void setDatabaseName (std::string const&);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief returns the version and build number of the arango server
@@ -173,7 +173,7 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         v8::Handle<v8::Value> getData (std::string const& location,
-                                       std::map<std::string, std::string> const& headerFields,
+                                       std::map<std::string, std::string> const* headerFields,
                                        bool raw);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         v8::Handle<v8::Value> deleteData (std::string const& location,
-                                          std::map<std::string, std::string> const& headerFields,
+                                          std::map<std::string, std::string> const* headerFields,
                                           bool raw);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,7 +201,7 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         v8::Handle<v8::Value> headData (std::string const& location,
-                                        std::map<std::string, std::string> const& headerFields,
+                                        std::map<std::string, std::string> const* headerFields,
                                         bool raw);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -216,8 +216,9 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         v8::Handle<v8::Value> optionsData (std::string const& location,
-                                           std::string const& body,
-                                           std::map<std::string, std::string> const& headerFields,
+                                           char const* body,
+                                           size_t bodySize,
+                                           std::map<std::string, std::string> const* headerFields,
                                            bool raw);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -232,14 +233,10 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         v8::Handle<v8::Value> postData (std::string const& location,
-                                        std::string const& body,
-                                        std::map<std::string, std::string> const& headerFields,
+                                        char const* body,
+                                        size_t bodySize,
+                                        std::map<std::string, std::string> const* headerFields,
                                         bool raw);
-
-        v8::Handle<v8::Value> postData (std::string const& location,
-                                        const char* body,
-                                        const size_t bodySize,
-                                        std::map<std::string, std::string> const& headerFields);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief do a "PUT" request
@@ -253,8 +250,9 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         v8::Handle<v8::Value> putData (std::string const& location,
-                                       std::string const& body,
-                                       std::map<std::string, std::string> const& headerFields,
+                                       char const* body,
+                                       size_t bodySize,
+                                       std::map<std::string, std::string> const* headerFields,
                                        bool raw);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -269,8 +267,9 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         v8::Handle<v8::Value> patchData (std::string const& location,
-                                         std::string const& body,
-                                         std::map<std::string, std::string> const& headerFields,
+                                         char const* body,
+                                         size_t bodySize,
+                                         std::map<std::string, std::string> const* headerFields,
                                          bool raw);
 
 // -----------------------------------------------------------------------------
@@ -285,18 +284,9 @@ namespace triagens {
 
       v8::Handle<v8::Value> requestData (rest::HttpRequest::HttpRequestType method,
                                          std::string const& location,
-                                         const char* body,
-                                         const size_t bodySize,
-                                         std::map<std::string, std::string> const& headerFields);
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief executes a request
-////////////////////////////////////////////////////////////////////////////////
-
-      v8::Handle<v8::Value> requestData (rest::HttpRequest::HttpRequestType method,
-                                         std::string const& location,
-                                         std::string const& body,
-                                         std::map<std::string, std::string> const& headerFields);
+                                         char const* body,
+                                         size_t bodySize,
+                                         std::map<std::string, std::string> const* headerFields);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief handles a result
@@ -310,8 +300,9 @@ namespace triagens {
 
       v8::Handle<v8::Value> requestDataRaw (rest::HttpRequest::HttpRequestType method,
                                             std::string const& location,
-                                            std::string const& body,
-                                            std::map<std::string, std::string> const& headerFields);
+                                            char const* body,
+                                            size_t bodySize,
+                                            std::map<std::string, std::string> const* headerFields);
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                 private variables

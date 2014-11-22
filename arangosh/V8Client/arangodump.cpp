@@ -300,13 +300,11 @@ static string GetHttpErrorMessage (SimpleHttpResult* result) {
 ////////////////////////////////////////////////////////////////////////////////
 
 static string GetArangoVersion () {
-  map<string, string> headers;
-
   SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_GET,
                                                "/_api/version",
                                                nullptr,
                                                0,
-                                               headers);
+                                               nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     if (response != nullptr) {
@@ -357,12 +355,11 @@ static string GetArangoVersion () {
 ////////////////////////////////////////////////////////////////////////////////
 
 static bool GetArangoIsCluster () {
-  map<string, string> headers;
   SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_GET,
                                         "/_admin/server/role",
-                                        "",
+                                        nullptr,
                                         0,
-                                        headers);
+                                        nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     if (response != nullptr) {
@@ -404,8 +401,6 @@ static bool GetArangoIsCluster () {
 ////////////////////////////////////////////////////////////////////////////////
 
 static int StartBatch (string DBserver, string& errorMsg) {
-  map<string, string> headers;
-
   const string url = "/_api/replication/batch";
   const string body = "{\"ttl\":300}";
   string urlExt;
@@ -417,7 +412,7 @@ static int StartBatch (string DBserver, string& errorMsg) {
                                                url + urlExt,
                                                body.c_str(),
                                                body.size(),
-                                               headers);
+                                               nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     errorMsg = "got invalid response from server: " + Client->getErrorMessage();
@@ -468,7 +463,6 @@ static int StartBatch (string DBserver, string& errorMsg) {
 static void ExtendBatch (string DBserver) {
   TRI_ASSERT(BatchId > 0);
 
-  map<string, string> headers;
   const string url = "/_api/replication/batch/" + StringUtils::itoa(BatchId);
   const string body = "{\"ttl\":300}";
   string urlExt;
@@ -480,7 +474,7 @@ static void ExtendBatch (string DBserver) {
                                                url + urlExt,
                                                body.c_str(),
                                                body.size(),
-                                               headers);
+                                               nullptr);
 
   // ignore any return value
   if (response != nullptr) {
@@ -495,7 +489,6 @@ static void ExtendBatch (string DBserver) {
 static void EndBatch (string DBserver) {
   TRI_ASSERT(BatchId > 0);
 
-  map<string, string> headers;
   const string url = "/_api/replication/batch/" + StringUtils::itoa(BatchId);
   string urlExt;
   if (! DBserver.empty()) {
@@ -508,7 +501,7 @@ static void EndBatch (string DBserver) {
                                                url + urlExt,
                                                nullptr,
                                                0,
-                                               headers);
+                                               nullptr);
 
   // ignore any return value
   if (response != nullptr) {
@@ -531,8 +524,6 @@ static int DumpCollection (int fd,
                          "&chunkSize=" + StringUtils::itoa(ChunkSize) +
                          "&ticks=false&translateIds=true&flush=false";
 
-  map<string, string> headers;
-
   uint64_t fromTick = TickStart;
 
   while (1) {
@@ -548,7 +539,7 @@ static int DumpCollection (int fd,
                                                  url,
                                                  nullptr,
                                                  0,
-                                                 headers);
+                                                 nullptr);
 
     if (response == nullptr || ! response->isComplete()) {
       errorMsg = "got invalid response from server: " + Client->getErrorMessage();
@@ -634,14 +625,13 @@ static int DumpCollection (int fd,
 ////////////////////////////////////////////////////////////////////////////////
 
 static void FlushWal () {
-  map<string, string> headers;
   const string url = "/_admin/wal/flush?waitForSync=true&waitForCollector=true";
 
   SimpleHttpResult* response = Client->request(HttpRequest::HTTP_REQUEST_PUT,
                                                url,
                                                nullptr,
                                                0,
-                                               headers);
+                                               nullptr);
 
   if (response == nullptr || ! response->isComplete() || response->wasHttpError()) {
     cerr << "got invalid response from server: " + Client->getErrorMessage() << endl;
@@ -657,8 +647,6 @@ static void FlushWal () {
 ////////////////////////////////////////////////////////////////////////////////
 
 static int RunDump (string& errorMsg) {
-  map<string, string> headers;
-
   const string url = "/_api/replication/inventory?includeSystem=" +
                      string(IncludeSystemCollections ? "true" : "false");
 
@@ -666,7 +654,7 @@ static int RunDump (string& errorMsg) {
                                                url,
                                                nullptr,
                                                0,
-                                               headers);
+                                               nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     errorMsg = "got invalid response from server: " + Client->getErrorMessage();
@@ -887,8 +875,6 @@ static int DumpShard (int fd,
                          "&chunkSize=" + StringUtils::itoa(ChunkSize) +
                          "&ticks=false&translateIds=true";
 
-  map<string, string> headers;
-
   uint64_t fromTick = 0;
   uint64_t maxTick = UINT64_MAX;
 
@@ -905,7 +891,7 @@ static int DumpShard (int fd,
                                                  url,
                                                  nullptr,
                                                  0,
-                                                 headers);
+                                                 nullptr);
 
     if (response == nullptr || ! response->isComplete()) {
       errorMsg = "got invalid response from server: " + Client->getErrorMessage();
@@ -994,8 +980,6 @@ static int DumpShard (int fd,
 static int RunClusterDump (string& errorMsg) {
   int res;
 
-  map<string, string> headers;
-
   const string url = "/_api/replication/clusterInventory?includeSystem=" +
                      string(IncludeSystemCollections ? "true" : "false");
 
@@ -1003,7 +987,7 @@ static int RunClusterDump (string& errorMsg) {
                                                url,
                                                nullptr,
                                                0,
-                                               headers);
+                                               nullptr);
 
   if (response == nullptr || ! response->isComplete()) {
     errorMsg = "got invalid response from server: " + Client->getErrorMessage();
@@ -1033,7 +1017,7 @@ static int RunClusterDump (string& errorMsg) {
   delete response;
 
   if (! JsonHelper::isArray(json)) {
-    if (json != 0) {
+    if (json != nullptr) {
       TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, json);
     }
 

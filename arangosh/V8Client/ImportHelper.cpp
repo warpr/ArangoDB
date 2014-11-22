@@ -640,9 +640,8 @@ namespace triagens {
         return;
       }
 
-      map<string, string> headerFields;
       string url("/_api/import?" + getCollectionUrlPart() + "&line=" + StringUtils::itoa(_rowOffset) + "&details=true");
-      SimpleHttpResult* result = _client->request(HttpRequest::HTTP_REQUEST_POST, url, _outputBuffer.c_str(), _outputBuffer.length(), headerFields);
+      SimpleHttpResult* result = _client->request(HttpRequest::HTTP_REQUEST_POST, url, _outputBuffer.c_str(), _outputBuffer.length(), nullptr);
 
       handleResult(result);
 
@@ -655,14 +654,13 @@ namespace triagens {
         return;
       }
 
-      map<string, string> headerFields;
       SimpleHttpResult* result;
 
       if (isArray) {
-        result = _client->request(HttpRequest::HTTP_REQUEST_POST, "/_api/import?type=array&" + getCollectionUrlPart() + "&details=true", str, len, headerFields);
+        result = _client->request(HttpRequest::HTTP_REQUEST_POST, "/_api/import?type=array&" + getCollectionUrlPart() + "&details=true", str, len, nullptr);
       }
       else {
-        result = _client->request(HttpRequest::HTTP_REQUEST_POST, "/_api/import?type=documents&" + getCollectionUrlPart() + "&details=true", str, len, headerFields);
+        result = _client->request(HttpRequest::HTTP_REQUEST_POST, "/_api/import?type=documents&" + getCollectionUrlPart() + "&details=true", str, len, nullptr);
       }
 
       handleResult(result);

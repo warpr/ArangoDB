@@ -96,8 +96,8 @@ namespace triagens {
             _sslProtocol(sslProtocol),
             _keepAlive(keepAlive),
             _async(async),
-            _client(0),
-            _connection(0),
+            _client(nullptr),
+            _connection(nullptr),
             _offset(0),
             _counter(0),
             _time(0.0) {
@@ -152,7 +152,7 @@ namespace triagens {
                                                       "/_api/version",
                                                       nullptr,
                                                       0,
-                                                      _headers);
+                                                      &_headers);
 
           if (! result || ! result->isComplete()) {
             if (result) {
@@ -280,7 +280,7 @@ namespace triagens {
                                                       "/_api/batch",
                                                       batchPayload.c_str(),
                                                       batchPayload.length(),
-                                                      _headers);
+                                                      &_headers);
           _time += TRI_microtime() - start;
 
           if (result == nullptr || ! result->isComplete()) {
@@ -341,7 +341,7 @@ namespace triagens {
                                                       url,
                                                       payload,
                                                       payloadLength,
-                                                      _headers);
+                                                      &_headers);
           _time += TRI_microtime() - start;
 
           if (mustFree) {

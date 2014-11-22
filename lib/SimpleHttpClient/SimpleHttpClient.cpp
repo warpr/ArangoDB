@@ -109,7 +109,7 @@ namespace triagens {
       std::string const& location,
       char const* body,
       size_t bodyLength,
-      std::map<std::string, std::string> const& headerFields) {
+      std::map<std::string, std::string> const* headerFields) {
       
       // ensure connection has not yet been invalidated
       TRI_ASSERT(_connection != nullptr);
@@ -361,7 +361,7 @@ namespace triagens {
                                        std::string const& location,
                                        char const* body,
                                        size_t bodyLength,
-                                       std::map<std::string, std::string> const& headerFields) {
+                                       std::map<std::string, std::string> const* headerFields) {
       // clear read-buffer (no pipeling!)
       _readBufferOffset = 0;
       _readBuffer.reset();
@@ -393,7 +393,7 @@ namespace triagens {
       static char const* HostHeader = "Host: ";
       _writeBuffer.appendText(HostHeader, strlen(HostHeader));
       _writeBuffer.appendText(hostname);
-      _writeBuffer.appendText("\r\n", 2);
+      _writeBuffer.appendText("\r\n", strlen("\r\n"));
 
       if (_keepAlive) {
         static char const* ConnectionKeepAliveHeader = "Connection: Keep-Alive\r\n";
@@ -427,26 +427,28 @@ namespace triagens {
         if (! foundValue.empty()) {
           _writeBuffer.appendText("Authorization: Basic ");
           _writeBuffer.appendText(foundValue);
-          _writeBuffer.appendText("\r\n", 2);
+          _writeBuffer.appendText("\r\n", strlen("\r\n"));
         }
       }
 
-      for (auto const& header : headerFields) {
-        // TODO: check Header name and value
-        _writeBuffer.appendText(header.first);
-        _writeBuffer.appendText(": ", strlen(": "));
-        _writeBuffer.appendText(header.second);
-        _writeBuffer.appendText("\r\n", 2);
+      if (headerFields != nullptr) {
+        for (auto const& header : *headerFields) {
+          // TODO: check Header name and value
+          _writeBuffer.appendText(header.first);
+          _writeBuffer.appendText(": ", strlen(": "));
+          _writeBuffer.appendText(header.second);
+          _writeBuffer.appendText("\r\n", strlen("\r\n"));
+        }
       }
 
       if (method != HttpRequest::HTTP_REQUEST_GET) {
         static char const* ContentLengthHeader = "Content-Length: ";
         _writeBuffer.appendText(ContentLengthHeader, strlen(ContentLengthHeader));
         _writeBuffer.appendInteger(bodyLength);
-        _writeBuffer.appendText("\r\n\r\n", 4);
+        _writeBuffer.appendText("\r\n\r\n", strlen("\r\n\r\n"));
       }
       else {
-        _writeBuffer.appendText("\r\n", 2);
+        _writeBuffer.appendText("\r\n", strlen("\r\n"));
       }
 
       if (body != nullptr) {
