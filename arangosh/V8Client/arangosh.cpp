@@ -1367,6 +1367,7 @@ static std::string BuildPrompt () {
 static void SignalHandler (int signal) {
   if (Console != nullptr) {
     Console->close();
+    delete Console;
     Console = nullptr;
   }
   printf("\n");

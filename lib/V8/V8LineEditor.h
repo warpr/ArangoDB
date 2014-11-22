@@ -107,7 +107,7 @@ class V8LineEditor : public LineEditor {
 
   protected:
 
-    virtual void initializeShell();
+    virtual void initializeShell() override final;
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                 private variables
