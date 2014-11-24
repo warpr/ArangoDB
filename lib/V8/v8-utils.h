@@ -232,6 +232,32 @@ void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
                             std::string const& message,
                             bool autoPrepend);
 
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object, based on error number only
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (v8::PropertyCallbackInfo<v8::Value> const& args, int errorNumber);
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object, using supplied text
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (v8::PropertyCallbackInfo<v8::Value> const& args,
+                            int errorNumber,
+                            std::string const& message);
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (v8::PropertyCallbackInfo<v8::Value> const& args,
+                            int errorNumber,
+                            std::string const& message,
+                            bool autoPrepend);
+
+
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief normalize a v8 object
 ////////////////////////////////////////////////////////////////////////////////

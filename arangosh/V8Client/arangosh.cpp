@@ -1149,7 +1149,10 @@ static void ClientConnection_httpSendFile (const v8::FunctionCallbackInfo<v8::Va
   TRI_Free(TRI_UNKNOWN_MEM_ZONE, body);
 
   if (tryCatch.HasCaught()) {
-    TRI_V8_LOG_THROW_EXCEPTION(tryCatch);
+      string exception = TRI_StringifyV8Exception(isolate, &tryCatch);
+      isolate->ThrowException(tryCatch.Exception());
+      BaseClient.printErrLine(exception);
+      BaseClient.log("%s", exception.c_str());
   }
 
   TRI_V8_RETURN(result);
@@ -1598,9 +1601,8 @@ static void RunShell (v8::Isolate* isolate, v8::Handle<v8::Context> context, boo
 
     if (tryCatch.HasCaught()) {
       // command failed
+      string exception = TRI_StringifyV8Exception(isolate, &tryCatch);
       isolate->ThrowException(tryCatch.Exception());
-      string exception; /// TODO (isolate, TRI_StringifyV8Exception(&tryCatch));
-
       BaseClient.printErrLine(exception);
       BaseClient.log("%s", exception.c_str());
 
@@ -1658,8 +1660,10 @@ static bool RunUnitTests (v8::Isolate* isolate, v8::Handle<v8::Context> context)
   TRI_ExecuteJavaScriptString(isolate, context, TRI_V8_SYMBOL(input), name, true);
 
   if (tryCatch.HasCaught()) {
+    string exception = TRI_StringifyV8Exception(isolate, &tryCatch);
     isolate->ThrowException(tryCatch.Exception());
-    /// BaseClient.printErrLine(TRI_StringifyV8Exception(&tryCatch));
+    BaseClient.printErrLine(exception);
+    BaseClient.log("%s", exception.c_str());
     ok = false;
   }
   else {
@@ -1721,11 +1725,10 @@ static bool RunScripts (v8::Isolate* isolate,
     }
 
     if (tryCatch.HasCaught()) {
-      string exception;/// todo (TRI_StringifyV8Exception(&tryCatch));
+      string exception = TRI_StringifyV8Exception(isolate, &tryCatch);
       isolate->ThrowException(tryCatch.Exception());
-
       BaseClient.printErrLine(exception);
-      BaseClient.log("%s\n", exception.c_str());
+      BaseClient.log("%s", exception.c_str());
 
       ok = false;
       break;
@@ -1750,17 +1753,15 @@ static bool RunString (v8::Isolate* isolate,
   v8::TryCatch tryCatch;
   bool ok = true;
 
-  v8::Handle<v8::Value> result; /* TODO  = TRI_ExecuteJavaScriptString(context,
+  v8::Handle<v8::Value> result = TRI_ExecuteJavaScriptString(isolate, 
+                                                             context,
                                                              TRI_V8_SYMBOL_STD_STRING(script),
                                                              TRI_V8_SYMBOL("(command-line)"),
-                                                             false);*/
+                                                             false);
 
   if (tryCatch.HasCaught()) {
-    string exception;/// todo (TRI_StringifyV8Exception(&tryCatch));
     isolate->ThrowException(tryCatch.Exception());
-
-    BaseClient.printErrLine(exception);
-    BaseClient.log("%s\n", exception.c_str());
+    BaseClient.printErrLine(TRI_StringifyV8Exception(isolate, &tryCatch));
     ok = false;
   }
   else {
@@ -1805,9 +1806,8 @@ static bool RunJsLint (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   TRI_ExecuteJavaScriptString(isolate, context, TRI_V8_SYMBOL(input), name, true);
 
   if (tryCatch.HasCaught()) {
-    string exception;/// todo (TRI_StringifyV8Exception(&tryCatch));
     isolate->ThrowException(tryCatch.Exception());
-    /// BaseClient.printErrLine(TRI_StringifyV8Exception(&tryCatch));
+    BaseClient.printErrLine(TRI_StringifyV8Exception(isolate, &tryCatch));
     ok = false;
   }
   else {
@@ -2251,7 +2251,8 @@ int main (int argc, char* args[]) {
   files.push_back("client/client.js"); // needs internal
 
   for (size_t i = 0;  i < files.size();  ++i) {
-    bool ok = StartupLoader.loadScript(isolate, context, files[i]);
+    //    bool ok = StartupLoader.loadScript(isolate, context, files[i]);
+    bool ok = StartupLoader.loadScript(isolate, localContext, files[i]);
 
     if (ok) {
       LOG_TRACE("loaded JavaScript file '%s'", files[i].c_str());

@@ -65,23 +65,21 @@ static int32_t const WRP_GENERAL_CURSOR_TYPE = 3;
 /// @brief weak reference callback for general cursors
 ////////////////////////////////////////////////////////////////////////////////
 
-static void WeakGeneralCursorCallback (v8::Isolate* isolate,
-                                       v8::Persistent<v8::Value> object,
-                                       void* parameter) {
+static void WeakGeneralCursorCallback (const v8::WeakCallbackData<v8::External, v8::Persistent<v8::External>>& data) {
+  auto isolate      = data.GetIsolate();
+  auto persistent   = data.GetParameter();
+  auto myConnection = v8::Local<v8::External>::New(data.GetIsolate(), *persistent);
+  auto cursor       = static_cast<TRI_general_cursor_t*>(myConnection->Value());
+
   v8::HandleScope scope(isolate);
 
   TRI_GET_GLOBALS();
   v8g->_hasDeadObjects = true;
 
-  TRI_general_cursor_t* cursor = (TRI_general_cursor_t*) parameter;
-
   TRI_ReleaseGeneralCursor(cursor);
 
   // decrease the reference-counter for the database
   TRI_ReleaseVocBase(cursor->_vocbase);
-
-  // dispose and clear the persistent handle
-  object.Reset();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,20 +99,24 @@ void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,
   v8::Handle<v8::Object> result = GeneralCursorTempl->NewInstance();
 
   if (! result.IsEmpty()) {
+    v8::Persistent<v8::External> persistent;
     TRI_general_cursor_t* c = (TRI_general_cursor_t*) cursor;
     TRI_UseGeneralCursor(c);
 
     // increase the reference-counter for the database
     TRI_UseVocBase(c->_vocbase);
 
-    ///    auto cursorHandle = v8::Handle<v8::Value>::New(isolate, v8::External::New(isolate, cursor));
+    auto externalCursor = v8::External::New(isolate, cursor);
+    persistent.Reset(isolate, externalCursor);
 
     if (tryCatch.HasCaught()) {
       TRI_V8_RETURN_UNDEFINED();
     }
 
     result->SetInternalField(SLOT_CLASS_TYPE, v8::Integer::New(isolate, WRP_GENERAL_CURSOR_TYPE));
-    //// TODO result->SetInternalField(SLOT_CLASS, cursorHandle);
+    result->SetInternalField(SLOT_CLASS, externalCursor);
+
+    persistent.SetWeak(&persistent, WeakGeneralCursorCallback);
   }
 
   if (result.IsEmpty()) {

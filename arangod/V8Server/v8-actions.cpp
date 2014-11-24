@@ -159,7 +159,7 @@ class v8_action_t : public TRI_action_t {
 
       // locate the callback
       READ_LOCKER(_callbacksLock);
-      /* TODO
+
       map< v8::Isolate*, v8::Persistent<v8::Function> >::iterator i = _callbacks.find(context->_isolate);
 
       if (i == _callbacks.end()) {
@@ -187,9 +187,9 @@ class v8_action_t : public TRI_action_t {
 
         *data = (void*) context->_isolate;
       }
+      auto localFunction = v8::Local<v8::Function>::New(context->_isolate, i->second);
+      result = ExecuteActionVocbase(vocbase, context->_isolate, this, localFunction, request);
 
-      result = ExecuteActionVocbase(vocbase, context->_isolate, this, i->second, request);
-      */
       {
         MUTEX_LOCKER(*dataLock);
         *data = 0;

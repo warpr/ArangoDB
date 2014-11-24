@@ -341,7 +341,7 @@ v8::Handle<v8::Value> TRI_WrapShapedJson (v8::Isolate* isolate,
 /// @brief selects the keys from the shaped json
 ////////////////////////////////////////////////////////////////////////////////
 
-static void KeysOfShapedJson (const v8::PropertyCallbackInfo<v8::Value>& args) {
+static void KeysOfShapedJson (const v8::PropertyCallbackInfo<v8::Array>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
@@ -649,7 +649,7 @@ static void MapSetNamedShapedJson (v8::Local<v8::String> name,
 ////////////////////////////////////////////////////////////////////////////////
 
 static void MapDeleteNamedShapedJson (v8::Local<v8::String> name,
-                                      const v8::PropertyCallbackInfo<v8::Value>& args) {
+                                      const v8::PropertyCallbackInfo<v8::Boolean>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
   
@@ -683,7 +683,7 @@ static void MapDeleteNamedShapedJson (v8::Local<v8::String> name,
 ////////////////////////////////////////////////////////////////////////////////
 
 static void PropertyQueryShapedJson (v8::Local<v8::String> name,
-                                     const v8::PropertyCallbackInfo<v8::Value>& args) {
+                                     const v8::PropertyCallbackInfo<v8::Integer>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
@@ -791,7 +791,7 @@ static void MapSetIndexedShapedJson (uint32_t idx,
 ////////////////////////////////////////////////////////////////////////////////
 
 static void MapDeleteIndexedShapedJson (uint32_t idx,
-                                        const v8::PropertyCallbackInfo<v8::Value>& args) {
+                                        const v8::PropertyCallbackInfo<v8::Boolean>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
@@ -822,7 +822,7 @@ void TRI_InitV8ShapedJson (v8::Handle<v8::Context> context,
 
   rt = ft->InstanceTemplate();
   rt->SetInternalFieldCount(3);
-  /*
+
   // accessor for named properties (e.g. doc.abcdef)
   rt->SetNamedPropertyHandler(MapGetNamedShapedJson,    // NamedPropertyGetter,
                               MapSetNamedShapedJson,    // NamedPropertySetter setter 
@@ -840,7 +840,7 @@ void TRI_InitV8ShapedJson (v8::Handle<v8::Context> context,
                                 0                           // IndexedPropertyEnumerator,
                                                             // Handle<Value> data = Handle<Value>());
                                );
-TODO  */ 
+
   v8g->ShapedJsonTempl.Reset(isolate, rt);
   TRI_AddGlobalFunctionVocbase(isolate, context, "ShapedJson", ft->GetFunction());
 }

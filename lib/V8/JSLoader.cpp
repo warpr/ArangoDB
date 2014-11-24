@@ -101,7 +101,7 @@ v8::Handle<v8::Value> JSLoader::executeGlobalScript (v8::Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////////////
 
 bool JSLoader::loadScript (v8::Isolate* isolate,
-                           v8::Persistent<v8::Context>& context,
+                           v8::Handle<v8::Context>& context,
                            string const& name) {
   v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
@@ -115,21 +115,15 @@ bool JSLoader::loadScript (v8::Isolate* isolate,
     LOG_ERROR("unknown script '%s'", StringUtils::correctPath(name).c_str());
     return false;
   }
-  //v8::Handle<v8::Context>
-  //v8::Handle<v8::Context>(context),
-  // v8::Persistent::Cast<v8::Context>(context),
-  v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
-  v8::Handle<v8::Context> localContext = v8::Context::New(isolate, NULL, global);
-  // Enter the newly created execution environment.
-  v8::Context::Scope context_scope(localContext);
 
-  context.Reset(isolate, localContext);
+  // Enter the newly created execution environment.
+  v8::Context::Scope context_scope(context);
   
   TRI_ExecuteJavaScriptString(isolate,
-                              localContext,
+                              context,
                               TRI_V8_SYMBOL_STD_STRING(i->second),
                               TRI_V8_SYMBOL_STD_STRING(name),
-                              false);
+                              true); //// todo false);
 
   if (tryCatch.HasCaught()) {
     if (tryCatch.CanContinue()) {
@@ -152,7 +146,7 @@ bool JSLoader::loadScript (v8::Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////////////
 
 bool JSLoader::loadAllScripts (v8::Isolate* isolate,
-                               v8::Persistent<v8::Context> context) {
+                               v8::Handle<v8::Context>& context) {
   v8::HandleScope scope(isolate);
 
   if (_directory.empty()) {
@@ -175,7 +169,8 @@ bool JSLoader::loadAllScripts (v8::Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////////////
 
 bool JSLoader::executeScript (v8::Isolate* isolate,
-                              v8::Persistent<v8::Context> context, string const& name) {
+                              v8::Handle<v8::Context>& context,
+                              string const& name) {
   v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
 
@@ -189,18 +184,11 @@ bool JSLoader::executeScript (v8::Isolate* isolate,
 
   string content = "(function() { " + i->second + "/* end-of-file '" + name + "' */ })()";
 
-  //v8::Handle<v8::Context>
-  //v8::Handle<v8::Context>(context),
-  // v8::Persistent::Cast<v8::Context>(context),
-  v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
-  v8::Handle<v8::Context> localContext = v8::Context::New(isolate, NULL, global);
   // Enter the newly created execution environment.
-  v8::Context::Scope context_scope(localContext);
+  v8::Context::Scope context_scope(context);
 
-  context.Reset(isolate, localContext);
-  
   TRI_ExecuteJavaScriptString(isolate,
-                              localContext,
+                              context,
                               TRI_V8_SYMBOL_STD_STRING(content),
                               TRI_V8_SYMBOL_STD_STRING(name),
                               false);
@@ -218,7 +206,7 @@ bool JSLoader::executeScript (v8::Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////////////
 
 bool JSLoader::executeAllScripts (v8::Isolate* isolate,
-                                  v8::Persistent<v8::Context> context) {
+                                  v8::Handle<v8::Context>& context) {
   v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
   bool ok;

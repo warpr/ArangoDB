@@ -1355,7 +1355,8 @@ static void WrapVocBase (const v8::FunctionCallbackInfo<v8::Value>& args, TRI_vo
 ////////////////////////////////////////////////////////////////////////////////
 
 static void MapGetVocBase (v8::Local<v8::String> const name,
-                           const v8::PropertyCallbackInfo<v8::Boolean>& args) {
+                           v8::PropertyCallbackInfo<v8::Value> const& args) {
+
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
@@ -2544,7 +2545,7 @@ void TRI_InitV8VocBridge (triagens::arango::ApplicationV8* applicationV8,
 
   ArangoNS = ft->InstanceTemplate();
   ArangoNS->SetInternalFieldCount(2);
-  /// todo   ArangoNS->SetNamedPropertyHandler(MapGetVocBase);
+  ArangoNS->SetNamedPropertyHandler(MapGetVocBase);
 
   // for any database function added here, be sure to add it to in function
   // JS_CompletionsVocbase, too for the auto-completion

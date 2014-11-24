@@ -80,7 +80,7 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         bool loadScript (v8::Isolate* isolate,
-                         v8::Persistent<v8::Context>&,
+                         v8::Handle<v8::Context>&,
                          std::string const& name);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -88,21 +88,22 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
         bool loadAllScripts (v8::Isolate* isolate,
-                             v8::Persistent<v8::Context>);
+                             v8::Handle<v8::Context>& context);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief executes a named script
 ////////////////////////////////////////////////////////////////////////////////
 
         bool executeScript (v8::Isolate* isolate,
-                            v8::Persistent<v8::Context>, std::string const& name);
+                            v8::Handle<v8::Context>& context,
+                            std::string const& name);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief executes all scripts
 ////////////////////////////////////////////////////////////////////////////////
 
         bool executeAllScripts (v8::Isolate* isolate,
-                                v8::Persistent<v8::Context>);
+                                v8::Handle<v8::Context>& context);
     };
   }
 }

@@ -3931,6 +3931,57 @@ void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object, based on error number only
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (v8::PropertyCallbackInfo<v8::Value> const& args,
+                            int errorNumber) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  CreateErrorObject<v8::PropertyCallbackInfo<v8::Value> const&>(args,
+                                                                 errorNumber,
+                                                                 TRI_errno_string(errorNumber));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object, using supplied text
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (v8::PropertyCallbackInfo<v8::Value> const& args,
+                            int errorNumber,
+                            string const& message) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
+  CreateErrorObject<v8::PropertyCallbackInfo<v8::Value> const&>(args,
+                                                                errorNumber,
+                                                                message);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief creates an error in a javascript object
+////////////////////////////////////////////////////////////////////////////////
+
+void TRI_CreateErrorObject (v8::PropertyCallbackInfo<v8::Value> const& args,
+                            int errorNumber,
+                            string const& message,
+                            bool autoPrepend) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  if (autoPrepend) {
+    CreateErrorObject<v8::PropertyCallbackInfo<v8::Value> const&>(args,
+                                                                  errorNumber,
+                                                                  message + ": " + string(TRI_errno_string(errorNumber)));
+  }
+  else {
+    CreateErrorObject<v8::PropertyCallbackInfo<v8::Value> const&>(args,
+                                                                  errorNumber,
+                                                                  message);
+  }
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////

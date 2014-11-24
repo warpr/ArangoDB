@@ -147,13 +147,11 @@ bool ServerJob::execute () {
 
   try {
     v8::HandleScope scope(isolate);
+    
     // execute script inside the context
     auto file = TRI_V8_SYMBOL("handle-plan-change");
     auto content = TRI_V8_SYMBOL("require('org/arangodb/cluster').handlePlanChange();");
-    /* TODO
-    TRI_ExecuteJavaScriptString(args, /// ARGS?
-                                content, file, false);
-    */
+    TRI_ExecuteJavaScriptString(isolate, isolate->GetCurrentContext(), content, file, false);
   }
   catch (...) {
   }

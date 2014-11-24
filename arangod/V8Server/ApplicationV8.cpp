@@ -1327,13 +1327,11 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
 
   // load all init files
   for (size_t j = 0;  j < files.size();  ++j) {
-    /* TODO
-    bool ok = _startupLoader.loadScript(localContext, files[j]);
+    bool ok = _startupLoader.loadScript(isolate, localContext, files[j]);
 
     if (! ok) {
       LOG_FATAL_AND_EXIT("cannot load JavaScript utilities from file '%s'", files[j].c_str());
     }
-    */
   }
 
   // and return from the context
@@ -1368,14 +1366,14 @@ void ApplicationV8::prepareV8Server (const string& name, const size_t i, const s
   v8::Context::Scope contextScope(localContext);
   isolate->Enter();
   localContext->Enter();
-  /* TODO
+
   // load server startup file
-  bool ok = _startupLoader.loadScript(localContext, startupFile);
+  bool ok = _startupLoader.loadScript(isolate, localContext, startupFile);
 
   if (! ok) {
     LOG_FATAL_AND_EXIT("cannot load JavaScript utilities from file '%s'", startupFile.c_str());
   }
-  */
+
   // and return from the context
   localContext->Exit();
   isolate->Exit();
