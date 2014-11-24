@@ -47,7 +47,7 @@ class V8Completer : public Completer {
 
   enum {
     NORMAL,             // start
-    NORMAL_1,           // from NORMAL: seen a1single /
+    NORMAL_1,           // from NORMAL: seen a single /
     DOUBLE_QUOTE,       // from NORMAL: seen a single "
     DOUBLE_QUOTE_ESC,   // from DOUBLE_QUOTE: seen a backslash
     SINGLE_QUOTE,       // from NORMAL: seen a single '

@@ -128,9 +128,10 @@ class V8Buffer : public V8Wrapper<V8Buffer, TRI_V8_BUFFER_CID> {
 /// @brief the buffer data
 ////////////////////////////////////////////////////////////////////////////////
 
-    static inline char* data (V8Buffer *b) {
-      //// return data(b->_handle);
-      return nullptr;//// TODO
+    static inline char* data (v8::Isolate *isolate, V8Buffer *b) {
+      auto localData = v8::Local<v8::Object>::New(isolate, b->_handle);
+      
+      return data(localData);
     }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -148,8 +149,9 @@ class V8Buffer : public V8Wrapper<V8Buffer, TRI_V8_BUFFER_CID> {
 /// @brief length of the data
 ////////////////////////////////////////////////////////////////////////////////
 
-    static inline size_t length (V8Buffer *b) {
-      return 0; /// TODO length(b->_handle);
+    static inline size_t length (v8::Isolate *isolate, V8Buffer *b) {
+      auto localData = v8::Local<v8::Object>::New(isolate, b->_handle);
+      return length(localData);
     }
 
 // -----------------------------------------------------------------------------

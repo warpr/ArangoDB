@@ -637,7 +637,7 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
   intptr_t RetainedBufferInfo::GetSizeInBytes () {
-    return V8Buffer::length(_buffer);
+    return V8Buffer::length(_buffer->_isolate, _buffer);
   }
 }
 

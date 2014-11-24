@@ -122,7 +122,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_EXCEPTION(code)                                          \
-  TRI_CreateErrorObject(args, code);                                    \
+  TRI_CreateErrorObject(isolate, code);                                 \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -131,7 +131,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_EXCEPTION_MESSAGE(code, message)         \
-  TRI_CreateErrorObject(args, code, message, true);     \
+  TRI_CreateErrorObject(isolate, code, message, true);  \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -139,8 +139,8 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 /// Implicitely demands *args* to be function arguments.
 ////////////////////////////////////////////////////////////////////////////////
 
-#define TRI_V8_EXCEPTION_FULL(code, message)                   \
-  TRI_CreateErrorObject(args, code, message, false);           \
+#define TRI_V8_EXCEPTION_FULL(code, message)                      \
+  TRI_CreateErrorObject(isolate, code, message, false);           \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -151,7 +151,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
   do {                                                                  \
     std::string msg = "usage: ";                                        \
     msg += usage;                                                       \
-    TRI_CreateErrorObject(args,                                         \
+    TRI_CreateErrorObject(isolate,                                      \
                           TRI_ERROR_BAD_PARAMETER,                      \
                           msg.c_str());                                 \
   }                                                                     \
@@ -163,7 +163,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_EXCEPTION_INTERNAL(message)                              \
-  TRI_CreateErrorObject(args, TRI_ERROR_INTERNAL, message);             \
+  TRI_CreateErrorObject(isolate, TRI_ERROR_INTERNAL, message);          \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -171,7 +171,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_EXCEPTION_PARAMETER(message)                             \
-  TRI_CreateErrorObject(args, TRI_ERROR_BAD_PARAMETER, message);        \
+  TRI_CreateErrorObject(isolate, TRI_ERROR_BAD_PARAMETER, message);     \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -179,7 +179,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_EXCEPTION_MEMORY()                       \
-  TRI_CreateErrorObject(args, TRI_ERROR_OUT_OF_MEMORY);
+  TRI_CreateErrorObject(isolate, TRI_ERROR_OUT_OF_MEMORY);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief shortcut for throwing an exception for an system error
@@ -191,7 +191,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
     std::string msg = message;                                      \
     msg += ": ";                                                    \
     msg += TRI_LAST_ERROR_STR;                                      \
-    TRI_CreateErrorObject(args,                                     \
+    TRI_CreateErrorObject(isolate,                                  \
                           TRI_errno(),                              \
                           msg.c_str());                             \
     return;                                                         \
@@ -212,7 +212,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_ERROR(message)                                           \
-  args.GetIsolate()->ThrowException(v8::Exception::Error(TRI_V8_SYMBOL(message))); \
+  isolate->ThrowException(v8::Exception::Error(TRI_V8_SYMBOL(message))); \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -220,7 +220,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_RANGE_ERROR(message)                                     \
-  args.GetIsolate()->ThrowException(v8::Exception::RangeError(TRI_V8_SYMBOL(message))); \
+  isolate->ThrowException(v8::Exception::RangeError(TRI_V8_SYMBOL(message))); \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -228,7 +228,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_SYNTAX_ERROR(message)                                    \
-  args.GetIsolate()->ThrowException(v8::Exception::SyntaxError(TRI_V8_SYMBOL(message))); \
+  isolate->ThrowException(v8::Exception::SyntaxError(TRI_V8_SYMBOL(message))); \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -236,7 +236,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_TYPE_ERROR(message)                                      \
-  args.GetIsolate()->ThrowException(v8::Exception::TypeError(TRI_V8_SYMBOL(message))); \
+  isolate->ThrowException(v8::Exception::TypeError(TRI_V8_SYMBOL(message))); \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -255,25 +255,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief globals stored in the isolate
 ////////////////////////////////////////////////////////////////////////////////
-#define TRI_GET_GLOBALS()                                               \
-        TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(isolate->GetData(V8DataSlot))
 
-#define TRI_GET_GLOBAL(WHICH, TYPE)                                          \
-  auto WHICH = v8::Local<TYPE>::New(isolate, v8g->WHICH);
-
-#define TRI_GET_GLOBAL_STR(WHICH)                               \
-  auto WHICH = v8::Local<v8::String>::New(isolate, v8g->WHICH);
-
-#define TRI_V8_CANCEL_FUNCTION_ISOLATE()                   \
-  TRI_GET_GLOBALS();                                       \
-  v8g->_canceled = true;                                   \
-  return v8::Undefined(isolate);
-
-#define TRI_V8_CANCEL_FUNCTION()                           \
-  TRI_GET_GLOBALS();                                       \
-  v8g->_canceled = true;                                   \
-  args.GetReturnValue().Set(v8::Undefined(isolate));       \
-  return
 
 #define TRI_V8_RETURN_UNDEFINED()                                      \
   args.GetReturnValue().Set(v8::Undefined(isolate));                   \
@@ -306,6 +288,26 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 #define TRI_V8_RETURN_PAIR(WHAT, WHATLEN)                                       \
   args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT, v8::String::kNormalString, (int) WHATLEN)); \
   return;
+
+#define TRI_V8_CANCEL_FUNCTION_ISOLATE()                   \
+  TRI_GET_GLOBALS();                                       \
+  v8g->_canceled = true;                                   \
+  return v8::Undefined(isolate);
+
+#define TRI_V8_CANCEL_FUNCTION()                           \
+  TRI_GET_GLOBALS();                                       \
+  v8g->_canceled = true;                                   \
+  args.GetReturnValue().Set(v8::Undefined(isolate));       \
+  return
+
+#define TRI_GET_GLOBALS()                                               \
+        TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(isolate->GetData(V8DataSlot))
+
+#define TRI_GET_GLOBAL(WHICH, TYPE)                                          \
+  auto WHICH = v8::Local<TYPE>::New(isolate, v8g->WHICH);
+
+#define TRI_GET_GLOBAL_STR(WHICH)                               \
+  auto WHICH = v8::Local<v8::String>::New(isolate, v8g->WHICH);
   
 typedef struct TRI_v8_global_s {
 
@@ -967,7 +969,6 @@ void TRI_V8_AddProtoMethod (v8::Isolate* isolate,
 
   // normal method
   else {
-  
     tpl->PrototypeTemplate()->Set(TRI_V8_SYMBOL(name),
                                   v8::FunctionTemplate::New(isolate, callback));
     }
@@ -989,7 +990,6 @@ inline void TRI_V8_AddMethod (v8::Isolate* isolate,
                   callback->GetFunction(),
                   v8::DontEnum);
   }
-
   // normal method
   else {
     tpl->Set(TRI_V8_SYMBOL(name),
@@ -1008,7 +1008,6 @@ inline void TRI_V8_AddMethod (v8::Isolate* isolate,
     tpl->Set(TRI_V8_SYMBOL(name),
              v8::FunctionTemplate::New(isolate, callback)->GetFunction());
   }
-
   // normal method
   else {
     tpl->Set(TRI_V8_SYMBOL(name),

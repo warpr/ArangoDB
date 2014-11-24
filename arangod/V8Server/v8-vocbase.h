@@ -97,7 +97,8 @@ void TRI_V8ReloadRouting (v8::Handle<v8::Context>);
 /// @brief creates a TRI_vocbase_t global context
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitV8VocBridge (triagens::arango::ApplicationV8*,
+void TRI_InitV8VocBridge (v8::Isolate* isolate,
+                          triagens::arango::ApplicationV8*,
                           v8::Handle<v8::Context>,
                           triagens::aql::QueryRegistry*,
                           struct TRI_server_s*,

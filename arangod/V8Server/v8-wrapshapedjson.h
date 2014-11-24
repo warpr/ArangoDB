@@ -69,11 +69,8 @@ v8::Handle<v8::Value> TRI_WrapShapedJson (v8::Isolate* isolate,
 /// @brief generate the TRI_shaped_json_t template
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitV8ShapedJson (const v8::FunctionCallbackInfo<v8::Value>& args,
+void TRI_InitV8ShapedJson (v8::Isolate *isolate, 
                            v8::Handle<v8::Context> context,
-                           TRI_server_t* server,
-                           TRI_vocbase_t* vocbase,
-                           triagens::arango::JSLoader* loader,
                            size_t threadNumber,
                            TRI_v8_global_t* v8g);
 #endif

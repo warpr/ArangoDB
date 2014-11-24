@@ -28,6 +28,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "ApplicationV8.h"
+#include <libplatform/libplatform.h>
 
 #include "Actions/actions.h"
 #include "Aql/QueryRegistry.h"
@@ -1046,6 +1047,9 @@ bool ApplicationV8::prepare () {
 bool ApplicationV8::prepare2 () {
   static const string name = "STANDARD";
   size_t nrInstances = _nrInstances[name];
+  v8::V8::InitializeICU();
+  v8::Platform* platform = v8::platform::CreateDefaultPlatform();
+  v8::V8::InitializePlatform(platform);
 
   // setup instances
   {
@@ -1251,7 +1255,9 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
 
   files.push_back("server/initialise.js");
 
-  V8Context* context = _contexts[name][i] = new V8Context();
+  v8::Isolate* isolate = v8::Isolate::New();
+  
+  V8Context* context = _contexts[name][i] =new V8Context();
 
   if (context == nullptr) {
     LOG_FATAL_AND_EXIT("cannot initialize V8 context #%d", (int) i);
@@ -1260,13 +1266,20 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
   // enter a new isolate
   context->_name = name;
   context->_id = i;
-  context->_isolate = v8::Isolate::New();
-  context->_locker = new v8::Locker(context->_isolate);
+  context->_isolate = isolate;
+  context->_locker = new v8::Locker(isolate);
   context->_isolate->Enter();
 
   // create the context
-  auto isolate = context->_isolate;
-  auto localContext = v8::Context::New(isolate);
+  v8::HandleScope handle_scope(isolate);
+
+  v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
+
+  v8::Persistent<v8::Context> persistentContext;
+  persistentContext.Reset(isolate, v8::Context::New(isolate, 0, global));
+  auto localContext = v8::Local<v8::Context>::New(isolate, persistentContext);
+
+
   v8::Context::Scope contextScope(localContext);
 
   context->_context.Reset(context->_isolate, localContext);
@@ -1278,7 +1291,7 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
   isolate->Enter();
   localContext->Enter();
 
-  TRI_InitV8VocBridge(this, localContext, _queryRegistry, _server, _vocbase, &_startupLoader, i);
+  TRI_InitV8VocBridge(isolate, this, localContext, _queryRegistry, _server, _vocbase, &_startupLoader, i);
   TRI_InitV8Queries(isolate, localContext);
   TRI_InitV8UserStructures(isolate, localContext);
 

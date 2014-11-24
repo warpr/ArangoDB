@@ -2506,41 +2506,38 @@ void TRI_InitV8Queries (v8::Isolate* isolate,
                         v8::Handle<v8::Context> context) {
   v8::HandleScope scope(isolate);
 
-  v8::Handle<v8::ObjectTemplate> rt;
-
   TRI_GET_GLOBALS();
   TRI_ASSERT(v8g != nullptr);
+  TRI_GET_GLOBAL(VocbaseColTempl, v8::ObjectTemplate);
 
   // .............................................................................
   // generate the TRI_vocbase_col_t template
   // .............................................................................
 
-  v8g->VocbaseColTempl.Reset(isolate, rt);
-
-  TRI_AddMethodVocbase(isolate, rt, "ALL", JS_AllQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "ANY", JS_AnyQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "BY_CONDITION_SKIPLIST", JS_ByConditionSkiplist, true);
-  TRI_AddMethodVocbase(isolate, rt, "BY_EXAMPLE", JS_ByExampleQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "BY_EXAMPLE_HASH", JS_ByExampleHashIndex, true);
-  TRI_AddMethodVocbase(isolate, rt, "BY_EXAMPLE_SKIPLIST", JS_ByExampleSkiplist, true);
-  TRI_AddMethodVocbase(isolate, rt, "checksum", JS_ChecksumCollection);
-  TRI_AddMethodVocbase(isolate, rt, "EDGES", JS_EdgesQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "FIRST", JS_FirstQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "FULLTEXT", JS_FulltextQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "INEDGES", JS_InEdgesQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "LAST", JS_LastQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "NEAR", JS_NearQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "ALL", JS_AllQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "ANY", JS_AnyQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "BY_CONDITION_SKIPLIST", JS_ByConditionSkiplist, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "BY_EXAMPLE", JS_ByExampleQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "BY_EXAMPLE_HASH", JS_ByExampleHashIndex, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "BY_EXAMPLE_SKIPLIST", JS_ByExampleSkiplist, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "checksum", JS_ChecksumCollection);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "EDGES", JS_EdgesQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "FIRST", JS_FirstQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "FULLTEXT", JS_FulltextQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "INEDGES", JS_InEdgesQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "LAST", JS_LastQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "NEAR", JS_NearQuery, true);
 
   // internal method. not intended to be used by end-users
-  TRI_AddMethodVocbase(isolate, rt, "NTH", JS_NthQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "NTH2", JS_Nth2Query, true);
-  TRI_AddMethodVocbase(isolate, rt, "NTH3", JS_Nth3Query, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "NTH", JS_NthQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "NTH2", JS_Nth2Query, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "NTH3", JS_Nth3Query, true);
 
   // internal method. not intended to be used by end-users
-  TRI_AddMethodVocbase(isolate, rt, "OFFSET", JS_OffsetQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "OFFSET", JS_OffsetQuery, true);
 
-  TRI_AddMethodVocbase(isolate, rt, "OUTEDGES", JS_OutEdgesQuery, true);
-  TRI_AddMethodVocbase(isolate, rt, "WITHIN", JS_WithinQuery);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "OUTEDGES", JS_OutEdgesQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "WITHIN", JS_WithinQuery);
 }
 
 // -----------------------------------------------------------------------------

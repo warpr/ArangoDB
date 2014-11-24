@@ -120,12 +120,9 @@ TRI_Utf8ValueNFC::~TRI_Utf8ValueNFC () {
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief create a Javascript error object
 ////////////////////////////////////////////////////////////////////////////////
-template <typename ARGS_TYPE>
-static void CreateErrorObject (ARGS_TYPE args,
+static void CreateErrorObject (v8::Isolate *isolate,
                                int errorNumber,
                                string const& message) {
-  v8::Isolate* isolate = args.GetIsolate();
-
   if (errorNumber == TRI_ERROR_OUT_OF_MEMORY) {
     LOG_ERROR("encountered out-of-memory error");
   }
@@ -139,14 +136,14 @@ static void CreateErrorObject (ARGS_TYPE args,
   v8::Handle<v8::Value> err = v8::Exception::Error(errorMessage);
 
   if (err.IsEmpty()) {
-    args.GetIsolate()->ThrowException(v8::Object::New(isolate));
+    isolate->ThrowException(v8::Object::New(isolate));
     return ;
   }
 
   v8::Handle<v8::Object> errorObject = err->ToObject();
 
   if (errorObject.IsEmpty()) {
-    args.GetIsolate()->ThrowException(v8::Object::New(isolate));
+    isolate->ThrowException(v8::Object::New(isolate));
     return ;
   }
 
@@ -161,8 +158,9 @@ static void CreateErrorObject (ARGS_TYPE args,
   if (! proto.IsEmpty()) {
     errorObject->SetPrototype(proto);
   }
-  args.GetIsolate()->ThrowException(errorObject);
+  isolate->ThrowException(errorObject);
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief reads/execute a file into/in the current context
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,8 +199,8 @@ static bool LoadJavaScriptFile (v8::Isolate* isolate,
     return false;
   }
 
-  v8::Handle<v8::String> name =   v8::String::NewFromUtf8(isolate, filename);
-  v8::Handle<v8::String> source = v8::String::NewFromUtf8(isolate, content, v8::String::kNormalString, (int) length);
+  v8::Handle<v8::String> name =   TRI_V8_SYMBOL(filename);
+  v8::Handle<v8::String> source = TRI_V8_SYMBOL_PAIR(content, (int) length);
 
   TRI_FreeString(TRI_UNKNOWN_MEM_ZONE, content);
 
@@ -422,7 +420,7 @@ static void JS_Parse (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_TYPE_ERROR("<script> must be a string");
   }
 
-  v8::Handle<v8::Script> script = v8::Script::Compile(source->ToString(), v8::Handle<v8::String>::Cast(filename));
+  v8::Handle<v8::Script> script = v8::Script::Compile(source->ToString(), filename->ToString());
 
   // compilation failed, we have caught an exception
   if (tryCatch.HasCaught()) {
@@ -482,12 +480,8 @@ static void JS_ParseFile (const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
   
   v8::Handle<v8::Value> result;
-  auto script = v8::Script::Compile(
-                                    v8::String::NewFromUtf8(isolate,
-                                                            content,
-                                                            v8::String::kNormalString,
-                                                            (int) length),
-                                    v8::Handle<v8::String>::Cast(args[0]));
+  auto script = v8::Script::Compile(TRI_V8_SYMBOL_PAIR(content,(int) length),
+                                    args[0]->ToString());
   
   TRI_FreeString(TRI_UNKNOWN_MEM_ZONE, content);
 
@@ -837,7 +831,7 @@ static void JS_Execute (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   v8::Handle<v8::Value> source = args[0];
   v8::Handle<v8::Value> sandboxValue = args[1];
-  v8::Handle<v8::String> filename = v8::Handle<v8::String>::Cast(args[2]);
+  v8::Handle<v8::Value> filename = args[2];
 
   if (! source->IsString()) {
     TRI_V8_TYPE_ERROR("<script> must be a string");
@@ -884,7 +878,7 @@ static void JS_Execute (const v8::FunctionCallbackInfo<v8::Value>& args) {
   {
     v8::TryCatch tryCatch;
 
-    script = v8::Script::Compile(source->ToString(), filename);
+    script = v8::Script::Compile(source->ToString(), filename->ToString());
 
     // compilation failed, print errors that happened during compilation
     if (script.IsEmpty()) {
@@ -969,7 +963,7 @@ static void JS_RegisterExecuteFile (const v8::FunctionCallbackInfo<v8::Value>& a
     TRI_V8_EXCEPTION_USAGE("registerExecuteCallback(<func>)");
   }
 
-  auto func=v8::Handle<v8::Function>::Cast(args[0]);
+  auto func = v8::Handle<v8::Function>::Cast(args[0]);
 
   v8g->ExecuteFileCallback.Reset(isolate, func);
 
@@ -1529,10 +1523,12 @@ static void JS_Load (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_MESSAGE(TRI_errno(), "cannot read file");
   }
 
+  v8::Handle<v8::Value> filename = args[0];
+
   TRI_ExecuteJavaScriptString(isolate,
                               isolate->GetCurrentContext(),
                               TRI_V8_SYMBOL_PAIR(content, length),
-                              v8::Handle<v8::String>::Cast(args[0]),
+                              filename->ToString(),
                               false);
 
   TRI_FreeString(TRI_UNKNOWN_MEM_ZONE, content);
@@ -1633,7 +1629,7 @@ static void JS_LogLevel (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_SetLogLevelLogging(*str);
   }
 
-  TRI_V8_RETURN(v8::String::NewFromUtf8(isolate, TRI_LogLevelLogging()));
+  TRI_V8_RETURN_STR(TRI_LogLevelLogging());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1960,14 +1956,14 @@ static void JS_ProcessStatistics (const v8::FunctionCallbackInfo<v8::Value>& arg
     rssp = rss / TRI_PhysicalMemory;
   }
 
-  result->Set(TRI_V8_SYMBOL("minorPageFaults"), v8::Number::New(isolate, (double) info._minorPageFaults));
-  result->Set(TRI_V8_SYMBOL("majorPageFaults"), v8::Number::New(isolate, (double) info._majorPageFaults));
-  result->Set(TRI_V8_SYMBOL("userTime"), v8::Number::New(isolate, (double) info._userTime / (double) info._scClkTck));
-  result->Set(TRI_V8_SYMBOL("systemTime"), v8::Number::New(isolate, (double) info._systemTime / (double) info._scClkTck));
-  result->Set(TRI_V8_SYMBOL("numberOfThreads"), v8::Number::New(isolate, (double) info._numberThreads));
-  result->Set(TRI_V8_SYMBOL("residentSize"), v8::Number::New(isolate, rss));
+  result->Set(TRI_V8_SYMBOL("minorPageFaults"),     v8::Number::New(isolate, (double) info._minorPageFaults));
+  result->Set(TRI_V8_SYMBOL("majorPageFaults"),     v8::Number::New(isolate, (double) info._majorPageFaults));
+  result->Set(TRI_V8_SYMBOL("userTime"),            v8::Number::New(isolate, (double) info._userTime / (double) info._scClkTck));
+  result->Set(TRI_V8_SYMBOL("systemTime"),          v8::Number::New(isolate, (double) info._systemTime / (double) info._scClkTck));
+  result->Set(TRI_V8_SYMBOL("numberOfThreads"),     v8::Number::New(isolate, (double) info._numberThreads));
+  result->Set(TRI_V8_SYMBOL("residentSize"),        v8::Number::New(isolate, rss));
   result->Set(TRI_V8_SYMBOL("residentSizePercent"), v8::Number::New(isolate, rssp));
-  result->Set(TRI_V8_SYMBOL("virtualSize"), v8::Number::New(isolate, (double) info._virtualSize));
+  result->Set(TRI_V8_SYMBOL("virtualSize"),         v8::Number::New(isolate, (double) info._virtualSize));
 
   TRI_V8_RETURN(result);
 }
@@ -2349,7 +2345,7 @@ static void JS_ServerStatistics (const v8::FunctionCallbackInfo<v8::Value>& args
 
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
 
-  result->Set(TRI_V8_SYMBOL("uptime"), v8::Number::New(isolate, (double) info._uptime));
+  result->Set(TRI_V8_SYMBOL("uptime"),         v8::Number::New(isolate, (double) info._uptime));
   result->Set(TRI_V8_SYMBOL("physicalMemory"), v8::Number::New(isolate, (double) TRI_PhysicalMemory));
 
   TRI_V8_RETURN(result);
@@ -2370,7 +2366,7 @@ static void JS_SPrintF (const v8::FunctionCallbackInfo<v8::Value>& args) {
   size_t len = args.Length();
 
   if (len == 0) {
-    TRI_V8_RETURN(v8::String::NewFromUtf8(isolate, ""));
+    TRI_V8_RETURN_STR("");
   }
 
   TRI_Utf8ValueNFC format(TRI_UNKNOWN_MEM_ZONE, args[0]);
@@ -2944,11 +2940,11 @@ static void JS_ClientStatistics (const v8::FunctionCallbackInfo<v8::Value>& args
 
   TRI_FillRequestStatistics(totalTime, requestTime, queueTime, ioTime, bytesSent, bytesReceived);
 
-  FillDistribution(isolate, result, "totalTime", totalTime);
-  FillDistribution(isolate, result, "requestTime", requestTime);
-  FillDistribution(isolate, result, "queueTime", queueTime);
-  FillDistribution(isolate, result, "ioTime", ioTime);
-  FillDistribution(isolate, result, "bytesSent", bytesSent);
+  FillDistribution(isolate, result, "totalTime",     totalTime);
+  FillDistribution(isolate, result, "requestTime",   requestTime);
+  FillDistribution(isolate, result, "queueTime",     queueTime);
+  FillDistribution(isolate, result, "ioTime",        ioTime);
+  FillDistribution(isolate, result, "bytesSent",     bytesSent);
   FillDistribution(isolate, result, "bytesReceived", bytesReceived);
 
   TRI_V8_RETURN(result);
@@ -3465,8 +3461,8 @@ static void JS_ArangoError (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::HandleScope scope(isolate);
 
   TRI_GET_GLOBALS();
-  TRI_GET_GLOBAL(ErrorKey, v8::String);
-  TRI_GET_GLOBAL(ErrorNumKey, v8::String);
+  TRI_GET_GLOBAL_STR(ErrorKey);
+  TRI_GET_GLOBAL_STR(ErrorNumKey);
 
   v8::Handle<v8::Object> self = args.Holder()->ToObject();
 
@@ -3474,8 +3470,8 @@ static void JS_ArangoError (const v8::FunctionCallbackInfo<v8::Value>& args) {
   self->Set(ErrorNumKey, v8::Integer::New(isolate, TRI_ERROR_FAILED));
 
   if (0 < args.Length() && args[0]->IsObject()) {
-    TRI_GET_GLOBAL(CodeKey, v8::String);
-    TRI_GET_GLOBAL(ErrorMessageKey, v8::String);
+    TRI_GET_GLOBAL_STR(CodeKey);
+    TRI_GET_GLOBAL_STR(ErrorMessageKey);
 
     v8::Handle<v8::Object> data = args[0]->ToObject();
 
@@ -3513,7 +3509,7 @@ static void JS_SleepAndRequeue (const v8::FunctionCallbackInfo<v8::Value>& args)
 
   if (0 < args.Length() && args[0]->IsObject()) {
     v8::Handle<v8::Object> data = args[0]->ToObject();
-    TRI_GET_GLOBAL(SleepKey, v8::String);
+    TRI_GET_GLOBAL_STR(SleepKey);
 
     if (data->Has(SleepKey)) {
       self->Set(SleepKey, data->Get(SleepKey));
@@ -3667,7 +3663,7 @@ string TRI_StringifyV8Exception (v8::Isolate* isolate, v8::TryCatch* tryCatch) {
 /// @brief prints an exception and stacktrace
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_LogV8Exception (v8::Isolate* isolate, ///const v8::FunctionCallbackInfo<v8::Value>& args,
+void TRI_LogV8Exception (v8::Isolate* isolate,
                          v8::TryCatch* tryCatch) {
   v8::HandleScope handle_scope(isolate);
 
@@ -3801,7 +3797,6 @@ v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Isolate* isolate,
   result = script->Run();
 
   if (result.IsEmpty()) {
-    /// TRI_V8_RETURN(result);
     return result;
   }
   else {
@@ -3826,7 +3821,6 @@ v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Isolate* isolate,
     }
 
     return result;
-    /// TRI_V8_RETURN(result);
   }
 }
 
@@ -3834,155 +3828,41 @@ v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Isolate* isolate,
 /// @brief creates an error in a javascript object, based on error number only
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args, int errorNumber) {
-  v8::Isolate* isolate = args.GetIsolate();
+void TRI_CreateErrorObject (v8::Isolate *isolate, int errorNumber) {
   v8::HandleScope scope(isolate);
 
-  CreateErrorObject<v8::FunctionCallbackInfo<v8::Value> const&>(args,
-                                                                errorNumber,
-                                                                TRI_errno_string(errorNumber));
+  CreateErrorObject(isolate, errorNumber, TRI_errno_string(errorNumber));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates an error in a javascript object, using supplied text
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args,
+void TRI_CreateErrorObject (v8::Isolate *isolate,
                             int errorNumber,
                             string const& message) {
-  v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-  CreateErrorObject<v8::FunctionCallbackInfo<v8::Value> const&>(args,
-                                                                errorNumber,
-                                                                message);
+  CreateErrorObject(isolate, errorNumber, message);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates an error in a javascript object
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_CreateErrorObject (const v8::FunctionCallbackInfo<v8::Value>& args,
+void TRI_CreateErrorObject (v8::Isolate *isolate,
                             int errorNumber,
                             string const& message,
                             bool autoPrepend) {
-  v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
   if (autoPrepend) {
-    CreateErrorObject<v8::FunctionCallbackInfo<v8::Value> const&>(args,
-                                                                  errorNumber,
-                                                                  message + ": " + string(TRI_errno_string(errorNumber)));
+    CreateErrorObject(isolate, errorNumber, 
+                      message + ": " + string(TRI_errno_string(errorNumber)));
   }
   else {
-    CreateErrorObject<v8::FunctionCallbackInfo<v8::Value> const&>(args,
-                                                                  errorNumber,
-                                                                  message);
+    CreateErrorObject(isolate, errorNumber, message);
   }
 }
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates an error in a javascript object, based on error number only
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
-                            int errorNumber) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
-
-  CreateErrorObject<v8::PropertyCallbackInfo<v8::Boolean> const&>(args,
-                                                                  errorNumber,
-                                                                  TRI_errno_string(errorNumber));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates an error in a javascript object, using supplied text
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
-                            int errorNumber,
-                            string const& message) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
-  CreateErrorObject<v8::PropertyCallbackInfo<v8::Boolean> const&>(args,
-                                                                  errorNumber,
-                                                                  message);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates an error in a javascript object
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_CreateErrorObject (const v8::PropertyCallbackInfo<v8::Boolean>& args,
-                            int errorNumber,
-                            string const& message,
-                            bool autoPrepend) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
-
-  if (autoPrepend) {
-    CreateErrorObject<v8::PropertyCallbackInfo<v8::Boolean> const&>(args,
-                                                                    errorNumber,
-                                                                    message + ": " + string(TRI_errno_string(errorNumber)));
-  }
-  else {
-    CreateErrorObject<v8::PropertyCallbackInfo<v8::Boolean> const&>(args,
-                                                                    errorNumber,
-                                                                    message);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates an error in a javascript object, based on error number only
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_CreateErrorObject (v8::PropertyCallbackInfo<v8::Value> const& args,
-                            int errorNumber) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
-
-  CreateErrorObject<v8::PropertyCallbackInfo<v8::Value> const&>(args,
-                                                                 errorNumber,
-                                                                 TRI_errno_string(errorNumber));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates an error in a javascript object, using supplied text
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_CreateErrorObject (v8::PropertyCallbackInfo<v8::Value> const& args,
-                            int errorNumber,
-                            string const& message) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
-  CreateErrorObject<v8::PropertyCallbackInfo<v8::Value> const&>(args,
-                                                                errorNumber,
-                                                                message);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief creates an error in a javascript object
-////////////////////////////////////////////////////////////////////////////////
-
-void TRI_CreateErrorObject (v8::PropertyCallbackInfo<v8::Value> const& args,
-                            int errorNumber,
-                            string const& message,
-                            bool autoPrepend) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
-
-  if (autoPrepend) {
-    CreateErrorObject<v8::PropertyCallbackInfo<v8::Value> const&>(args,
-                                                                  errorNumber,
-                                                                  message + ": " + string(TRI_errno_string(errorNumber)));
-  }
-  else {
-    CreateErrorObject<v8::PropertyCallbackInfo<v8::Value> const&>(args,
-                                                                  errorNumber,
-                                                                  message);
-  }
-}
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief normalizes a v8 object
@@ -4045,6 +3925,33 @@ v8::Handle<v8::Array> TRI_V8PathList (v8::Isolate* isolate, string const& module
   return result;
 }
 
+//// debug function - todo remove me.
+// Extracts a C string from a V8 Utf8Value.
+const char* ToCString(const v8::String::Utf8Value& value) {
+  return *value ? *value : "<string conversion failed>";
+}
+
+static void printdebug (const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
+  bool first = true;
+
+  for (int i = 0; i < args.Length(); i++) {
+    v8::HandleScope handle_scope(args.GetIsolate());
+    if (first) {
+      first = false;
+    } else {
+      printf(" ");
+    }
+    v8::String::Utf8Value str(args[i]);
+    const char* cstr = ToCString(str);
+    printf("%s", cstr);
+  }
+  printf("\n");
+  fflush(stdout);
+  TRI_V8_RETURN_UNDEFINED();
+}
+
 // -----------------------------------------------------------------------------
 // --SECTION--                                             module initialisation
 // -----------------------------------------------------------------------------
@@ -4080,6 +3987,7 @@ void TRI_InitV8Utils (v8::Isolate* isolate,
   ArangoErrorFunc->Get(TRI_V8_SYMBOL("prototype"))->ToObject()->SetPrototype(ErrorPrototype);
 
   TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoError", ArangoErrorFunc);
+
   rt = ft->InstanceTemplate();
   v8g->ArangoErrorTempl.Reset(isolate, rt);
 
@@ -4103,6 +4011,7 @@ void TRI_InitV8Utils (v8::Isolate* isolate,
   // .............................................................................
   // create the global functions
   // .............................................................................
+  TRI_AddGlobalFunctionVocbase(isolate, context, "PPP", printdebug); //// debug - todo remove me
 
   TRI_AddGlobalFunctionVocbase(isolate, context, "FS_EXISTS", JS_Exists);
   TRI_AddGlobalFunctionVocbase(isolate, context, "FS_GET_TEMP_FILE", JS_GetTempFile);

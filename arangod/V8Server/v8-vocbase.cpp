@@ -110,26 +110,25 @@ int32_t const WRP_VOCBASE_COL_TYPE = 2;
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class T>
-static void WrapClass (v8::Persistent<v8::ObjectTemplate> classTempl,
-                       int32_t type,
-                       T* y,
-                       const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
+static v8::Handle<v8::Object> WrapClass (v8::Isolate *isolate,
+                                         v8::Persistent<v8::ObjectTemplate>& classTempl,
+                                         int32_t type,
+                                         T* y) {
 
+  auto localClassTemplate = v8::Local<v8::ObjectTemplate>::New(isolate, classTempl);
   // create the new handle to return, and set its template type
-  v8::Handle<v8::Object> result; //// TODO persistent fuck  = classTempl->NewInstance();
+  v8::Handle<v8::Object> result = localClassTemplate->NewInstance();
 
   if (result.IsEmpty()) {
     // error
-    TRI_V8_RETURN(result);
+    return result;
   }
 
   // set the c++ pointer for unwrapping later
   result->SetInternalField(SLOT_CLASS_TYPE, v8::Integer::New(isolate, type));
   result->SetInternalField(SLOT_CLASS, v8::External::New(isolate, y));
 
-  TRI_V8_RETURN(result);
+  return result;
 }
 
 
@@ -1320,18 +1319,15 @@ static void JS_ExecuteAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
 /// @brief wraps a TRI_vocbase_t
 ////////////////////////////////////////////////////////////////////////////////
 
-static void WrapVocBase (const v8::FunctionCallbackInfo<v8::Value>& args, TRI_vocbase_t const* database) {
-  /// v8::Isolate* isolate = args.GetIsolate();
-  /// v8::HandleScope scope(isolate);
+static v8::Handle<v8::Object> WrapVocBase (v8::Isolate *isolate, TRI_vocbase_t const* database) {
 
-  /// TRI_GET_GLOBALS();
-  /*
-  v8::Handle<v8::Object> result = WrapClass(v8g->VocbaseTempl,
+  TRI_GET_GLOBALS();
+  
+  v8::Handle<v8::Object> result = WrapClass(isolate,
+                                            v8g->VocbaseTempl,
                                             WRP_VOCBASE_TYPE,
-                                            const_cast<TRI_vocbase_t*>(database),
-                                            args); TODO
-  */ 
-  //todo  TRI_V8_RETURN(result);
+                                            const_cast<TRI_vocbase_t*>(database));
+  return result;                                                       
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1652,8 +1648,7 @@ static void JS_UseDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   if (TRI_EqualString(name.c_str(), vocbase->_name)) {
     // same database. nothing to do
-    WrapVocBase(args, vocbase);
-    return;
+    TRI_V8_RETURN(WrapVocBase(isolate, vocbase));
   }
 
   if (ServerState::instance()->isCoordinator()) {
@@ -1675,8 +1670,7 @@ static void JS_UseDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
       TRI_ReleaseDatabaseServer(static_cast<TRI_server_t*>(v8g->_server), (TRI_vocbase_t*) orig);
     }
 
-    WrapVocBase(args, vocbase);
-    return;
+    TRI_V8_RETURN(WrapVocBase(isolate, vocbase));
   }
 
   TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
@@ -2499,14 +2493,14 @@ TODO
 /// @brief creates a TRI_vocbase_t global context
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitV8VocBridge (triagens::arango::ApplicationV8* applicationV8,
+void TRI_InitV8VocBridge (v8::Isolate* isolate, 
+                          triagens::arango::ApplicationV8* applicationV8,
                           v8::Handle<v8::Context> context,
                           triagens::aql::QueryRegistry* queryRegistry,
                           TRI_server_t* server,
                           TRI_vocbase_t* vocbase,
                           JSLoader* loader,
                           size_t threadNumber) {
-  ISOLATE;
   v8::HandleScope scope(isolate);
 
   // check the isolate
@@ -2566,9 +2560,9 @@ void TRI_InitV8VocBridge (triagens::arango::ApplicationV8* applicationV8,
 
   v8g->VocbaseTempl.Reset(isolate, ArangoNS);
   TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoDatabase", ft->GetFunction());
-  /* TODO
-  TRI_InitV8ShapedJson(args, context, server, vocbase, loader, threadNumber, v8g);
-  */
+
+  TRI_InitV8ShapedJson(isolate, context, threadNumber, v8g);
+
   TRI_InitV8cursor(context, server, vocbase, loader, threadNumber, v8g);
 
   // .............................................................................
@@ -2604,25 +2598,25 @@ void TRI_InitV8VocBridge (triagens::arango::ApplicationV8* applicationV8,
   // .............................................................................
   // create global variables
   // .............................................................................
-  /* TODO
-  v8::Handle<v8::Value> v = WrapVocBase(vocbase);
+
+  v8::Handle<v8::Object> v = WrapVocBase(isolate, vocbase);
   if (v.IsEmpty()) {
     // TODO: raise an error here
     LOG_ERROR("out of memory when initialising VocBase");
   }
   else {
-    TRI_AddGlobalVariableVocbase(context, "db", v);
+    TRI_AddGlobalVariableVocbase(isolate, context, "db", v);
   }
-  */
+  
   // current thread number
-  /// todo context->Global()->Set(TRI_V8_SYMBOL("THREAD_NUMBER"), v8::Number::New((double) threadNumber), v8::ReadOnly);
+  context->Global()->ForceSet(TRI_V8_SYMBOL("THREAD_NUMBER"), v8::Number::New(isolate, (double) threadNumber), v8::ReadOnly);
   
   // whether or not statistics are enabled
-  /// todo   context->Global()->Set(TRI_V8_SYMBOL("ENABLE_STATISTICS"), v8::Boolean::New(TRI_ENABLE_STATISTICS), v8::ReadOnly);
+  context->Global()->ForceSet(TRI_V8_SYMBOL("ENABLE_STATISTICS"), v8::Boolean::New(isolate, TRI_ENABLE_STATISTICS), v8::ReadOnly);
   
   // a thread-global variable that will is supposed to contain the AQL module
   // do not remove this, otherwise AQL queries will break
-  /// todo   context->Global()->Set(TRI_V8_SYMBOL("_AQL"), v8::Undefined(), v8::DontEnum);
+  context->Global()->ForceSet(TRI_V8_SYMBOL("_AQL"), v8::Undefined(isolate), v8::DontEnum);
 }
 
 // -----------------------------------------------------------------------------

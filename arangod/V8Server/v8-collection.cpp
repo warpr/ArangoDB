@@ -515,12 +515,13 @@ static void DocumentVocbaseCol (bool useCollection,
 TRI_vocbase_col_t const* UseCollection (v8::Handle<v8::Object> collection,
                                         const v8::FunctionCallbackInfo<v8::Value>& args) {
 
+  v8::Isolate* isolate = args.GetIsolate();
   int res = TRI_ERROR_INTERNAL;
   TRI_vocbase_col_t* col = TRI_UnwrapClass<TRI_vocbase_col_t>(collection, WRP_VOCBASE_COL_TYPE);
 
   if (col != nullptr) {
     if (! col->_isLocal) {
-      TRI_CreateErrorObject(args, TRI_ERROR_NOT_IMPLEMENTED);
+      TRI_CreateErrorObject(isolate, TRI_ERROR_NOT_IMPLEMENTED);
       TRI_set_errno(TRI_ERROR_NOT_IMPLEMENTED);
       return nullptr;
     }
@@ -536,7 +537,7 @@ TRI_vocbase_col_t const* UseCollection (v8::Handle<v8::Object> collection,
   }
 
   // some error occurred
-  TRI_CreateErrorObject(args, res, "cannot use/load collection", true);
+  TRI_CreateErrorObject(isolate, res, "cannot use/load collection", true);
   TRI_set_errno(res);
   return nullptr;
 }

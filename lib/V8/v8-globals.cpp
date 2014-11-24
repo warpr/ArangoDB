@@ -39,8 +39,8 @@
 
 TRI_v8_global_s::TRI_v8_global_s (v8::Isolate* isolate)
   : JSBarriers(),
-    JSCollections()
-/*
+    JSCollections(),
+
     AgencyTempl(),
     ClusterInfoTempl(),
     ServerStateTempl(),
@@ -126,8 +126,8 @@ TRI_v8_global_s::TRI_v8_global_s (v8::Isolate* isolate)
     _RevKey(),
     _ToKey(),
 
-    _currentRequest(nullptr),
-    _currentResponse(nullptr),
+    _currentRequest(),
+    _currentResponse(),
     _transactionContext(nullptr),
     _queryRegistry(nullptr),
     _query(nullptr),
@@ -138,7 +138,8 @@ TRI_v8_global_s::TRI_v8_global_s (v8::Isolate* isolate)
     _applicationV8(nullptr),
     _loader(nullptr),
     _canceled(false)
-*/
+
+
 {
   v8::HandleScope scope(isolate);
 
@@ -293,6 +294,10 @@ void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
                                 v8::ReadOnly);
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief adds a global function to the given context
+////////////////////////////////////////////////////////////////////////////////
 
 void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
                                    v8::Handle<v8::Context> context,

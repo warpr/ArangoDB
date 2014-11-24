@@ -807,15 +807,12 @@ static void MapDeleteIndexedShapedJson (uint32_t idx,
 /// @brief generate the TRI_shaped_json_t template
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_InitV8ShapedJson (v8::Handle<v8::Context> context,
-                           TRI_server_t* server,
-                           TRI_vocbase_t* vocbase,
-                           triagens::arango::JSLoader* loader,
+void TRI_InitV8ShapedJson (v8::Isolate *isolate, 
+                           v8::Handle<v8::Context> context,
                            size_t threadNumber,
                            TRI_v8_global_t* v8g) {
   v8::Handle<v8::ObjectTemplate> rt;
   v8::Handle<v8::FunctionTemplate> ft;
-  ISOLATE;
 
   ft = v8::FunctionTemplate::New(isolate);
   ft->SetClassName(TRI_V8_SYMBOL("ShapedJson"));
