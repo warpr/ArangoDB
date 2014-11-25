@@ -98,16 +98,15 @@ query_t;
 /// @brief return an empty result set
 ////////////////////////////////////////////////////////////////////////////////
 
-static void EmptyResult (const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
+static v8::Handle<v8::Value> EmptyResult (v8::Isolate* isolate) {
+  v8::EscapableHandleScope scope(isolate);
 
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
   result->Set(TRI_V8_SYMBOL("documents"), v8::Array::New(isolate));
   result->Set(TRI_V8_SYMBOL("total"), v8::Number::New(isolate, 0));
   result->Set(TRI_V8_SYMBOL("count"), v8::Number::New(isolate, 0));
 
-  TRI_V8_RETURN(result);
+  return scope.Escape<v8::Value>(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -234,7 +233,7 @@ static int SetupExampleObject (v8::Handle<v8::Object> const example,
 
   // convert
   for (size_t i = 0;  i < n;  ++i) {
-    v8::Handle<v8::Value> key = names->Get((uint32_t) i);
+    v8::Handle<v8::Value> key = names->Get(v8::Number::New(isolate, (uint32_t) i));
     v8::Handle<v8::Value> val = example->Get(key);
 
     // property initialise the memory
@@ -304,7 +303,7 @@ static TRI_index_operator_t* SetupConditionsSkiplist (v8::Isolate* isolate,
     // iterator over all conditions
     v8::Handle<v8::Array> values = v8::Handle<v8::Array>::Cast(fieldConditions);
     for (uint32_t j = 0; j < values->Length(); ++j) {
-      v8::Handle<v8::Value> fieldCondition = values->Get(j);
+      v8::Handle<v8::Value> fieldCondition = values->Get(v8::Number::New(isolate, j));
 
       if (! fieldCondition->IsArray()) {
         // wrong data type for single condition
@@ -318,8 +317,8 @@ static TRI_index_operator_t* SetupConditionsSkiplist (v8::Isolate* isolate,
         goto MEM_ERROR;
       }
 
-      v8::Handle<v8::Value> op = condition->Get(0);
-      v8::Handle<v8::Value> value = condition->Get(1);
+      v8::Handle<v8::Value> op = condition->Get(v8::Number::New(isolate, 0));
+      v8::Handle<v8::Value> value = condition->Get(v8::Number::New(isolate, 1));
 
       if (! op->IsString() && ! op->IsStringObject()) {
         // wrong operator type
@@ -680,7 +679,7 @@ static void ExecuteSkiplistQuery (const v8::FunctionCallbackInfo<v8::Value>& arg
 
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), col, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), col, args[0], false);
 
   if (idx == nullptr) {
     return;
@@ -710,8 +709,7 @@ static void ExecuteSkiplistQuery (const v8::FunctionCallbackInfo<v8::Value>& arg
   if (skiplistIterator == nullptr) {
     int res = TRI_errno();
     if (res == TRI_RESULT_ELEMENT_NOT_FOUND) {
-      EmptyResult(args);
-      return;
+      TRI_V8_RETURN(EmptyResult(isolate));
     }
 
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_NO_INDEX);
@@ -745,7 +743,7 @@ static void ExecuteSkiplistQuery (const v8::FunctionCallbackInfo<v8::Value>& arg
         break;
       }
       else {
-        documents->Set(count, doc);
+        documents->Set(v8::Number::New(isolate, count), doc);
 
         if (++count >= limit) {
           break;
@@ -842,8 +840,8 @@ static int StoreGeoResult (v8::Isolate* isolate,
       break;
     }
 
-    documents->Set(i, doc);
-    distances->Set(i, v8::Number::New(isolate, gtr->_distance));
+    documents->Set(v8::Number::New(isolate, i), doc);
+    distances->Set(v8::Number::New(isolate, i), v8::Number::New(isolate, gtr->_distance));
   }
 
   TRI_Free(TRI_UNKNOWN_MEM_ZONE, tmp);
@@ -937,7 +935,8 @@ static void EdgesQuery (TRI_edge_direction_e direction,
       TRI_voc_cid_t cid;
       std::unique_ptr<char[]> key;
 
-      res = TRI_ParseVertex(args, trx.resolver(), cid, key, vertices->Get(i));
+      res = TRI_ParseVertex(args, trx.resolver(), cid, key,
+                            vertices->Get(v8::Number::New(isolate, i)));
 
       if (res != TRI_ERROR_NO_ERROR) {
         // error is just ignored
@@ -955,7 +954,7 @@ static void EdgesQuery (TRI_edge_direction_e direction,
           break;
         }
         else {
-          documents->Set(count, doc);
+          documents->Set(v8::Number::New(isolate, count), doc);
           ++count;
         }
 
@@ -993,7 +992,7 @@ static void EdgesQuery (TRI_edge_direction_e direction,
         break;
       }
       else {
-        documents->Set(static_cast<uint32_t>(j), doc);
+        documents->Set(v8::Number::New(isolate, static_cast<uint32_t>(j)), doc);
       }
     }
   }
@@ -1076,7 +1075,7 @@ static void JS_AllQuery (const v8::FunctionCallbackInfo<v8::Value>& args) {
       TRI_V8_EXCEPTION_MEMORY();
     }
     else {
-      documents->Set(count++, doc);
+      documents->Set(v8::Number::New(isolate, count++), doc);
     }
   }
 
@@ -1152,7 +1151,7 @@ static void JS_NthQuery (const v8::FunctionCallbackInfo<v8::Value>& args) {
       TRI_V8_EXCEPTION_MEMORY();
     }
     else {
-      documents->Set(count++, doc);
+      documents->Set(v8::Number::New(isolate, count++), doc);
     }
   }
 
@@ -1223,7 +1222,7 @@ static void JS_Nth2Query (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   for (size_t i = 0; i < n; ++i) {
     char const* key = TRI_EXTRACT_MARKER_KEY(static_cast<TRI_df_marker_t const*>(docs[i].getDataPtr()));
-    documents->Set(count++, TRI_V8_SYMBOL(key));
+    documents->Set(v8::Number::New(isolate, count++), TRI_V8_SYMBOL(key));
   }
 
   result->Set(TRI_V8_SYMBOL("total"), v8::Number::New(isolate, total));
@@ -1324,7 +1323,7 @@ static void JS_OffsetQuery (const v8::FunctionCallbackInfo<v8::Value>& args) {
       TRI_V8_EXCEPTION_MEMORY();
     }
     else {
-      documents->Set(count++, document);
+      documents->Set(v8::Number::New(isolate, count++), document);
     }
   }
 
@@ -1454,8 +1453,7 @@ static void JS_ByExampleQuery (const v8::FunctionCallbackInfo<v8::Value>& args) 
 
   if (res == TRI_RESULT_ELEMENT_NOT_FOUND) {
     // empty result
-    EmptyResult(args);
-    return;
+    TRI_V8_RETURN(EmptyResult(isolate));
   }
 
   if (res != TRI_ERROR_NO_ERROR) {
@@ -1509,7 +1507,7 @@ static void JS_ByExampleQuery (const v8::FunctionCallbackInfo<v8::Value>& args) 
           break;
         }
         else {
-          documents->Set((uint32_t) count++, doc);
+          documents->Set(v8::Number::New(isolate, (uint32_t) count++), doc);
         }
       }
     }
@@ -1569,7 +1567,7 @@ static void ByExampleHashIndexQuery (SingleCollectionReadOnlyTransaction& trx,
   result->Set(TRI_V8_SYMBOL("documents"), documents);
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false);
 
   if (idx == nullptr) {
     return;
@@ -1590,8 +1588,7 @@ static void ByExampleHashIndexQuery (SingleCollectionReadOnlyTransaction& trx,
 
   if (res != TRI_ERROR_NO_ERROR) {
     if (res == TRI_RESULT_ELEMENT_NOT_FOUND) {
-      EmptyResult(args); //// TODO: test whether this removes the exception!
-      return;
+      TRI_V8_RETURN(EmptyResult(isolate)); //// TODO: test whether this removes the exception!
     }
     return ;
   }
@@ -1620,7 +1617,7 @@ static void ByExampleHashIndexQuery (SingleCollectionReadOnlyTransaction& trx,
           break;
         }
         else {
-          documents->Set((uint32_t) count++, doc);
+          documents->Set(v8::Number::New(isolate, (uint32_t) count++), doc);
         }
       }
     }
@@ -2006,7 +2003,7 @@ static void JS_FirstQuery (const v8::FunctionCallbackInfo<v8::Value>& args) {
         TRI_V8_EXCEPTION_MEMORY();
       }
 
-      result->Set(j++, doc);
+      result->Set(v8::Number::New(isolate, j++), doc);
     }
 
     TRI_V8_RETURN(result);
@@ -2044,7 +2041,7 @@ static void FulltextQuery (SingleCollectionReadOnlyTransaction& trx,
   }
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false);
 
   if (idx == nullptr) {
     return;
@@ -2105,7 +2102,7 @@ static void FulltextQuery (SingleCollectionReadOnlyTransaction& trx,
       break;
     }
 
-    documents->Set(i, doc);
+    documents->Set(v8::Number::New(isolate, i), doc);
   }
 
   TRI_FreeResultFulltextIndex(queryResult);
@@ -2243,7 +2240,7 @@ static void JS_LastQuery (const v8::FunctionCallbackInfo<v8::Value>& args) {
         TRI_V8_EXCEPTION_MEMORY();
       }
 
-      result->Set(j++, doc);
+      result->Set(v8::Number::New(isolate, j++), doc);
     }
 
     TRI_V8_RETURN(result);
@@ -2281,7 +2278,7 @@ static void NearQuery (SingleCollectionReadOnlyTransaction& trx,
   }
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false);
 
   if (idx == nullptr) {
     return;
@@ -2408,7 +2405,7 @@ static void WithinQuery (SingleCollectionReadOnlyTransaction& trx,
   }
 
   // extract the index
-  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], false);
 
   if (idx == nullptr) {
     return;
@@ -2486,7 +2483,7 @@ static void JS_WithinQuery (const v8::FunctionCallbackInfo<v8::Value>& args) {
   trx.finish(res);
 
   // .............................................................................
-  // outside a write transaction
+  // outside a read transaction
   // .............................................................................
 }
 

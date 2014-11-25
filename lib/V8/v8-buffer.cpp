@@ -827,7 +827,6 @@ void V8Buffer::replace (v8::Isolate* isolate,
                         size_t length,
                         free_callback_fptr callback,
                         void* hint) {
-  
   TRI_V8_CURRENT_GLOBALS_AND_SCOPE;
 
   if (_callback != 0) {

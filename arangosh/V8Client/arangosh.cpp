@@ -1645,7 +1645,7 @@ static bool RunUnitTests (v8::Isolate* isolate, v8::Handle<v8::Context> context)
   v8::Handle<v8::Array> sysTestFiles = v8::Array::New(isolate);
 
   for (size_t i = 0;  i < UnitTests.size();  ++i) {
-    sysTestFiles->Set((uint32_t) i, TRI_V8_SYMBOL_STD_STRING(UnitTests[i]));
+    sysTestFiles->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(UnitTests[i]));
   }
 
   TRI_AddGlobalVariableVocbase(isolate, context, "SYS_UNIT_TESTS", sysTestFiles);
@@ -1791,7 +1791,7 @@ static bool RunJsLint (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   v8::Handle<v8::Array> sysTestFiles = v8::Array::New(isolate);
 
   for (size_t i = 0;  i < JsLint.size();  ++i) {
-    sysTestFiles->Set((uint32_t) i, TRI_V8_SYMBOL_STD_STRING(JsLint[i]));
+    sysTestFiles->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(JsLint[i]));
   }
 
   context->Global()->Set(TRI_V8_SYMBOL("SYS_UNIT_TESTS"), sysTestFiles);
@@ -2264,7 +2264,7 @@ int main (int argc, char* args[]) {
   v8::Handle<v8::Array> p = v8::Array::New(isolate, (int) positionals.size());
 
   for (uint32_t i = 0;  i < positionals.size();  ++i) {
-    p->Set(i, TRI_V8_SYMBOL_STD_STRING(positionals[i]));
+    p->Set(v8::Number::New(isolate, i), TRI_V8_SYMBOL_STD_STRING(positionals[i]));
   }
 
   TRI_AddGlobalVariableVocbase(isolate, localContext, "ARGUMENTS", p);

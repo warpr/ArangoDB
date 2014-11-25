@@ -624,7 +624,7 @@ static int FillShapeValueArray (v8::Isolate* isolate,
   size_t v = 0;
 
   for (uint32_t i = 0;  i < n;  ++i, ++p) {
-    v8::Handle<v8::Value> key = names->Get(i);
+    v8::Handle<v8::Value> key = names->Get(v8::Number::New(isolate, i));
 
     // first find an identifier for the name
     TRI_Utf8ValueNFC keyStr(TRI_UNKNOWN_MEM_ZONE, key);
@@ -1281,7 +1281,7 @@ static v8::Handle<v8::Value> JsonShapeDataList (v8::Isolate* isolate,
 
     const TRI_shape_size_t offset = *offsets;
     v8::Handle<v8::Value> element = JsonShapeData(isolate, shaper, subshape, data + offset, offsets[1] - offset);
-    list->Set(i, element);
+    list->Set(v8::Number::New(isolate, i), element);
   }
 
   return list;
@@ -1326,7 +1326,7 @@ static v8::Handle<v8::Value> JsonShapeDataHomogeneousList (v8::Isolate* isolate,
     TRI_shape_size_t offset = *offsets;
     v8::Handle<v8::Value> element = JsonShapeData(isolate, shaper, subshape, data + offset, offsets[1] - offset);
 
-    list->Set(i, element);
+    list->Set(v8::Number::New(isolate, i), element);
   }
 
   return list;
@@ -1374,7 +1374,7 @@ static v8::Handle<v8::Value> JsonShapeDataHomogeneousSizedList (v8::Isolate* iso
 
   for (i = 0;  i < l;  ++i, offset += length) {
     v8::Handle<v8::Value> element = JsonShapeData(isolate, shaper, subshape, data + offset, length);
-    list->Set(i, element);
+    list->Set(v8::Number::New(isolate, i), element);
   }
 
   return list;
@@ -1511,7 +1511,7 @@ static v8::Handle<v8::Value> ObjectJsonList (v8::Isolate* isolate, TRI_json_t co
     TRI_json_t const* j = static_cast<TRI_json_t const*>(TRI_AtVector(&json->_value._objects, i));
     v8::Handle<v8::Value> val = TRI_ObjectJson(isolate, j);
 
-    object->Set(i, val);
+    object->Set(v8::Number::New(isolate, i), val);
   }
 
   return object;
@@ -1537,7 +1537,7 @@ static v8::Handle<v8::Value> ExtractArray (v8::Isolate* isolate,
     TRI_json_t const* value = static_cast<TRI_json_t const*>(TRI_AtVector(&json->_value._objects, i));
 
     if (value != nullptr) {
-      result->Set(count++, TRI_ObjectJson(isolate, value));
+      result->Set(v8::Number::New(isolate, count++), TRI_ObjectJson(isolate, value));
     }
   }
 
@@ -1566,7 +1566,7 @@ v8::Handle<v8::Array> TRI_ArrayAssociativePointer (v8::Isolate* isolate,
       continue;
     }
 
-    result->Set(j++, v8::String::NewFromUtf8(isolate, value));/// TODO: strlen...
+    result->Set(v8::Number::New(isolate, j++), v8::String::NewFromUtf8(isolate, value));/// TODO: strlen...
   }
 
   return result;
@@ -1722,7 +1722,8 @@ int TRI_FillShapedJsonV8Object (v8::Isolate* isolate,
 /// @brief convert a V8 value to a json_t value,
 ////////////////////////////////////////////////////////////////////////////////
 
-static bool ShapedJsonToJson (TRI_json_t* dst,
+static bool ShapedJsonToJson (v8::Isolate *isolate,
+                              TRI_json_t* dst,
                               triagens::utils::V8StringConverter& converter,
                               v8::Handle<v8::Value> const parameter) {
   if (parameter->IsBoolean()) {
@@ -1781,7 +1782,10 @@ static bool ShapedJsonToJson (TRI_json_t* dst,
     
       TRI_json_t listElement;
       for (uint32_t j = 0; j < n; ++j) {
-        if (! ShapedJsonToJson(&listElement, converter, arrayParameter->Get(j))) {
+        if (! ShapedJsonToJson(isolate,
+                               &listElement,
+                               converter,
+                               arrayParameter->Get(v8::Number::New(isolate, j)))) {
           return false;
         }
         TRI_PushBack2ListJson(dst, &listElement);
@@ -1806,8 +1810,11 @@ static bool ShapedJsonToJson (TRI_json_t* dst,
       TRI_json_t valueElement;
 
       for (uint32_t j = 0; j < n; ++j) {
-        v8::Handle<v8::Value> key = names->Get(j);
-        if (! ShapedJsonToJson(&valueElement, converter, arrayParameter->Get(key))) {
+        v8::Handle<v8::Value> key = names->Get(v8::Number::New(isolate, j));
+        if (! ShapedJsonToJson(isolate,
+                               &valueElement,
+                               converter,
+                               arrayParameter->Get(key))) {
           return false;
         }
 
@@ -1884,7 +1891,10 @@ static TRI_json_t* ObjectToJson (v8::Isolate* isolate,
 
     if (listJson != nullptr) {
       for (uint32_t j = 0; j < n; ++j) {
-        TRI_json_t* result = ObjectToJson(isolate, arrayParameter->Get(j), seenHashes, seenObjects);
+        TRI_json_t* result = ObjectToJson(isolate,
+                                          arrayParameter->Get(v8::Number::New(isolate, j)),
+                                          seenHashes,
+                                          seenObjects);
 
         if (result != nullptr) {
           TRI_PushBack3ListJson(TRI_UNKNOWN_MEM_ZONE, listJson, result);
@@ -1959,8 +1969,11 @@ static TRI_json_t* ObjectToJson (v8::Isolate* isolate,
 
     if (arrayJson != nullptr && n > 0) {
       for (uint32_t j = 0; j < n; ++j) {
-        v8::Handle<v8::Value> key  = names->Get(j);
-        TRI_json_t* result = ObjectToJson(isolate, arrayParameter->Get(key), seenHashes, seenObjects);
+        v8::Handle<v8::Value> key  = names->Get(v8::Number::New(isolate, j));
+        TRI_json_t* result = ObjectToJson(isolate,
+                                          arrayParameter->Get(key),
+                                          seenHashes,
+                                          seenObjects);
 
         if (result != nullptr) {
           TRI_Utf8ValueNFC str(TRI_UNKNOWN_MEM_ZONE, key);
@@ -2004,7 +2017,7 @@ TRI_json_t* TRI_ObjectToJson (v8::Isolate* isolate,
 /// use for ShapedJson v8 objects only or for lists of ShapedJson v8 objects!
 ////////////////////////////////////////////////////////////////////////////////
 
-TRI_json_t* TRI_ShapedJsonToJson (v8::Handle<v8::Value> const parameter) {
+TRI_json_t* TRI_ShapedJsonToJson (v8::Isolate *isolate, v8::Handle<v8::Value> const parameter) {
   triagens::utils::V8StringConverter converter(TRI_UNKNOWN_MEM_ZONE);
 
   TRI_json_t* result = TRI_CreateNullJson(TRI_UNKNOWN_MEM_ZONE);
@@ -2014,7 +2027,7 @@ TRI_json_t* TRI_ShapedJsonToJson (v8::Handle<v8::Value> const parameter) {
     return nullptr;
   }
 
-  if (! ShapedJsonToJson(result, converter, parameter)) {
+  if (! ShapedJsonToJson(isolate, result, converter, parameter)) {
     // something went wrong during JSON buildup
     TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, result);
     return nullptr;

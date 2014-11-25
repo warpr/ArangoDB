@@ -288,16 +288,15 @@ static bool LoadJavaScriptDirectory (v8::Isolate* isolate,
 
 static v8::Handle<v8::Array> DistributionList (v8::Isolate* isolate,
                                                StatisticsVector const& dist) {
-  v8::HandleScope scope(isolate);
+  v8::EscapableHandleScope scope(isolate);
 
   v8::Handle<v8::Array> result = v8::Array::New(isolate);
 
   for (uint32_t i = 0;  i < (uint32_t) dist._value.size();  ++i) {
-    result->Set(i, v8::Number::New(isolate, dist._value[i]));
+    result->Set(v8::Number::New(isolate, i), v8::Number::New(isolate, dist._value[i]));
   }
 
-  ///  return scope.Close(result); TODO
-  return result;
+  return scope.Escape<v8::Array>(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -317,7 +316,7 @@ static void FillDistribution (v8::Isolate* isolate,
   uint32_t pos = 0;
 
   for (vector<uint64_t>::const_iterator i = dist._counts.begin();  i != dist._counts.end();  ++i, ++pos) {
-    counts->Set(pos, v8::Number::New(isolate, (double) *i));
+    counts->Set(v8::Number::New(isolate, pos), v8::Number::New(isolate, (double) *i));
   }
 
   result->Set(TRI_V8_SYMBOL("counts"), counts);
@@ -1280,7 +1279,7 @@ static void JS_List (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   for (size_t i = 0;  i < list._length;  ++i) {
     const char* f = list._buffer[i];
-    result->Set(j++, TRI_V8_SYMBOL(f));
+    result->Set(v8::Number::New(isolate, j++), TRI_V8_SYMBOL(f));
   }
 
   TRI_DestroyVectorString(&list);
@@ -1325,7 +1324,7 @@ static void JS_ListTree (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   for (size_t i = 0;  i < list._length;  ++i) {
     const char* f = list._buffer[i];
-    result->Set(j++, TRI_V8_SYMBOL(f));
+    result->Set(v8::Number::New(isolate,j++), TRI_V8_SYMBOL(f));
   }
 
   TRI_DestroyVectorString(&list);
@@ -1459,7 +1458,7 @@ static void JS_ZipFile (const v8::FunctionCallbackInfo<v8::Value>& args) {
   TRI_InitVectorString(&filenames, TRI_UNKNOWN_MEM_ZONE);
 
   for (uint32_t i = 0 ; i < files->Length(); ++i) {
-    v8::Handle<v8::Value> file = files->Get(i);
+    v8::Handle<v8::Value> file = files->Get(v8::Number::New(isolate, i));
     if (file->IsString()) {
       string fname = TRI_ObjectToString(file);
       TRI_PushBackVectorString(&filenames, TRI_DuplicateStringZ(TRI_UNKNOWN_MEM_ZONE, fname.c_str()));
@@ -1525,13 +1524,15 @@ static void JS_Load (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   v8::Handle<v8::Value> filename = args[0];
 
-  TRI_ExecuteJavaScriptString(isolate,
-                              isolate->GetCurrentContext(),
-                              TRI_V8_SYMBOL_PAIR(content, length),
-                              filename->ToString(),
-                              false);
+  v8::Handle<v8::Value> result =
+    TRI_ExecuteJavaScriptString(isolate,
+                                isolate->GetCurrentContext(),
+                                TRI_V8_SYMBOL_PAIR(content, length),
+                                filename->ToString(),
+                                false);
 
   TRI_FreeString(TRI_UNKNOWN_MEM_ZONE, content);
+  TRI_V8_RETURN(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3094,7 +3095,7 @@ static void JS_ExecuteExternal (const v8::FunctionCallbackInfo<v8::Value>& args)
       arguments = (char**) TRI_Allocate(TRI_CORE_MEM_ZONE, n * sizeof(char*), false);
 
       for (uint32_t i = 0;  i < n;  ++i) {
-        TRI_Utf8ValueNFC arg(TRI_UNKNOWN_MEM_ZONE, arr->Get(i));
+        TRI_Utf8ValueNFC arg(TRI_UNKNOWN_MEM_ZONE, arr->Get(v8::Number::New(isolate, i)));
 
         if (*arg == nullptr) {
           arguments[i] = TRI_DuplicateString("");
@@ -3269,7 +3270,7 @@ static void JS_ExecuteAndWaitExternal (const v8::FunctionCallbackInfo<v8::Value>
       arguments = (char**) TRI_Allocate(TRI_CORE_MEM_ZONE, n * sizeof(char*), false);
 
       for (uint32_t i = 0;  i < n;  ++i) {
-        TRI_Utf8ValueNFC arg(TRI_UNKNOWN_MEM_ZONE, arr->Get(i));
+        TRI_Utf8ValueNFC arg(TRI_UNKNOWN_MEM_ZONE, arr->Get(v8::Number::New(isolate, i)));
 
         if (*arg == nullptr) {
           arguments[i] = TRI_DuplicateString("");
@@ -3783,21 +3784,21 @@ v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Isolate* isolate,
                                                    v8::Handle<v8::String> const source,
                                                    v8::Handle<v8::String> const name,
                                                    bool printResult) {
-  /// todo ... v8::HandleScope scope(isolate);
+  v8::EscapableHandleScope scope(isolate);
 
   v8::Handle<v8::Value> result;
   v8::Handle<v8::Script> script = v8::Script::Compile(source, name);
 
   // compilation failed, print errors that happened during compilation
   if (script.IsEmpty()) {
-    return result;
+    return scope.Escape<v8::Value>(result);
   }
 
   // compilation succeeded, run the script
   result = script->Run();
 
   if (result.IsEmpty()) {
-    return result;
+    return scope.Escape<v8::Value>(result);
   }
   else {
     // if all went well and the result wasn't undefined then print the returned value
@@ -3820,7 +3821,7 @@ v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Isolate* isolate,
       }
     }
 
-    return result;
+    return scope.Escape<v8::Value>(result);
   }
 }
 
@@ -3906,7 +3907,7 @@ void TRI_CreateErrorObject (v8::Isolate *isolate,
 /// @brief creates the path list
 ////////////////////////////////////////////////////////////////////////////////
 
-v8::Handle<v8::Array> TRI_V8PathList (v8::Isolate* isolate, string const& modules) {
+v8::Handle<v8::Array> static TRI_V8PathList (v8::Isolate* isolate, string const& modules) {
   v8::EscapableHandleScope scope(isolate);
 
 #ifdef _WIN32

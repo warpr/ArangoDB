@@ -363,7 +363,7 @@ void Executor::HandleV8Error (v8::TryCatch& tryCatch,
         
       if (objValue->HasOwnProperty(errorNum) && 
           objValue->HasOwnProperty(errorMessage)) {
-        v8::Handle<v8::Value> errorNumValue = objValue->Get(errorNum);
+        v8::Handle<v8::Value> errorNumValue = objValue->Get(errorNum); //// TODO: do we ned v8::number here?
         v8::Handle<v8::Value> errorMessageValue = objValue->Get(errorMessage);
 
         // found something that looks like an ArangoError

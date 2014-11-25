@@ -216,16 +216,6 @@ void TRI_normalize_V8_Obj (const v8::FunctionCallbackInfo<v8::Value>& args,
                            v8::Handle<v8::Value> obj);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief creates the path list
-//
-/// The spilt has been modified -- only except semicolon, previously we excepted
-/// a colon as well. So as not to break existing configurations, we only make
-/// the modification for windows version -- since there isn't one yet!
-////////////////////////////////////////////////////////////////////////////////
-
-v8::Handle<v8::Array> TRI_V8PathList (v8::Isolate* isolate, std::string const&);
-
-////////////////////////////////////////////////////////////////////////////////
 /// @brief stores the V8 utils function inside the global variable
 ////////////////////////////////////////////////////////////////////////////////
 

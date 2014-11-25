@@ -62,8 +62,8 @@ JSLoader::JSLoader () {
 v8::Handle<v8::Value> JSLoader::executeGlobalScript (v8::Isolate* isolate,
                                                      v8::Handle<v8::Context> context,
                                                      string const& name) {
+  v8::EscapableHandleScope scope(isolate);
   v8::Handle<v8::Value> result;
-  v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
 
   findScript(name);
@@ -93,7 +93,7 @@ v8::Handle<v8::Value> JSLoader::executeGlobalScript (v8::Isolate* isolate,
       v8g->_canceled = true;
     }
   }
-  return result;
+  return scope.Escape<v8::Value>(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

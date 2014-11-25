@@ -114,6 +114,7 @@ static v8::Handle<v8::Object> WrapClass (v8::Isolate *isolate,
                                          v8::Persistent<v8::ObjectTemplate>& classTempl,
                                          int32_t type,
                                          T* y) {
+  v8::EscapableHandleScope scope(isolate);
 
   auto localClassTemplate = v8::Local<v8::ObjectTemplate>::New(isolate, classTempl);
   // create the new handle to return, and set its template type
@@ -121,14 +122,14 @@ static v8::Handle<v8::Object> WrapClass (v8::Isolate *isolate,
 
   if (result.IsEmpty()) {
     // error
-    return result;
+    return scope.Escape<v8::Object>(result);
   }
 
   // set the c++ pointer for unwrapping later
   result->SetInternalField(SLOT_CLASS_TYPE, v8::Integer::New(isolate, type));
   result->SetInternalField(SLOT_CLASS, v8::External::New(isolate, y));
 
-  return result;
+  return scope.Escape<v8::Object>(result);
 }
 
 
@@ -215,7 +216,7 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
       v8::Handle<v8::Array> names = v8::Handle<v8::Array>::Cast(collections->Get(TRI_V8_SYMBOL("read")));
 
       for (uint32_t i = 0 ; i < names->Length(); ++i) {
-        v8::Handle<v8::Value> collection = names->Get(i);
+        v8::Handle<v8::Value> collection = names->Get(v8::Number::New(isolate,i));
         if (! collection->IsString()) {
           isValid = false;
           break;
@@ -238,7 +239,7 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
       v8::Handle<v8::Array> names = v8::Handle<v8::Array>::Cast(collections->Get(TRI_V8_SYMBOL("write")));
 
       for (uint32_t i = 0 ; i < names->Length(); ++i) {
-        v8::Handle<v8::Value> collection = names->Get(i);
+        v8::Handle<v8::Value> collection = names->Get(v8::Number::New(isolate,i));
         if (! collection->IsString()) {
           isValid = false;
           break;
@@ -307,7 +308,6 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (action.IsEmpty()) {
     TRI_V8_EXCEPTION_PARAMETER(actionError);
   }
-
 
   // start actual transaction
   ExplicitTransaction trx(vocbase,
@@ -603,7 +603,7 @@ static void JS_getIcuTimezones (const v8::FunctionCallbackInfo<v8::Value>& args)
     for (int32_t i = 0; i < idsCount && U_ZERO_ERROR == status; ++i) {
       int32_t resultLength;
       const char* str = timeZones->next(&resultLength, status);
-      result->Set(i, TRI_V8_SYMBOL_PAIR(str, resultLength));
+      result->Set(v8::Number::New(isolate, i), TRI_V8_SYMBOL_PAIR(str, resultLength));
     }
 
     delete timeZones;
@@ -634,7 +634,7 @@ static void JS_getIcuLocales (const v8::FunctionCallbackInfo<v8::Value>& args) {
       const Locale* l = locales + i;
       const char* str = l->getBaseName();
 
-      result->Set(i, TRI_V8_SYMBOL(str));
+      result->Set(v8::Number::New(isolate, i), TRI_V8_SYMBOL(str));
     }
   }
 
@@ -865,7 +865,7 @@ static void JS_ParseAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
     result->Set(TRI_V8_STRING("collections"), collections);
     uint32_t i = 0;
     for (auto it = parseResult.collectionNames.begin(); it != parseResult.collectionNames.end(); ++it) {
-      collections->Set(i++, TRI_V8_SYMBOL_STD_STRING((*it)));
+      collections->Set(v8::Number::New(isolate, i++), TRI_V8_SYMBOL_STD_STRING((*it)));
     }
   }
 
@@ -873,7 +873,7 @@ static void JS_ParseAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
     v8::Handle<v8::Array> bindVars = v8::Array::New(isolate);
     uint32_t i = 0;
     for (auto it = parseResult.bindParameters.begin(); it != parseResult.bindParameters.end(); ++it) {
-      bindVars->Set(i++, TRI_V8_SYMBOL_STD_STRING((*it)));
+      bindVars->Set(v8::Number::New(isolate, i++), TRI_V8_SYMBOL_STD_STRING((*it)));
     }
     result->Set(TRI_V8_STRING("parameters"), bindVars); 
   }
@@ -1047,11 +1047,11 @@ static void JS_ExecuteAqlJson (const v8::FunctionCallbackInfo<v8::Value>& args) 
       TRI_V8_TYPE_ERROR("expecting object for <options>");
     }
 
-    v8::Handle<v8::Object> argsalue = v8::Handle<v8::Object>::Cast(args[1]);
+    v8::Handle<v8::Object> argValue = v8::Handle<v8::Object>::Cast(args[1]);
       
     v8::Handle<v8::String> optionName = TRI_V8_SYMBOL("batchSize");
-    if (argsalue->Has(optionName)) {
-      batchSize = static_cast<decltype(batchSize)>(TRI_ObjectToInt64(argsalue->Get(optionName)));
+    if (argValue->Has(optionName)) {
+      batchSize = static_cast<decltype(batchSize)>(TRI_ObjectToInt64(argValue->Get(optionName)));
       if (batchSize == 0) {
         TRI_V8_TYPE_ERROR("expecting non-zero value for <batchSize>");
         // well, this makes no sense
@@ -1059,13 +1059,13 @@ static void JS_ExecuteAqlJson (const v8::FunctionCallbackInfo<v8::Value>& args) 
     }
       
     optionName = TRI_V8_SYMBOL("count");
-    if (argsalue->Has(optionName)) {
-      doCount = TRI_ObjectToBoolean(argsalue->Get(optionName));
+    if (argValue->Has(optionName)) {
+      doCount = TRI_ObjectToBoolean(argValue->Get(optionName));
     }
       
     optionName = TRI_V8_SYMBOL("ttl");
-    if (argsalue->Has(optionName)) {
-      ttl = TRI_ObjectToBoolean(argsalue->Get(optionName));
+    if (argValue->Has(optionName)) {
+      ttl = TRI_ObjectToBoolean(argValue->Get(optionName));
       ttl = (ttl <= 0.0 ? 30.0 : ttl);
     }
       
@@ -1692,7 +1692,7 @@ static void ListDatabasesCoordinator (const v8::FunctionCallbackInfo<v8::Value>&
     vector<DatabaseID> list = ci->listDatabases(true);
     v8::Handle<v8::Array> result = v8::Array::New(isolate);
     for (size_t i = 0;  i < list.size();  ++i) {
-      result->Set((uint32_t) i, TRI_V8_SYMBOL_STD_STRING(list[i]));
+      result->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(list[i]));
     }
     TRI_V8_RETURN(result);
   }
@@ -1728,7 +1728,7 @@ static void ListDatabasesCoordinator (const v8::FunctionCallbackInfo<v8::Value>&
               TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, json);
               v8::Handle<v8::Array> result = v8::Array::New(isolate);
               for (size_t i = 0;  i < list.size();  ++i) {
-                result->Set((uint32_t) i, TRI_V8_SYMBOL_STD_STRING(list[i]));
+                result->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(list[i]));
               }
               TRI_V8_RETURN(result);
             }
@@ -1807,7 +1807,7 @@ static void JS_ListDatabases (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   v8::Handle<v8::Array> result = v8::Array::New(isolate);
   for (size_t i = 0;  i < names._length;  ++i) {
-    result->Set((uint32_t) i, TRI_V8_SYMBOL((char const*) TRI_AtVectorString(&names, i)));
+    result->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL((char const*) TRI_AtVectorString(&names, i)));
   }
 
   TRI_DestroyVectorString(&names);
@@ -2243,7 +2243,7 @@ static void JS_ConfigureEndpoint (const v8::FunctionCallbackInfo<v8::Value>& arg
 
     const uint32_t n = list->Length();
     for (uint32_t i = 0; i < n; ++i) {
-      v8::Handle<v8::Value> name = list->Get(i);
+      v8::Handle<v8::Value> name = list->Get(v8::Number::New(isolate, i));
 
       if (name->IsString()) {
         const string dbName = TRI_ObjectToString(name);
@@ -2354,7 +2354,7 @@ static void JS_ListEndpoints (const v8::FunctionCallbackInfo<v8::Value>& args) {
     v8::Handle<v8::Array> dbNames = v8::Array::New(isolate);
 
     for (uint32_t i = 0; i < (*it).second.size(); ++i) {
-      dbNames->Set(i, TRI_V8_SYMBOL_STD_STRING((*it).second.at(i)));
+      dbNames->Set(v8::Number::New(isolate, i), TRI_V8_SYMBOL_STD_STRING((*it).second.at(i)));
     }
 
     v8::Handle<v8::Object> item = v8::Object::New(isolate);

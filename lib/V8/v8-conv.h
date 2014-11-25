@@ -127,7 +127,7 @@ TRI_json_t* TRI_ObjectToJson (v8::Isolate* isolate,
 /// use for ShapedJson v8 objects only or for lists of ShapedJson v8 objects!
 ////////////////////////////////////////////////////////////////////////////////
 
-TRI_json_t* TRI_ShapedJsonToJson (v8::Handle<v8::Value> const);
+TRI_json_t* TRI_ShapedJsonToJson (v8::Isolate *isolate, v8::Handle<v8::Value> const);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief converts an V8 object to a string

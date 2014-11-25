@@ -140,7 +140,7 @@ int ProcessIndexFields (v8::Isolate* isolate,
     uint32_t const n = fieldList->Length();
 
     for (uint32_t i = 0; i < n; ++i) {
-      if (! fieldList->Get(i)->IsString()) {
+      if (! fieldList->Get(v8::Number::New(isolate, i))->IsString()) {
         return TRI_ERROR_BAD_PARAMETER;
       }
 
@@ -935,7 +935,7 @@ static void CreateCollectionCoordinator (const v8::FunctionCallbackInfo<v8::Valu
         v8::Handle<v8::Array> k = v8::Handle<v8::Array>::Cast(p->Get(TRI_V8_SYMBOL("shardKeys")));
 
         for (uint32_t i = 0 ; i < k->Length(); ++i) {
-          v8::Handle<v8::Value> v = k->Get(i);
+          v8::Handle<v8::Value> v = k->Get(v8::Number::New(isolate, i));
           if (v->IsString()) {
             string const key = TRI_ObjectToString(v);
 
@@ -1288,7 +1288,7 @@ static void JS_DropIndexVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& a
 
   TRI_document_collection_t* document = trx.documentCollection();
 
-  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], true, args);
+  TRI_index_t* idx = TRI_LookupIndexByHandle(isolate, trx.resolver(), collection, args[0], true);
 
   if (idx == nullptr) {
     return;
@@ -1351,7 +1351,7 @@ static void GetIndexesCoordinator (const v8::FunctionCallbackInfo<v8::Value>& ar
       TRI_json_t const* v = TRI_LookupListJson(json, i);
 
       if (v != nullptr) {
-        ret->Set(j++, IndexRep(isolate, collectionName, v));
+        ret->Set(v8::Number::New(isolate, j++), IndexRep(isolate, collectionName, v));
       }
     }
   }
@@ -1447,7 +1447,7 @@ static void JS_GetIndexesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
     TRI_json_t* idx = static_cast<TRI_json_t*>(indexes->_buffer[i]);
 
     if (idx != nullptr) {
-      result->Set(j++, IndexRep(isolate, collectionName, idx));
+      result->Set(v8::Number::New(isolate, j++), IndexRep(isolate, collectionName, idx));
       TRI_FreeJson(TRI_CORE_MEM_ZONE, idx);
     }
   }
@@ -1463,11 +1463,10 @@ static void JS_GetIndexesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
 ////////////////////////////////////////////////////////////////////////////////
 
 TRI_index_t* TRI_LookupIndexByHandle (v8::Isolate* isolate,
-                                      CollectionNameResolver const* resolver,
+                                      triagens::arango::CollectionNameResolver const* resolver,
                                       TRI_vocbase_col_t const* collection,
                                       v8::Handle<v8::Value> const val,
-                                      bool ignoreNotFound,
-                                      const v8::FunctionCallbackInfo<v8::Value>& args) {
+                                      bool ignoreNotFound) {
   // reset the collection identifier
   string collectionName;
   TRI_idx_iid_t iid = 0;

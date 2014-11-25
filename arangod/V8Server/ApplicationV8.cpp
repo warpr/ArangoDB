@@ -431,7 +431,10 @@ void ApplicationV8::exitContext (V8Context* context) {
 
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
   v8::Context::Scope contextScope(localContext);
-
+/*
+   // HasOutOfMemoryException must be called while there is still an isolate!
+  bool const hasOutOfMemoryException = context->_context->HasOutOfMemoryException();
+*/
   // check for cancelation requests
   bool const canceled = v8g->_canceled;
   v8g->_canceled = false;
@@ -700,8 +703,10 @@ void ApplicationV8::upgradeDatabase (bool skip,
 
   context->_locker = new v8::Locker(context->_isolate);
   auto isolate = context->_isolate;
+  v8::HandleScope scope(isolate);
+
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
-  v8::Context::Scope contextScope(localContext);
+  //// TODO do we need this? v8::Context::Scope contextScope(localContext);
   isolate->Enter();
   localContext->Enter();
 
@@ -1277,17 +1282,15 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
   persistentContext.Reset(isolate, v8::Context::New(isolate, 0, global));
   auto localContext = v8::Local<v8::Context>::New(isolate, persistentContext);
 
-
-  v8::Context::Scope contextScope(localContext);
+  isolate->Enter();
+  localContext->Enter();
+  /// TODO  v8::Context::Scope contextScope(localContext);
 
   context->_context.Reset(context->_isolate, localContext);
 
   if (context->_context.IsEmpty()) {
     LOG_FATAL_AND_EXIT("cannot initialize V8 engine");
   }
-
-  isolate->Enter();
-  localContext->Enter();
 
   TRI_InitV8VocBridge(isolate, this, localContext, _queryRegistry, _server, _vocbase, &_startupLoader, i);
   TRI_InitV8Queries(isolate, localContext);
@@ -1373,8 +1376,9 @@ void ApplicationV8::prepareV8Server (const string& name, const size_t i, const s
 
   context->_locker = new v8::Locker(context->_isolate);
   auto isolate = context->_isolate;
+  v8::HandleScope scope(isolate);
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
-  v8::Context::Scope contextScope(localContext);
+  /// TODO: do we need this? v8::Context::Scope contextScope(localContext);
   isolate->Enter();
   localContext->Enter();
 

@@ -42,11 +42,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 TRI_index_t* TRI_LookupIndexByHandle (v8::Isolate* isolate,
-                                      triagens::arango::CollectionNameResolver const*,
-                                      TRI_vocbase_col_t const*,
-                                      v8::Handle<v8::Value>,
-                                      bool,
-                                      const v8::FunctionCallbackInfo<v8::Value>& args);
+                                      triagens::arango::CollectionNameResolver const* resolver,
+                                      TRI_vocbase_col_t const* collection,
+                                      v8::Handle<v8::Value> const val,
+                                      bool ignoreNotFound);
 
 void TRI_InitV8indexArangoDB (v8::Isolate* isolate,
                               v8::Handle<v8::ObjectTemplate>  ArangoDBNS);

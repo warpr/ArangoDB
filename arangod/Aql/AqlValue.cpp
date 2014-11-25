@@ -434,7 +434,7 @@ v8::Handle<v8::Value> AqlValue::toV8 (v8::Isolate* isolate,
         size_t const n = current->size();
         auto vecCollection = current->getDocumentCollection(0);
         for (size_t i = 0; i < n; ++i) {
-          result->Set(j++, current->getValue(i, 0).toV8(isolate, trx, vecCollection));
+          result->Set(v8::Number::New(isolate, j++), current->getValue(i, 0).toV8(isolate, trx, vecCollection));
         }
       }
       return result;
@@ -449,7 +449,7 @@ v8::Handle<v8::Value> AqlValue::toV8 (v8::Isolate* isolate,
       
       for (uint32_t i = 0; i < n; ++i) {
         // is it safe to use a double here (precision loss)?
-        result->Set(i, v8::Number::New(isolate, static_cast<double>(_range->at(static_cast<size_t>(i)))));
+        result->Set(v8::Number::New(isolate, i), v8::Number::New(isolate, static_cast<double>(_range->at(static_cast<size_t>(i)))));
       }
 
       return result;

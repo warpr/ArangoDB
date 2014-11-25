@@ -399,7 +399,7 @@ static void JS_ToArrayGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& 
         if (row == nullptr) {
           break;
         }
-        rows->Set(i, TRI_ObjectJson(isolate, (TRI_json_t*) row));
+        rows->Set(v8::Number::New(isolate, i), TRI_ObjectJson(isolate, (TRI_json_t*) row));
       }
 
       result = true;

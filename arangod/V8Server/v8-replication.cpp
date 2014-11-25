@@ -187,7 +187,7 @@ static void JS_SynchroniseReplication (const v8::FunctionCallbackInfo<v8::Value>
     const uint32_t n = a->Length();
 
     for (uint32_t i = 0; i < n; ++i) {
-      v8::Handle<v8::Value> cname = a->Get(i);
+      v8::Handle<v8::Value> cname = a->Get(v8::Number::New(isolate, i));
 
       if (cname->IsString()) {
         restrictCollections.insert(pair<string, bool>(TRI_ObjectToString(cname), true));
@@ -252,7 +252,7 @@ static void JS_SynchroniseReplication (const v8::FunctionCallbackInfo<v8::Value>
       ci->Set(TRI_V8_SYMBOL("id"),   TRI_V8_SYMBOL_STD_STRING(cidString));
       ci->Set(TRI_V8_SYMBOL("name"), TRI_V8_SYMBOL_STD_STRING((*it).second));
 
-      collections->Set(j++, ci);
+      collections->Set(v8::Number::New(isolate, j++), ci);
     }
 
     result->Set(TRI_V8_SYMBOL("collections"), collections);

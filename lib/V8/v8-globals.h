@@ -292,7 +292,7 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 #define TRI_V8_CANCEL_FUNCTION_ISOLATE()                   \
   TRI_GET_GLOBALS();                                       \
   v8g->_canceled = true;                                   \
-  return v8::Undefined(isolate);
+  scope.Escape<v8::Value>(v8::Undefined(isolate));
 
 #define TRI_V8_CANCEL_FUNCTION()                           \
   TRI_GET_GLOBALS();                                       \

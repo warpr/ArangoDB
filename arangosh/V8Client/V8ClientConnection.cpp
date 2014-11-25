@@ -434,6 +434,7 @@ v8::Handle<v8::Value> V8ClientConnection::requestData (v8::Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////////////
 
 v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
+  v8::EscapableHandleScope scope(isolate);
   if (! _httpResult->isComplete()) {
     // not complete
     _lastErrorMessage = _client->getErrorMessage();
@@ -471,7 +472,7 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
     result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, errorNumber));
     result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(_lastErrorMessage));
 
-    return result;
+    return scope.Escape<v8::Value>(result);
   }
   else {
     // complete
@@ -481,13 +482,14 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
     StringBuffer& sb = _httpResult->getBody();
 
     if (sb.length() > 0) {
+      isolate->GetCurrentContext()->Global();
 
       if (_httpResult->isJson()) {
-        return TRI_FromJsonString(isolate, sb.c_str(), nullptr);
+        return scope.Escape<v8::Value>(TRI_FromJsonString(isolate, sb.c_str(), nullptr));
       }
 
       // return body as string
-      return TRI_V8_SYMBOL_STD_STRING(sb);
+      return scope.Escape<v8::Value>(TRI_V8_SYMBOL_STD_STRING(sb));
     }
     else {
       // no body
@@ -506,8 +508,7 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
       else {
         result->Set(TRI_V8_SYMBOL("error"),        v8::Boolean::New(isolate, false));
       }
-
-      return result;
+      return scope.Escape<v8::Value>(result);
     }
   }
 }
@@ -521,6 +522,8 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (v8::Isolate* isolate,
                                                           string const& location,
                                                           string const& body,
                                                           map<string, string> const& headerFields) {
+  v8::EscapableHandleScope scope(isolate);
+
   _lastErrorMessage = "";
   _lastHttpReturnCode = 0;
 
@@ -571,7 +574,7 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (v8::Isolate* isolate,
     result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, errorNumber));
     result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(_lastErrorMessage));
 
-    return result;
+    return scope.Escape<v8::Value>(result);
   }
   else {
     // complete
@@ -615,7 +618,7 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (v8::Isolate* isolate,
     result->Set(TRI_V8_SYMBOL("headers"), headers);
 
     // and returns
-    return result;
+    return scope.Escape<v8::Value>(result);
   }
 }
 

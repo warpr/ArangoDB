@@ -148,6 +148,7 @@ class KeySpace {
     }
 
     v8::Handle<v8::Value> keyspaceRemove (v8::Isolate* isolate) {
+      v8::EscapableHandleScope scope(isolate);
 
       WRITE_LOCKER(_lock);
 
@@ -165,11 +166,12 @@ class KeySpace {
       }
       _hash._nrUsed = 0;
 
-      return v8::Number::New(isolate, static_cast<int>(deleted)); 
+      return scope.Escape<v8::Value>(v8::Number::New(isolate, static_cast<int>(deleted)));
     }
 
     v8::Handle<v8::Value> keyspaceRemove (v8::Isolate* isolate,
                                           std::string const& prefix) {
+      v8::EscapableHandleScope scope(isolate);
       WRITE_LOCKER(_lock);
 
       uint32_t const n = _hash._nrAlloc;
@@ -191,10 +193,11 @@ class KeySpace {
         ++i;
       }
 
-      return v8::Number::New(isolate, static_cast<int>(deleted)); 
+      return scope.Escape<v8::Value>(v8::Number::New(isolate, static_cast<int>(deleted)));
     }
 
     v8::Handle<v8::Value> keyspaceKeys (v8::Isolate* isolate) {
+      v8::EscapableHandleScope scope(isolate);
       v8::Handle<v8::Array> result;
       {
         READ_LOCKER(_lock);
@@ -207,15 +210,16 @@ class KeySpace {
           auto element = static_cast<KeySpaceElement*>(_hash._table[i]);
 
           if (element != nullptr) {
-            result->Set(count++, TRI_V8_SYMBOL(element->key));
+            result->Set(v8::Number::New(isolate, count++), TRI_V8_SYMBOL(element->key));
           }
         }
       }
 
-      return result; 
+      return scope.Escape<v8::Value>(result);
     }
 
    v8::Handle<v8::Value> keyspaceKeys (v8::Isolate* isolate, std::string const& prefix) {
+     v8::EscapableHandleScope scope(isolate);
       v8::Handle<v8::Array> result;
       {
         READ_LOCKER(_lock);
@@ -229,16 +233,17 @@ class KeySpace {
 
           if (element != nullptr) {
             if (TRI_IsPrefixString(element->key, prefix.c_str())) {
-              result->Set(count++, TRI_V8_SYMBOL(element->key));
+              result->Set(v8::Number::New(isolate, count++), TRI_V8_SYMBOL(element->key));
             }
           }
         }
       }
 
-      return result; 
+      return scope.Escape<v8::Value>(result);
     }
 
     v8::Handle<v8::Value> keyspaceGet (v8::Isolate* isolate) {
+      v8::EscapableHandleScope scope(isolate);
       v8::Handle<v8::Object> result = v8::Object::New(isolate);
       {
         READ_LOCKER(_lock);
@@ -254,10 +259,11 @@ class KeySpace {
         }
       }
 
-      return result; 
+      return scope.Escape<v8::Value>(result);
     }
 
     v8::Handle<v8::Value> keyspaceGet (v8::Isolate* isolate, std::string const& prefix) {
+      v8::EscapableHandleScope scope(isolate);
       v8::Handle<v8::Object> result = v8::Object::New(isolate);
       {
         READ_LOCKER(_lock);
@@ -275,7 +281,7 @@ class KeySpace {
         }
       }
 
-      return result; 
+      return scope.Escape<v8::Value>(result);
     }
 
     bool keyCount (std::string const& key, 
@@ -608,6 +614,7 @@ class KeySpace {
 
     v8::Handle<v8::Value> keyValues (v8::Isolate* isolate,
                                      std::string const& key) {
+      v8::EscapableHandleScope scope(isolate);
       v8::Handle<v8::Value> result;
       {
         READ_LOCKER(_lock);
@@ -622,7 +629,7 @@ class KeySpace {
         }
       }
 
-      return result;
+      return scope.Escape<v8::Value>(result);
     }
 
     void keyGetAt (const v8::FunctionCallbackInfo<v8::Value>& args,

@@ -179,7 +179,6 @@ bool V8Completer::isComplete(std::string const& source, size_t lineno, size_t co
 
 void V8Completer::getAlternatives(char const * text, vector<string> & result) {
   // locate global object or sub-object
-  //  v8::Handle<v8::Object> current = v8::Context::GetCurrent()->Global();
   ISOLATE;
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Handle<v8::Object> current = context->Global();
@@ -249,7 +248,7 @@ void V8Completer::getAlternatives(char const * text, vector<string> & result) {
     const uint32_t n = properties->Length();
 
     for (uint32_t i = 0;  i < n;  ++i) {
-      v8::Handle<v8::Value> v = properties->Get(i);
+      v8::Handle<v8::Value> v = properties->Get(v8::Number::New(isolate, i));
 
       TRI_Utf8ValueNFC str(TRI_UNKNOWN_MEM_ZONE, v);
       char const* s = *str;
