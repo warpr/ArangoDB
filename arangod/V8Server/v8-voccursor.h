@@ -36,10 +36,6 @@
 
 
 extern void TRI_InitV8cursor (v8::Handle<v8::Context> context,
-                              TRI_server_t* server,
-                              TRI_vocbase_t* vocbase,
-                              triagens::arango::JSLoader* loader,
-                              const size_t threadNumber,
                               TRI_v8_global_t* v8g);
 
 void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,

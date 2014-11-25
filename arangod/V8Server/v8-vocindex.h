@@ -49,18 +49,8 @@ TRI_index_t* TRI_LookupIndexByHandle (v8::Isolate* isolate,
                                       const v8::FunctionCallbackInfo<v8::Value>& args);
 
 void TRI_InitV8indexArangoDB (v8::Isolate* isolate,
-                              v8::Handle<v8::Context> context,
-                              TRI_server_t* server,
-                              TRI_vocbase_t* vocbase,
-                              const size_t threadNumber,
-                              TRI_v8_global_t* v8g,
                               v8::Handle<v8::ObjectTemplate>  ArangoDBNS);
 
 void TRI_InitV8indexCollection (v8::Isolate* isolate,
-                                v8::Handle<v8::Context> context,
-                                TRI_server_t* server,
-                                TRI_vocbase_t* vocbase,
-                                const size_t threadNumber,
-                                TRI_v8_global_t* v8g,
                                 v8::Handle<v8::ObjectTemplate> rt);
 #endif

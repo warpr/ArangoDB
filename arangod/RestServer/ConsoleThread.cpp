@@ -136,14 +136,13 @@ void ConsoleThread::inner () {
   uint64_t nrCommands = 0;
 
   const std::string pretty = "start_pretty_print();";
-  /* TODO
-  TRI_ExecuteJavaScriptString(args,
+
+  TRI_ExecuteJavaScriptString(isolate,
                               localContext,
                               TRI_V8_SYMBOL_STD_STRING(pretty),
-                              (int) pretty.size(),
                               TRI_V8_SYMBOL("(internal)"),
                               false);
-  */
+
   V8LineEditor console(localContext, ".arangod.history");
 
   console.open(true);
@@ -184,7 +183,7 @@ void ConsoleThread::inner () {
     v8::HandleScope scope(isolate);
     v8::TryCatch tryCatch;
 
-    /// TODO: args    TRI_ExecuteJavaScriptString(args, localContext, TRI_V8_SYMBOL(input), name, true);
+    TRI_ExecuteJavaScriptString(isolate, localContext, TRI_V8_SYMBOL(input), name, true);
     TRI_FreeString(TRI_UNKNOWN_MEM_ZONE, input);
 
     if (tryCatch.HasCaught()) {

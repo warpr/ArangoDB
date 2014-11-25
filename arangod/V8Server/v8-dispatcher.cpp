@@ -468,7 +468,6 @@ void TRI_InitV8Dispatcher (v8::Isolate* isolate,
 
   GlobalV8Dealer = applicationV8;
 
-
   // .............................................................................
   // create the global functions
   // .............................................................................

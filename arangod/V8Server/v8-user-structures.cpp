@@ -340,8 +340,8 @@ class KeySpace {
         delete found;
         return true;
       }
-        
-      //// TODO???? delete element;
+
+      delete element;
       return false;
     }
 
@@ -371,7 +371,7 @@ class KeySpace {
       TRI_json_t* other = TRI_ObjectToJson(isolate, compare);
 
       if (other == nullptr) {
-        /// TODO ???? delete element;
+        delete element;
         // TODO: fix error message
         return TRI_ERROR_OUT_OF_MEMORY;
       }
@@ -380,7 +380,7 @@ class KeySpace {
       TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, other); 
 
       if (res != 0) {
-        //// TODO??? delete element;
+        delete element;
         match = false;
       }
       else {

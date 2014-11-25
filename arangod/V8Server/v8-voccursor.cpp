@@ -68,7 +68,7 @@ static int32_t const WRP_GENERAL_CURSOR_TYPE = 3;
 static void WeakGeneralCursorCallback (const v8::WeakCallbackData<v8::External, v8::Persistent<v8::External>>& data) {
   auto isolate      = data.GetIsolate();
   auto persistent   = data.GetParameter();
-  auto myConnection = v8::Local<v8::External>::New(data.GetIsolate(), *persistent);
+  auto myConnection = v8::Local<v8::External>::New(isolate, *persistent);
   auto cursor       = static_cast<TRI_general_cursor_t*>(myConnection->Value());
 
   v8::HandleScope scope(isolate);
@@ -646,10 +646,6 @@ static void JS_DeleteCursor (const v8::FunctionCallbackInfo<v8::Value>& args) {
   // generate the general cursor template
   // .............................................................................
 void TRI_InitV8cursor (v8::Handle<v8::Context> context,
-                       TRI_server_t* server,
-                       TRI_vocbase_t* vocbase,
-                       JSLoader* loader,
-                       const size_t threadNumber,
                        TRI_v8_global_t* v8g){
   v8::Handle<v8::ObjectTemplate> rt;
   v8::Handle<v8::FunctionTemplate> ft;

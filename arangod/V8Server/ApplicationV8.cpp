@@ -228,12 +228,13 @@ void ApplicationV8::V8Context::handleGlobalContextMethods () {
     v8g->_allowUseDatabase = true;
 
     v8::TryCatch tryCatch;
-    /* TODO
-    TRI_ExecuteJavaScriptString(_context,
+
+    TRI_ExecuteJavaScriptString(isolate,
+                                isolate->GetCurrentContext(),
                                 TRI_V8_SYMBOL_STD_STRING(func),
                                 TRI_V8_SYMBOL("global context method"),
                                 false);
-    */
+
     if (tryCatch.HasCaught()) {
       if (tryCatch.CanContinue()) {
         TRI_LogV8Exception(isolate, &tryCatch);
@@ -253,12 +254,12 @@ void ApplicationV8::V8Context::handleCancelationCleanup () {
   v8::HandleScope scope(isolate);
 
   LOG_DEBUG("executing cancelation cleanup context %d", (int) _id);
-  /* TODO
-  TRI_ExecuteJavaScriptString(_context,
+
+  TRI_ExecuteJavaScriptString(isolate,
+                              isolate->GetCurrentContext(),
                               TRI_V8_SYMBOL("require('internal').cleanupCancelation();"),
                               TRI_V8_SYMBOL("context cleanup method"),
                               false);
-  */
 }
 
 // -----------------------------------------------------------------------------
@@ -363,6 +364,7 @@ ApplicationV8::V8Context* ApplicationV8::enterContext (std::string const& name,
   TRI_ASSERT(! _freeContexts[name].empty());
 
   V8Context* context = _freeContexts[name].back();
+
   TRI_ASSERT(context != nullptr);
   auto isolate = context->_isolate;
   TRI_ASSERT(isolate != nullptr);
@@ -372,9 +374,9 @@ ApplicationV8::V8Context* ApplicationV8::enterContext (std::string const& name,
 
   context->_locker = new v8::Locker(isolate);
   context->_isolate->Enter();
-  
+
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
-  //v8::Context::Scope contextScope(localContext);
+  v8::Context::Scope contextScope(localContext);
   localContext->Enter();
 
   TRI_ASSERT(context->_locker->IsLocked(isolate));
@@ -391,12 +393,12 @@ ApplicationV8::V8Context* ApplicationV8::enterContext (std::string const& name,
 
   if (_developmentMode && ! initialise) {
     v8::HandleScope scope(isolate);
-    /* TODO
-    TRI_ExecuteJavaScriptString(localContext,
+
+    TRI_ExecuteJavaScriptString(isolate,
+                                localContext,
                                 TRI_V8_SYMBOL("require(\"internal\").resetEngine()"),
                                 TRI_V8_SYMBOL("global context method"),
                                 false);
-    */
   }
 
   return context;
@@ -429,9 +431,6 @@ void ApplicationV8::exitContext (V8Context* context) {
 
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
   v8::Context::Scope contextScope(localContext);
-
-  // HasOutOfMemoryException must be called while there is still an isolate!
-  ///   bool const hasOutOfMemoryException = localContext->HasOutOfMemoryException();
 
   // check for cancelation requests
   bool const canceled = v8g->_canceled;
@@ -487,12 +486,13 @@ void ApplicationV8::exitContext (V8Context* context) {
       LOG_TRACE("V8 context has reached maximum number of requests and will be scheduled for GC");
       performGarbageCollection = true;
     }
-    /* TODO!
+    /*
     else if (hasOutOfMemoryException) {
       LOG_INFO("V8 context has encountered out of memory and will be scheduled for GC");
       performGarbageCollection = true;
     }
-    */
+    TODO */
+
     if (performGarbageCollection) {
       _dirtyContexts[name].push_back(context);
     }
@@ -923,26 +923,24 @@ bool ApplicationV8::prepareNamedContexts (const string& name,
       v8::HandleScope scope(isolate);
       v8::TryCatch tryCatch;
 
-      /* TODO
       v8::Handle<v8::Value> wfunc = TRI_ExecuteJavaScriptString(
+        isolate, 
         localContext,
         TRI_V8_SYMBOL_STD_STRING(worker),
         TRI_V8_SYMBOL_STD_STRING(name),
         false);
-      */
+
       if (tryCatch.HasCaught()) {
         TRI_LogV8Exception(isolate, &tryCatch);
         result = false;
       }
       else {
-        /* TODO
         if (! wfunc.IsEmpty() && wfunc->IsFunction()) {
-          TRI_AddGlobalVariableVocbase(localCcontext, "MAIN", wfunc);
+          TRI_AddGlobalVariableVocbase(isolate, localContext, "MAIN", wfunc);
         }
         else {
           result = false;
         }
-        */
       }
     }
 

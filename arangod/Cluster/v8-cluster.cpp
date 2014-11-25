@@ -1188,8 +1188,6 @@ static void JS_JavaScriptPathServerState (const v8::FunctionCallbackInfo<v8::Val
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-
-
   if (args.Length() != 0) {
     TRI_V8_EXCEPTION_USAGE("javaScriptPath()");
   }
@@ -1205,8 +1203,6 @@ static void JS_JavaScriptPathServerState (const v8::FunctionCallbackInfo<v8::Val
 static void JS_DBserverConfigServerState (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-
-
 
   if (args.Length() != 0) {
     TRI_V8_EXCEPTION_USAGE("dbserverConfig()");
@@ -1224,8 +1220,6 @@ static void JS_CoordinatorConfigServerState (const v8::FunctionCallbackInfo<v8::
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-
-
   if (args.Length() != 0) {
     TRI_V8_EXCEPTION_USAGE("coordinatorConfig()");
   }
@@ -1241,8 +1235,6 @@ static void JS_CoordinatorConfigServerState (const v8::FunctionCallbackInfo<v8::
 static void JS_DisableDipatcherFrontendServerState (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-
-
 
   if (args.Length() != 0) {
     TRI_V8_EXCEPTION_USAGE("disableDispatcherFrontend()");
@@ -1264,8 +1256,6 @@ static void JS_DisableDipatcherKickstarterServerState (const v8::FunctionCallbac
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-
-
   if (args.Length() != 0) {
     TRI_V8_EXCEPTION_USAGE("disableDispatcherKickstarter()");
   }
@@ -1285,8 +1275,6 @@ static void JS_DisableDipatcherKickstarterServerState (const v8::FunctionCallbac
 static void JS_InitialisedServerState (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-
-
 
   if (args.Length() != 0) {
     TRI_V8_EXCEPTION_USAGE("initialised()");
@@ -1308,8 +1296,6 @@ static void JS_IsCoordinatorServerState (const v8::FunctionCallbackInfo<v8::Valu
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-
-
   if (args.Length() != 0) {
     TRI_V8_EXCEPTION_USAGE("isCoordinator()");
   }
@@ -1329,8 +1315,6 @@ static void JS_IsCoordinatorServerState (const v8::FunctionCallbackInfo<v8::Valu
 static void JS_RoleServerState (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-
-
 
   if (args.Length() != 0) {
     TRI_V8_EXCEPTION_USAGE("role()");
@@ -1369,8 +1353,6 @@ static void JS_SetRoleServerState (const v8::FunctionCallbackInfo<v8::Value>& ar
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-
-
   if (args.Length() != 1) {
     TRI_V8_EXCEPTION_USAGE("setRole(<role>)");
   }
@@ -1394,8 +1376,6 @@ static void JS_SetRoleServerState (const v8::FunctionCallbackInfo<v8::Value>& ar
 static void JS_StatusServerState (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-
-
 
   if (args.Length() != 0) {
     TRI_V8_EXCEPTION_USAGE("status()");
@@ -1766,8 +1746,6 @@ static void JS_SyncRequest (const v8::FunctionCallbackInfo<v8::Value>& args) {
 static void JS_Enquire (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-
-
 
   if (args.Length() != 1) {
     TRI_V8_EXCEPTION_USAGE("enquire(operationID)");

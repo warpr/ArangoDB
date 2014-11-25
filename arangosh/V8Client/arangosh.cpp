@@ -1151,8 +1151,7 @@ static void ClientConnection_httpSendFile (const v8::FunctionCallbackInfo<v8::Va
   if (tryCatch.HasCaught()) {
       string exception = TRI_StringifyV8Exception(isolate, &tryCatch);
       isolate->ThrowException(tryCatch.Exception());
-      BaseClient.printErrLine(exception);
-      BaseClient.log("%s", exception.c_str());
+	  return;
   }
 
   TRI_V8_RETURN(result);
@@ -1342,7 +1341,6 @@ static void ClientConnection_getDatabaseName (const v8::FunctionCallbackInfo<v8:
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief ClientConnection method "setDatabaseName"
 ////////////////////////////////////////////////////////////////////////////////
-
 static void ClientConnection_setDatabaseName (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
@@ -1601,8 +1599,8 @@ static void RunShell (v8::Isolate* isolate, v8::Handle<v8::Context> context, boo
 
     if (tryCatch.HasCaught()) {
       // command failed
-      string exception = TRI_StringifyV8Exception(isolate, &tryCatch);
-      isolate->ThrowException(tryCatch.Exception());
+      string exception(TRI_StringifyV8Exception(isolate, &tryCatch));
+
       BaseClient.printErrLine(exception);
       BaseClient.log("%s", exception.c_str());
 
@@ -1660,10 +1658,8 @@ static bool RunUnitTests (v8::Isolate* isolate, v8::Handle<v8::Context> context)
   TRI_ExecuteJavaScriptString(isolate, context, TRI_V8_SYMBOL(input), name, true);
 
   if (tryCatch.HasCaught()) {
-    string exception = TRI_StringifyV8Exception(isolate, &tryCatch);
-    isolate->ThrowException(tryCatch.Exception());
+    string exception(TRI_StringifyV8Exception(isolate, &tryCatch));
     BaseClient.printErrLine(exception);
-    BaseClient.log("%s", exception.c_str());
     ok = false;
   }
   else {
@@ -1690,7 +1686,6 @@ static bool RunScripts (v8::Isolate* isolate,
 
   TRI_GET_GLOBALS();
   TRI_GET_GLOBAL(ExecuteFileCallback, v8::Function);
-  ///v8::Handle<v8::Function> func = v8g->ExecuteFileCallback;
 
   if (ExecuteFileCallback.IsEmpty()) {
     string msg = "no execute function has been registered";
@@ -1725,10 +1720,10 @@ static bool RunScripts (v8::Isolate* isolate,
     }
 
     if (tryCatch.HasCaught()) {
-      string exception = TRI_StringifyV8Exception(isolate, &tryCatch);
-      isolate->ThrowException(tryCatch.Exception());
+      string exception(TRI_StringifyV8Exception(isolate, &tryCatch));
+
       BaseClient.printErrLine(exception);
-      BaseClient.log("%s", exception.c_str());
+      BaseClient.log("%s\n", exception.c_str());
 
       ok = false;
       break;
@@ -1760,8 +1755,10 @@ static bool RunString (v8::Isolate* isolate,
                                                              false);
 
   if (tryCatch.HasCaught()) {
-    isolate->ThrowException(tryCatch.Exception());
-    BaseClient.printErrLine(TRI_StringifyV8Exception(isolate, &tryCatch));
+    string exception(TRI_StringifyV8Exception(isolate, &tryCatch));
+
+    BaseClient.printErrLine(exception);
+    BaseClient.log("%s\n", exception.c_str());
     ok = false;
   }
   else {
@@ -1806,7 +1803,6 @@ static bool RunJsLint (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   TRI_ExecuteJavaScriptString(isolate, context, TRI_V8_SYMBOL(input), name, true);
 
   if (tryCatch.HasCaught()) {
-    isolate->ThrowException(tryCatch.Exception());
     BaseClient.printErrLine(TRI_StringifyV8Exception(isolate, &tryCatch));
     ok = false;
   }
@@ -2204,7 +2200,7 @@ int main (int argc, char* args[]) {
   StartupLoader.setDirectory(StartupPath);
 
   TRI_AddGlobalVariableVocbase(isolate, localContext, "ARANGO_QUIET", v8::Boolean::New(isolate, BaseClient.quiet()));
-  /// TODO  TRI_AddGlobalVariableVocbase(isolate, localContext, "VALGRIND", v8::Boolean::New((isolate, RUNNING_ON_VALGRIND) > 0));
+  TRI_AddGlobalVariableVocbase(isolate, localContext, "VALGRIND",     v8::Boolean::New(isolate, (RUNNING_ON_VALGRIND > 0)));
 
   bool isExecuteScript = false;
   bool isExecuteString = false;
@@ -2251,7 +2247,6 @@ int main (int argc, char* args[]) {
   files.push_back("client/client.js"); // needs internal
 
   for (size_t i = 0;  i < files.size();  ++i) {
-    //    bool ok = StartupLoader.loadScript(isolate, context, files[i]);
     bool ok = StartupLoader.loadScript(isolate, localContext, files[i]);
 
     if (ok) {

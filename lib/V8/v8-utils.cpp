@@ -3907,7 +3907,7 @@ void TRI_CreateErrorObject (v8::Isolate *isolate,
 ////////////////////////////////////////////////////////////////////////////////
 
 v8::Handle<v8::Array> TRI_V8PathList (v8::Isolate* isolate, string const& modules) {
-  v8::HandleScope scope(isolate);
+  v8::EscapableHandleScope scope(isolate);
 
 #ifdef _WIN32
   vector<string> paths = StringUtils::split(modules, ";", '\0');
@@ -3919,10 +3919,11 @@ v8::Handle<v8::Array> TRI_V8PathList (v8::Isolate* isolate, string const& module
   v8::Handle<v8::Array> result = v8::Array::New(isolate, n);
 
   for (uint32_t i = 0;  i < n;  ++i) {
-    result->Set(i, TRI_V8_SYMBOL_STD_STRING(paths[i]));
+    fprintf(stderr, "%d: - %s\n", i, paths[i].c_str());
+    result->Set(v8::Integer::New(isolate, i), TRI_V8_SYMBOL_STD_STRING(paths[i]));
   }
 
-  return result;
+  return scope.Escape<v8::Array>(result);
 }
 
 //// debug function - todo remove me.

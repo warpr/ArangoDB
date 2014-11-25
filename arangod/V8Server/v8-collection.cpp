@@ -448,7 +448,7 @@ static void DocumentVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err; /// TODO
+  v8::Handle<v8::Value> err;
   ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
@@ -458,7 +458,7 @@ static void DocumentVocbaseCol (bool useCollection,
   }
 
   if (! err.IsEmpty()) {
-    /// TODO v8::ThrowException(err);
+    isolate->ThrowException(err);
     return;
   }
 
@@ -626,7 +626,7 @@ static void ExistsVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err; /// TODO!
+  v8::Handle<v8::Value> err;
   ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
@@ -651,7 +651,7 @@ static void ExistsVocbaseCol (bool useCollection,
     }
 
     // for any other error that happens, we'll rethrow it
-    //// TODO v8::ThrowException(err);
+    isolate->ThrowException(err);
     return;
   }
 
@@ -866,7 +866,7 @@ void ReplaceVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err; //// TODO
+  v8::Handle<v8::Value> err;
   ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
@@ -876,8 +876,8 @@ void ReplaceVocbaseCol (bool useCollection,
   }
 
   if (! err.IsEmpty()) {
-    /// v8::ThrowException(err);
-    return;/// TODO
+    isolate->ThrowException(err);
+    return;
   }
 
   TRI_ASSERT(col != nullptr);
@@ -1169,7 +1169,7 @@ static void UpdateVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err; /// TODO
+  v8::Handle<v8::Value> err;
   ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
@@ -1179,8 +1179,8 @@ static void UpdateVocbaseCol (bool useCollection,
   }
 
   if (! err.IsEmpty()) {
-    /// v8::ThrowException(err);
-    return; /// TODO
+    isolate->ThrowException(err);
+    return;
   }
 
   TRI_ASSERT(col != nullptr);
@@ -1442,7 +1442,7 @@ static void RemoveVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err; /// TODO
+  v8::Handle<v8::Value> err;
   ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
@@ -1452,8 +1452,8 @@ static void RemoveVocbaseCol (bool useCollection,
   }
 
   if (! err.IsEmpty()) {
-    ///    v8::ThrowException(err);
-    return;/// TODO
+    isolate->ThrowException(err);
+    return;
   }
 
   TRI_ASSERT(col != nullptr);
@@ -1940,7 +1940,6 @@ static void JS_LoadVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& args) 
   TRI_vocbase_col_t const* collection = UseCollection(args.Holder(), args);
 
   if (collection == nullptr) {
-    /// TODO v8::ThrowException(err);
     return;
   }
 
@@ -2185,7 +2184,6 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
   collection = UseCollection(args.Holder(), args);
 
   if (collection == nullptr) {
-    ///v8::ThrowException(err);
     return;
   }
 
@@ -4349,7 +4347,6 @@ void TRI_InitV8collection (v8::Handle<v8::Context> context,
 
   rt = ft->InstanceTemplate();
   rt->SetInternalFieldCount(3);
-  //  v8g->BufferTempl.Reset(isolate, ft);
 
 
 #ifdef TRI_ENABLE_MAINTAINER_MODE
@@ -4381,7 +4378,7 @@ void TRI_InitV8collection (v8::Handle<v8::Context> context,
   TRI_AddMethodVocbase(isolate, rt, "update", JS_UpdateVocbaseCol);
   TRI_AddMethodVocbase(isolate, rt, "version", JS_VersionVocbaseCol);
 
-  TRI_InitV8indexCollection(isolate, context, server, vocbase, threadNumber, v8g, rt);
+  TRI_InitV8indexCollection(isolate, rt);
 
   v8g->VocbaseColTempl.Reset(isolate, rt);
   TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoCollection", ft->GetFunction());

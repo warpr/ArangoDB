@@ -100,7 +100,7 @@ query_t;
 
 static void EmptyResult (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
-  /// TODO do we need a scope here/v8::HandleScope scope(isolate);
+  v8::HandleScope scope(isolate);
 
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
   result->Set(TRI_V8_SYMBOL("documents"), v8::Array::New(isolate));

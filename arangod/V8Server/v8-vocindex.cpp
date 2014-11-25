@@ -354,7 +354,7 @@ static int EnhanceIndexJson (const v8::FunctionCallbackInfo<v8::Value>& args,
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  v8::Handle<v8::Object> obj; /// TODO = args[0].As<v8::Object>();
+  v8::Handle<v8::Object> obj = args[0].As<v8::Object>();
 
   // extract index type
   TRI_idx_type_e type = TRI_IDX_TYPE_UNKNOWN;
@@ -794,12 +794,12 @@ static void EnsureIndex (const v8::FunctionCallbackInfo<v8::Value>& args,
   if (collection == nullptr) {
     TRI_V8_EXCEPTION_INTERNAL("cannot extract collection");
   }
-  /*
+
   if (args.Length() != 1 ||  ! args[0]->IsObject()) {
     string name(functionName);
     name.append("(<description>)");
-    TRI_V8_EXCEPTION_USAGE(name.c_str()) v8::False(isolate);
-  }TODO*/
+    TRI_V8_EXCEPTION_USAGE(name.c_str());
+  }
 
   TRI_json_t* json = nullptr;
   int res = EnhanceIndexJson(args, json, create);
@@ -861,7 +861,7 @@ static void EnsureIndex (const v8::FunctionCallbackInfo<v8::Value>& args,
 
   TRI_ASSERT(json != nullptr);
 
-  // ensure an index, coordinator case //// TODO: ret?
+  // ensure an index, coordinator case
   if (ServerState::instance()->isCoordinator()) {
     EnsureIndexCoordinator(args, collection, json, create);
   }
@@ -870,8 +870,6 @@ static void EnsureIndex (const v8::FunctionCallbackInfo<v8::Value>& args,
   }
 
   TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, json);
-
-  TRI_V8_RETURN_TRUE(); //// TODO: ret
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1848,11 +1846,6 @@ static void JS_CreateEdgeCollectionVocbase (const v8::FunctionCallbackInfo<v8::V
 }
 
 void TRI_InitV8indexArangoDB (v8::Isolate* isolate,
-                              v8::Handle<v8::Context> context,
-                              TRI_server_t* server,
-                              TRI_vocbase_t* vocbase,
-                              const size_t threadNumber,
-                              TRI_v8_global_t* v8g,
                               v8::Handle<v8::ObjectTemplate> rt){
 
   TRI_AddMethodVocbase(isolate, rt, "_create", JS_CreateVocbase, true);
@@ -1863,11 +1856,6 @@ void TRI_InitV8indexArangoDB (v8::Isolate* isolate,
 
 
 void TRI_InitV8indexCollection (v8::Isolate* isolate,
-                                v8::Handle<v8::Context> context,
-                                TRI_server_t* server,
-                                TRI_vocbase_t* vocbase,
-                                const size_t threadNumber,
-                                TRI_v8_global_t* v8g,
                                 v8::Handle<v8::ObjectTemplate> rt){
 
   TRI_AddMethodVocbase(isolate, rt, "dropIndex", JS_DropIndexVocbaseCol);

@@ -446,7 +446,7 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
 
     v8::Handle<v8::Object> result = v8::Object::New(isolate);
     result->Set(TRI_V8_SYMBOL("error"), v8::Boolean::New(isolate, true));
-    result->Set(TRI_V8_SYMBOL("code"), v8::Integer::New(isolate, HttpResponse::SERVER_ERROR));
+    result->Set(TRI_V8_SYMBOL("code"),  v8::Integer::New(isolate, HttpResponse::SERVER_ERROR));
 
     int errorNumber = 0;
 
@@ -468,7 +468,7 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
         break;
     }
 
-    result->Set(TRI_V8_SYMBOL("errorNum"), v8::Integer::New(isolate, errorNumber));
+    result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, errorNumber));
     result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(_lastErrorMessage));
 
     return result;
@@ -499,12 +499,12 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
       if (_lastHttpReturnCode >= 400) {
         string returnMessage(_httpResult->getHttpReturnMessage());
 
-        result->Set(TRI_V8_SYMBOL("error"), v8::Boolean::New(isolate, true));
-        result->Set(TRI_V8_SYMBOL("errorNum"), v8::Integer::New(isolate, _lastHttpReturnCode));
+        result->Set(TRI_V8_SYMBOL("error"),        v8::Boolean::New(isolate, true));
+        result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, _lastHttpReturnCode));
         result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(returnMessage));
       }
       else {
-        result->Set(TRI_V8_SYMBOL("error"), v8::Boolean::New(isolate, false));
+        result->Set(TRI_V8_SYMBOL("error"),        v8::Boolean::New(isolate, false));
       }
 
       return result;
@@ -568,7 +568,7 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (v8::Isolate* isolate,
         break;
     }
 
-    result->Set(TRI_V8_SYMBOL("errorNum"), v8::Integer::New(isolate, errorNumber));
+    result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, errorNumber));
     result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(_lastErrorMessage));
 
     return result;
@@ -585,8 +585,8 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (v8::Isolate* isolate,
     if (_lastHttpReturnCode >= 400) {
       string returnMessage(_httpResult->getHttpReturnMessage());
 
-      result->Set(TRI_V8_SYMBOL("error"), v8::Boolean::New(isolate, true));
-      result->Set(TRI_V8_SYMBOL("errorNum"), v8::Integer::New(isolate, _lastHttpReturnCode));
+      result->Set(TRI_V8_SYMBOL("error"),        v8::Boolean::New(isolate, true));
+      result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, _lastHttpReturnCode));
       result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(returnMessage));
     }
     else {

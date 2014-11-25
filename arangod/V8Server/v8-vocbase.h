@@ -91,7 +91,7 @@ int TRI_CheckDatabaseVersion (TRI_vocbase_t* vocbase,
 /// @brief reloads routing
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_V8ReloadRouting (v8::Handle<v8::Context>);
+void TRI_V8ReloadRouting (v8::Isolate* isolate);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief creates a TRI_vocbase_t global context

@@ -166,10 +166,10 @@ static void WeakCollectionCallback (const v8::WeakCallbackData<v8::External, v8:
   TRI_ReleaseVocBase(collection->_vocbase);
 
   // find the persistent handle
-  /// TODO #if maintainer...
+#if TRI_ENABLE_MAINTAINER_MODE
   map<void*, v8::Persistent<v8::External>>::iterator it = v8g->JSCollections.find(collection);
   TRI_ASSERT(it != v8g->JSCollections.end())
-
+#endif
   if (! collection->_isLocal) {
     FreeCoordinatorCollection(collection);
   }
@@ -183,7 +183,7 @@ static void WeakCollectionCallback (const v8::WeakCallbackData<v8::External, v8:
 
 v8::Handle<v8::Object> WrapCollection (v8::Isolate* isolate,
                                        TRI_vocbase_col_t const* collection) {
-  ///v8::HandleScope scope(isolate);
+  v8::EscapableHandleScope scope(isolate);
 
   TRI_GET_GLOBALS();
   TRI_GET_GLOBAL(VocbaseColTempl, v8::ObjectTemplate);
@@ -220,7 +220,6 @@ v8::Handle<v8::Object> WrapCollection (v8::Isolate* isolate,
     result->ForceSet(VersionKey, v8::Number::New(isolate, (double) collection->_internalVersion), v8::DontEnum);
   }
 
-  ///TRI_V8_RETURN(result);
-  return result; /// TODO
+  return scope.Escape<v8::Object>(result);
 }
 

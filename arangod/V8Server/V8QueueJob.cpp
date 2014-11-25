@@ -118,7 +118,7 @@ Job::status_t V8QueueJob::work () {
     v8::HandleScope scope(isolate);
 
     // get built-in Function constructor (see ECMA-262 5th edition 15.3.2)
-    v8::Handle<v8::Object> current;/// TODO = v8::Context::GetCurrent()->Global();
+    v8::Handle<v8::Object> current = isolate->GetCurrentContext()->Global();
     v8::Local<v8::Function> main = v8::Local<v8::Function>::Cast(current->Get(TRI_V8_SYMBOL("MAIN")));
 
     if (main.IsEmpty()) {

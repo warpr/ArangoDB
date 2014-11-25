@@ -280,7 +280,7 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION(TRI_ERROR_INTERNAL);
   }
 
-  v8::Handle<v8::Object> current ; /// TODO  = v8::Context::GetCurrent()->Global();
+  v8::Handle<v8::Object> current = isolate->GetCurrentContext()->Global();
 
   // callback function
   v8::Handle<v8::Function> action;
@@ -1375,13 +1375,13 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
 
   // empty or null
   if (key == nullptr || *key == '\0') {
-    TRI_V8_RETURN_FALSE(); /// TODO: ist das richtig?
+    TRI_V8_RETURN(v8::Handle<v8::Value>());
   }
 
   if (strcmp(key, "hasOwnProperty") == 0 ||  // this prevents calling the property getter again (i.e. recursion!)
       strcmp(key, "toString") == 0 ||
       strcmp(key, "toJSON") == 0) {
-    TRI_V8_RETURN_FALSE(); /// TODO: ist das richtig?
+    TRI_V8_RETURN(v8::Handle<v8::Value>());
   }
 
   TRI_vocbase_col_t* collection = nullptr;
@@ -1399,7 +1399,7 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
 
     if (holder->HasRealNamedProperty(l)) {
       // some internal function inside db
-      TRI_V8_RETURN_FALSE(); /// TODO: ist das richtig?
+      TRI_V8_RETURN(v8::Handle<v8::Value>());
     }
 
     // something in the prototype chain?
@@ -1408,7 +1408,7 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
     if (! v.IsEmpty()) {
       if (! v->IsExternal()) {
         // something but an external... this means we can directly return this
-        TRI_V8_RETURN_FALSE(); /// TODO: ist das richtig?
+        TRI_V8_RETURN(v8::Handle<v8::Value>());
       }
     }
   }
@@ -1438,7 +1438,7 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
 
           if (cachedCid == cid && cachedVersion == internalVersion) {
             // cache hit
-            TRI_V8_RETURN_TRUE(); /// TODO: (value);
+            TRI_V8_RETURN(value);
           }
 
           // store the updated version number in the object for future comparisons
@@ -1465,7 +1465,7 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
 
       if (collection != nullptr && collection->_cid == 0) {
         FreeCoordinatorCollection(collection);
-        TRI_V8_RETURN_FALSE();
+        TRI_V8_RETURN(v8::Handle<v8::Value>());
       }
     }
   }
@@ -1475,23 +1475,23 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
 
   if (collection == nullptr) {
     if (*key == '_') {
-      TRI_V8_RETURN_FALSE();
+      TRI_V8_RETURN(v8::Handle<v8::Value>());
     }
 
-    TRI_V8_RETURN_FALSE();
+    TRI_V8_RETURN_UNDEFINED();
   }
 
   v8::Handle<v8::Value> result = WrapCollection(isolate, collection);
 
   if (result.IsEmpty()) {
-    TRI_V8_RETURN_FALSE();
+    TRI_V8_RETURN_UNDEFINED();
   }
 
   // TODO: caching the result makes subsequent results much faster, but
   // prevents physical removal of the collection or database
   holder->ForceSet(cacheName, result, v8::DontEnum);
 
-  TRI_V8_RETURN_TRUE();
+  TRI_V8_RETURN(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1508,7 +1508,7 @@ static void JS_VersionServer (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  //// TODO: what? TRI_V8_RETURN(TRI_VERSION);
+  TRI_V8_RETURN(TRI_V8_SYMBOL(TRI_VERSION));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1897,10 +1897,10 @@ static void CreateDatabaseCoordinator (const v8::FunctionCallbackInfo<v8::Value>
     v8::Handle<v8::Object> users = v8::Object::New(isolate);
     users->Set(TRI_V8_SYMBOL("users"), args[2]);
 
-    /// TODO    v8::Context::GetCurrent()->Global()->Set(TRI_V8_SYMBOL("UPGRADE_ARGS"), users);
+    isolate->GetCurrentContext()->Global()->Set(TRI_V8_SYMBOL("UPGRADE_ARGS"), users);
   }
   else {
-    /// TODO    v8::Context::GetCurrent()->Global()->Set(TRI_V8_SYMBOL("UPGRADE_ARGS"), v8::Object::New(isolate));
+    isolate->GetCurrentContext()->Global()->Set(TRI_V8_SYMBOL("UPGRADE_ARGS"), v8::Object::New(isolate));
   }
 
   // switch databases
@@ -1913,7 +1913,7 @@ static void CreateDatabaseCoordinator (const v8::FunctionCallbackInfo<v8::Value>
   bool allowUseDatabase = v8g->_allowUseDatabase;
   v8g->_allowUseDatabase = true;
 
-  //// TODO  v8g->_loader->executeGlobalScript(v8::Context::GetCurrent(), "server/bootstrap/coordinator-database.js");
+  v8g->_loader->executeGlobalScript(isolate, isolate->GetCurrentContext(), "server/bootstrap/coordinator-database.js");
   
   v8g->_allowUseDatabase = allowUseDatabase;
 
@@ -2066,10 +2066,10 @@ static void JS_CreateDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) 
     v8::Handle<v8::Object> users = v8::Object::New(isolate);
     users->Set(TRI_V8_SYMBOL("users"), args[2]);
 
-    /// todov8::Context::GetCurrent()->Global()->Set(TRI_V8_SYMBOL("UPGRADE_ARGS"), users);
+    isolate->GetCurrentContext()->Global()->Set(TRI_V8_SYMBOL("UPGRADE_ARGS"), users);
   }
   else {
-    /// todo v8::Context::GetCurrent()->Global()->Set(TRI_V8_SYMBOL("UPGRADE_ARGS"), v8::Object::New(isolate));
+    isolate->GetCurrentContext()->Global()->Set(TRI_V8_SYMBOL("UPGRADE_ARGS"), v8::Object::New(isolate));
   }
 
   // switch databases
@@ -2079,7 +2079,7 @@ static void JS_CreateDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) 
   v8g->_vocbase = database;
 
   // initalise database
-  /// TODO  v8g->_loader->executeGlobalScript(v8::Context::GetCurrent(), "server/bootstrap/local-database.js");
+  v8g->_loader->executeGlobalScript(isolate, isolate->GetCurrentContext(), "server/bootstrap/local-database.js");
 
   // and switch back
   v8g->_vocbase = orig;
@@ -2191,7 +2191,7 @@ static void JS_DropDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION(res);
   }
 
-  /// TODO  TRI_V8ReloadRouting(v8::Context::GetCurrent());
+  TRI_V8ReloadRouting(isolate);
 
   TRI_V8_RETURN_TRUE();
 }
@@ -2439,7 +2439,7 @@ bool TRI_UpgradeDatabase (TRI_vocbase_t* vocbase,
   TRI_vocbase_t* orig = v8g->_vocbase;
   v8g->_vocbase = vocbase;
 
-  v8::Handle<v8::Value> result;///todo   = startupLoader->executeGlobalScript(context, "server/upgrade-database.js");
+  v8::Handle<v8::Value> result = startupLoader->executeGlobalScript(isolate, isolate->GetCurrentContext(), "server/upgrade-database.js");
   bool ok = TRI_ObjectToBoolean(result);
 
   if (! ok) {
@@ -2466,7 +2466,7 @@ int TRI_CheckDatabaseVersion (TRI_vocbase_t* vocbase,
   TRI_vocbase_t* orig = v8g->_vocbase;
   v8g->_vocbase = vocbase;
 
-  v8::Handle<v8::Value> result; //// TODO = startupLoader->executeGlobalScript(context, "server/check-version.js");
+  v8::Handle<v8::Value> result = startupLoader->executeGlobalScript(isolate, isolate->GetCurrentContext(), "server/check-version.js");
   int code = (int) TRI_ObjectToInt64(result);
 
   v8g->_vocbase = orig;
@@ -2478,15 +2478,12 @@ int TRI_CheckDatabaseVersion (TRI_vocbase_t* vocbase,
 /// @brief reloads routing
 ////////////////////////////////////////////////////////////////////////////////
 
-void TRI_V8ReloadRouting (v8::Handle<v8::Context> context) {
-  /// ISOLATE;
-  /*
-  TRI_ExecuteJavaScriptString(context,
+void TRI_V8ReloadRouting (v8::Isolate *isolate) {
+  TRI_ExecuteJavaScriptString(isolate,
+							  isolate->GetCurrentContext(),
                               TRI_V8_SYMBOL("require('internal').executeGlobalContextFunction('reloadRouting')"),
                               TRI_V8_SYMBOL("reload routing"),
                               false);
-TODO
-  */
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2554,7 +2551,7 @@ void TRI_InitV8VocBridge (v8::Isolate* isolate,
   TRI_AddMethodVocbase(isolate, ArangoNS, "_listDatabases", JS_ListDatabases);
   TRI_AddMethodVocbase(isolate, ArangoNS, "_useDatabase", JS_UseDatabase);
 
-  TRI_InitV8indexArangoDB(isolate, context, server, vocbase, threadNumber, v8g, ArangoNS);
+  TRI_InitV8indexArangoDB(isolate, ArangoNS);
 
   TRI_InitV8collection(context, server, vocbase, loader, threadNumber, v8g, isolate, ArangoNS);
 
@@ -2563,7 +2560,7 @@ void TRI_InitV8VocBridge (v8::Isolate* isolate,
 
   TRI_InitV8ShapedJson(isolate, context, threadNumber, v8g);
 
-  TRI_InitV8cursor(context, server, vocbase, loader, threadNumber, v8g);
+  TRI_InitV8cursor(context, v8g);
 
   // .............................................................................
   // generate global functions
