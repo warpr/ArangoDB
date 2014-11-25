@@ -175,6 +175,7 @@ static void WeakCollectionCallback (const v8::WeakCallbackData<v8::External, v8:
   }
   // dispose and clear the persistent handle
   v8g->JSCollections[collection].Reset();
+  v8g->JSCollections.erase(collection);
 }
 
 /////////////////////////////////////////////////////////////////////////////////

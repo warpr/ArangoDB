@@ -375,6 +375,7 @@ ApplicationV8::V8Context* ApplicationV8::enterContext (std::string const& name,
   context->_locker = new v8::Locker(isolate);
   context->_isolate->Enter();
 
+  v8::HandleScope scope(isolate);
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
   v8::Context::Scope contextScope(localContext);
   localContext->Enter();
@@ -382,8 +383,8 @@ ApplicationV8::V8Context* ApplicationV8::enterContext (std::string const& name,
   TRI_ASSERT(context->_locker->IsLocked(isolate));
   TRI_ASSERT(v8::Locker::IsLocked(isolate));
   TRI_GET_GLOBALS();
+
   // set the current database
-  v8::HandleScope scope(isolate);
   
   v8g->_vocbase = vocbase;
   v8g->_allowUseDatabase = allowUseDatabase;
@@ -429,8 +430,10 @@ void ApplicationV8::exitContext (V8Context* context) {
   context->_hasDeadObjects = v8g->_hasDeadObjects;
   ++context->_numExecutions;
 
+  v8::HandleScope scope(isolate);
+
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
-  v8::Context::Scope contextScope(localContext);
+  /// TODO do we need this?  v8::Context::Scope contextScope(localContext);
 /*
    // HasOutOfMemoryException must be called while there is still an isolate!
   bool const hasOutOfMemoryException = context->_context->HasOutOfMemoryException();
@@ -637,11 +640,13 @@ void ApplicationV8::collectGarbage () {
     if (context != nullptr) {
       LOG_TRACE("collecting V8 garbage");
       auto isolate = context->_isolate;
-      auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
-      v8::Context::Scope contextScope(localContext);
-
       context->_locker = new v8::Locker(isolate);
       isolate->Enter();
+      v8::HandleScope scope(isolate);
+
+      auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
+      /// TODO: do we need this? v8::Context::Scope contextScope(localContext);
+
       localContext->Enter();
       
       TRI_ASSERT(context->_locker->IsLocked(isolate));
