@@ -440,8 +440,16 @@ enum WRAP_CLASS_TYPES {WRAP_TYPE_CONNECTION = 1};
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief parses the program options
 ////////////////////////////////////////////////////////////////////////////////
+typedef enum __eRunMode {
+  eInteractive,
+  eExecuteScript,
+  eExecuteString,
+  eCheckScripts,
+  eUnitTests,
+  eJsLint
+} eRunMode;
 
-static vector<string> ParseProgramOptions (int argc, char* args[]) {
+static vector<string> ParseProgramOptions (int argc, char* args[], eRunMode *runMode) {
   ProgramOptionsDescription description("STANDARD options");
   ProgramOptionsDescription javascript("JAVASCRIPT options");
 
@@ -475,6 +483,7 @@ static vector<string> ParseProgramOptions (int argc, char* args[]) {
   ;
 
   vector<string> arguments;
+  *runMode = eInteractive;
 
   description.arguments(&arguments);
 
@@ -522,6 +531,22 @@ static vector<string> ParseProgramOptions (int argc, char* args[]) {
   // voice mode
   if (options.has("voice")) {
     VoiceMode = true;
+  }
+
+  if (! ExecuteScripts.empty()) {
+    *runMode = eExecuteScript;
+  }
+  else if (! ExecuteString.empty()) {
+    *runMode = eExecuteString;
+  }
+  else if (! CheckScripts.empty()) {
+    *runMode = eCheckScripts;
+  }
+  else if (! UnitTests.empty()) {
+    *runMode = eUnitTests;
+  }
+  else if (! JsLint.empty()) {
+    *runMode = eJsLint;
   }
 
   // return the positional arguments
@@ -1890,152 +1915,7 @@ static void arangoshExitFunction(int exitCode, void* data) {
 
 #endif
 
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief main
-////////////////////////////////////////////////////////////////////////////////
-
-int main (int argc, char* args[]) {
-  int ret = EXIT_SUCCESS;
-
-  arangoshEntryFunction();
-
-  TRIAGENS_C_INITIALISE(argc, args);
-  TRIAGENS_REST_INITIALISE(argc, args);
-
-  TRI_InitialiseLogging(false);
-
-  BaseClient.setEndpointString(Endpoint::getDefaultEndpoint());
-
-  // .............................................................................
-  // parse the program options
-  // .............................................................................
-
-  vector<string> positionals = ParseProgramOptions(argc, args);
-
-  // .............................................................................
-  // set-up client connection
-  // .............................................................................
-
-  // check if we want to connect to a server
-  bool useServer = (BaseClient.endpointString() != "none");
-
-  // if we are in jslint mode, we will not need the server at all
-  if (! JsLint.empty()) {
-    useServer = false;
-  }
-
-  if (useServer) {
-    BaseClient.createEndpoint();
-
-    if (BaseClient.endpointServer() == nullptr) {
-      ostringstream s;
-      s << "invalid value for --server.endpoint ('" << BaseClient.endpointString() << "')";
-
-      BaseClient.printErrLine(s.str());
-
-      TRI_EXIT_FUNCTION(EXIT_FAILURE, nullptr);
-    }
-
-    ClientConnection = CreateConnection();
-  }
-
-  // .............................................................................
-  // set-up V8 objects
-  // .............................................................................
-
-  v8::V8::InitializeICU();
-  v8::Platform* platform = v8::platform::CreateDefaultPlatform();
-  v8::V8::InitializePlatform(platform);
-  v8::Isolate* isolate = v8::Isolate::New();
-  v8::Isolate::Scope isolate_scope(isolate);
-  v8::HandleScope handle_scope(isolate);
-
-  // create the global template
-  v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
-
-  // create the context
-  v8::Persistent<v8::Context> context;
-  context.Reset(isolate, v8::Context::New(isolate, 0, global));
-  auto localContext = v8::Local<v8::Context>::New(isolate, context);
-
-  if (localContext.IsEmpty()) {
-    BaseClient.printErrLine("cannot initialize V8 engine");
-    TRI_EXIT_FUNCTION(EXIT_FAILURE, nullptr);
-  }
-
-  localContext->Enter();
-
-  // set pretty print default: (used in print.js)
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "PRETTY_PRINT", v8::Boolean::New(isolate, BaseClient.prettyPrint()));
-
-  // add colors for print.js
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "COLOR_OUTPUT", v8::Boolean::New(isolate, BaseClient.colors()));
-
-  // add function SYS_OUTPUT to use pager
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "SYS_OUTPUT", v8::FunctionTemplate::New(isolate, JS_PagerOutput)->GetFunction());
-
-  TRI_InitV8Buffer(isolate, localContext);
-
-  TRI_InitV8Utils(isolate, localContext, StartupPath, StartupModules);
-  TRI_InitV8Shell(isolate, localContext);
-
-  // reset the prompt error flag (will determine prompt colors)
-  bool promptError = false;
-
-  // .............................................................................
-  // define ArangoConnection class
-  // .............................................................................
-
-  if (useServer) {
-    v8::Handle<v8::FunctionTemplate> connection_templ = v8::FunctionTemplate::New(isolate);
-    connection_templ->SetClassName(TRI_V8_SYMBOL("ArangoConnection"));
-
-    v8::Handle<v8::ObjectTemplate> connection_proto = connection_templ->PrototypeTemplate();
-
-    connection_proto->Set(isolate, "DELETE", v8::FunctionTemplate::New(isolate, ClientConnection_httpDelete));
-    connection_proto->Set(isolate, "DELETE_RAW", v8::FunctionTemplate::New(isolate, ClientConnection_httpDeleteRaw));
-    connection_proto->Set(isolate, "GET", v8::FunctionTemplate::New(isolate, ClientConnection_httpGet));
-    connection_proto->Set(isolate, "GET_RAW", v8::FunctionTemplate::New(isolate, ClientConnection_httpGetRaw));
-    connection_proto->Set(isolate, "HEAD", v8::FunctionTemplate::New(isolate, ClientConnection_httpHead));
-    connection_proto->Set(isolate, "HEAD_RAW", v8::FunctionTemplate::New(isolate, ClientConnection_httpHeadRaw));
-    connection_proto->Set(isolate, "OPTIONS", v8::FunctionTemplate::New(isolate, ClientConnection_httpOptions));
-    connection_proto->Set(isolate, "OPTIONS_RAW", v8::FunctionTemplate::New(isolate, ClientConnection_httpOptionsRaw));
-    connection_proto->Set(isolate, "PATCH", v8::FunctionTemplate::New(isolate, ClientConnection_httpPatch));
-    connection_proto->Set(isolate, "PATCH_RAW", v8::FunctionTemplate::New(isolate, ClientConnection_httpPatchRaw));
-    connection_proto->Set(isolate, "POST", v8::FunctionTemplate::New(isolate, ClientConnection_httpPost));
-    connection_proto->Set(isolate, "POST_RAW", v8::FunctionTemplate::New(isolate, ClientConnection_httpPostRaw));
-    connection_proto->Set(isolate, "PUT", v8::FunctionTemplate::New(isolate, ClientConnection_httpPut));
-    connection_proto->Set(isolate, "PUT_RAW", v8::FunctionTemplate::New(isolate, ClientConnection_httpPutRaw));
-    connection_proto->Set(isolate, "SEND_FILE", v8::FunctionTemplate::New(isolate, ClientConnection_httpSendFile));
-    connection_proto->Set(isolate, "getEndpoint", v8::FunctionTemplate::New(isolate, ClientConnection_getEndpoint));
-    connection_proto->Set(isolate, "lastHttpReturnCode", v8::FunctionTemplate::New(isolate, ClientConnection_lastHttpReturnCode));
-    connection_proto->Set(isolate, "lastErrorMessage", v8::FunctionTemplate::New(isolate, ClientConnection_lastErrorMessage));
-    connection_proto->Set(isolate, "isConnected", v8::FunctionTemplate::New(isolate, ClientConnection_isConnected));
-    connection_proto->Set(isolate, "reconnect", v8::FunctionTemplate::New(isolate, ClientConnection_reconnect));
-    connection_proto->Set(isolate, "toString", v8::FunctionTemplate::New(isolate, ClientConnection_toString));
-    connection_proto->Set(isolate, "getVersion", v8::FunctionTemplate::New(isolate, ClientConnection_getVersion));
-    connection_proto->Set(isolate, "getDatabaseName", v8::FunctionTemplate::New(isolate, ClientConnection_getDatabaseName));
-    connection_proto->Set(isolate, "setDatabaseName", v8::FunctionTemplate::New(isolate, ClientConnection_setDatabaseName));
-    connection_proto->SetCallAsFunctionHandler(ClientConnection_ConstructorCallback);
-
-    v8::Handle<v8::ObjectTemplate> connection_inst = connection_templ->InstanceTemplate();
-    connection_inst->SetInternalFieldCount(2);
-
-    TRI_AddGlobalVariableVocbase(isolate, localContext, "ArangoConnection", connection_proto->NewInstance());
-    ConnectionTempl.Reset(isolate, connection_inst);
-
-    // add the client connection to the context:
-    TRI_AddGlobalVariableVocbase(isolate, localContext, "SYS_ARANGO", wrapV8ClientConnection(isolate, ClientConnection));
-  }
-
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "SYS_START_PAGER", v8::FunctionTemplate::New(isolate, JS_StartOutputPager)->GetFunction());
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "SYS_STOP_PAGER", v8::FunctionTemplate::New(isolate, JS_StopOutputPager)->GetFunction());
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "SYS_IMPORT_CSV_FILE", v8::FunctionTemplate::New(isolate, JS_ImportCsvFile)->GetFunction());
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "SYS_IMPORT_JSON_FILE", v8::FunctionTemplate::New(isolate, JS_ImportJsonFile)->GetFunction());
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "NORMALIZE_STRING", v8::FunctionTemplate::New(isolate, JS_normalize_string)->GetFunction());
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "COMPARE_STRING", v8::FunctionTemplate::New(isolate, JS_compare_string)->GetFunction());
-
+bool print_helo(bool useServer, bool promptError) {
   // .............................................................................
   // banner
   // .............................................................................
@@ -2186,7 +2066,96 @@ int main (int argc, char* args[]) {
       BaseClient.printLine("", true);
     }
   }
+  return promptError;
+}
 
+void InitCallbacks(v8::Isolate *isolate,
+                   bool useServer,
+                   eRunMode runMode) {
+
+  auto context = isolate->GetCurrentContext();
+  // set pretty print default: (used in print.js)
+  TRI_AddGlobalVariableVocbase(isolate, context, "PRETTY_PRINT", v8::Boolean::New(isolate, BaseClient.prettyPrint()));
+
+  // add colors for print.js
+  TRI_AddGlobalVariableVocbase(isolate, context, "COLOR_OUTPUT", v8::Boolean::New(isolate, BaseClient.colors()));
+
+  // add function SYS_OUTPUT to use pager
+  TRI_AddGlobalVariableVocbase(isolate, context, "SYS_OUTPUT", v8::FunctionTemplate::New(isolate, JS_PagerOutput)->GetFunction());
+
+  TRI_InitV8Buffer(isolate, context);
+
+  TRI_InitV8Utils(isolate, context, StartupPath, StartupModules);
+  TRI_InitV8Shell(isolate, context);
+
+  // .............................................................................
+  // define ArangoConnection class
+  // .............................................................................
+
+  if (useServer) {
+    v8::Handle<v8::FunctionTemplate> connection_templ = v8::FunctionTemplate::New(isolate);
+    connection_templ->SetClassName(TRI_V8_SYMBOL("ArangoConnection"));
+
+    v8::Handle<v8::ObjectTemplate> connection_proto = connection_templ->PrototypeTemplate();
+
+    connection_proto->Set(isolate, "DELETE",             v8::FunctionTemplate::New(isolate, ClientConnection_httpDelete));
+    connection_proto->Set(isolate, "DELETE_RAW",         v8::FunctionTemplate::New(isolate, ClientConnection_httpDeleteRaw));
+    connection_proto->Set(isolate, "GET",                v8::FunctionTemplate::New(isolate, ClientConnection_httpGet));
+    connection_proto->Set(isolate, "GET_RAW",            v8::FunctionTemplate::New(isolate, ClientConnection_httpGetRaw));
+    connection_proto->Set(isolate, "HEAD",               v8::FunctionTemplate::New(isolate, ClientConnection_httpHead));
+    connection_proto->Set(isolate, "HEAD_RAW",           v8::FunctionTemplate::New(isolate, ClientConnection_httpHeadRaw));
+    connection_proto->Set(isolate, "OPTIONS",            v8::FunctionTemplate::New(isolate, ClientConnection_httpOptions));
+    connection_proto->Set(isolate, "OPTIONS_RAW",        v8::FunctionTemplate::New(isolate, ClientConnection_httpOptionsRaw));
+    connection_proto->Set(isolate, "PATCH",              v8::FunctionTemplate::New(isolate, ClientConnection_httpPatch));
+    connection_proto->Set(isolate, "PATCH_RAW",          v8::FunctionTemplate::New(isolate, ClientConnection_httpPatchRaw));
+    connection_proto->Set(isolate, "POST",               v8::FunctionTemplate::New(isolate, ClientConnection_httpPost));
+    connection_proto->Set(isolate, "POST_RAW",           v8::FunctionTemplate::New(isolate, ClientConnection_httpPostRaw));
+    connection_proto->Set(isolate, "PUT",                v8::FunctionTemplate::New(isolate, ClientConnection_httpPut));
+    connection_proto->Set(isolate, "PUT_RAW",            v8::FunctionTemplate::New(isolate, ClientConnection_httpPutRaw));
+    connection_proto->Set(isolate, "SEND_FILE",          v8::FunctionTemplate::New(isolate, ClientConnection_httpSendFile));
+    connection_proto->Set(isolate, "getEndpoint",        v8::FunctionTemplate::New(isolate, ClientConnection_getEndpoint));
+    connection_proto->Set(isolate, "lastHttpReturnCode", v8::FunctionTemplate::New(isolate, ClientConnection_lastHttpReturnCode));
+    connection_proto->Set(isolate, "lastErrorMessage",   v8::FunctionTemplate::New(isolate, ClientConnection_lastErrorMessage));
+    connection_proto->Set(isolate, "isConnected",        v8::FunctionTemplate::New(isolate, ClientConnection_isConnected));
+    connection_proto->Set(isolate, "reconnect",          v8::FunctionTemplate::New(isolate, ClientConnection_reconnect));
+    connection_proto->Set(isolate, "toString",           v8::FunctionTemplate::New(isolate, ClientConnection_toString));
+    connection_proto->Set(isolate, "getVersion",         v8::FunctionTemplate::New(isolate, ClientConnection_getVersion));
+    connection_proto->Set(isolate, "getDatabaseName",    v8::FunctionTemplate::New(isolate, ClientConnection_getDatabaseName));
+    connection_proto->Set(isolate, "setDatabaseName",    v8::FunctionTemplate::New(isolate, ClientConnection_setDatabaseName));
+    connection_proto->SetCallAsFunctionHandler(ClientConnection_ConstructorCallback);
+
+    v8::Handle<v8::ObjectTemplate> connection_inst = connection_templ->InstanceTemplate();
+    connection_inst->SetInternalFieldCount(2);
+
+    TRI_AddGlobalVariableVocbase(isolate, context, "ArangoConnection", connection_proto->NewInstance());
+    ConnectionTempl.Reset(isolate, connection_inst);
+
+    // add the client connection to the context:
+    TRI_AddGlobalVariableVocbase(isolate, context, "SYS_ARANGO", wrapV8ClientConnection(isolate, ClientConnection));
+  }
+
+  TRI_AddGlobalVariableVocbase(isolate, context, "SYS_START_PAGER",      v8::FunctionTemplate::New(isolate, JS_StartOutputPager)->GetFunction());
+  TRI_AddGlobalVariableVocbase(isolate, context, "SYS_STOP_PAGER",       v8::FunctionTemplate::New(isolate, JS_StopOutputPager)->GetFunction());
+  TRI_AddGlobalVariableVocbase(isolate, context, "SYS_IMPORT_CSV_FILE",  v8::FunctionTemplate::New(isolate, JS_ImportCsvFile)->GetFunction());
+  TRI_AddGlobalVariableVocbase(isolate, context, "SYS_IMPORT_JSON_FILE", v8::FunctionTemplate::New(isolate, JS_ImportJsonFile)->GetFunction());
+  TRI_AddGlobalVariableVocbase(isolate, context, "NORMALIZE_STRING",     v8::FunctionTemplate::New(isolate, JS_normalize_string)->GetFunction());
+  TRI_AddGlobalVariableVocbase(isolate, context, "COMPARE_STRING",       v8::FunctionTemplate::New(isolate, JS_compare_string)->GetFunction());
+
+  TRI_AddGlobalVariableVocbase(isolate, context, "ARANGO_QUIET",         v8::Boolean::New(isolate, BaseClient.quiet()));
+  TRI_AddGlobalVariableVocbase(isolate, context, "VALGRIND",             v8::Boolean::New(isolate, (RUNNING_ON_VALGRIND > 0)));
+
+  TRI_AddGlobalVariableVocbase(isolate, context, "IS_EXECUTE_SCRIPT",    v8::Boolean::New(isolate, runMode == eExecuteScript));
+  TRI_AddGlobalVariableVocbase(isolate, context, "IS_EXECUTE_STRING",    v8::Boolean::New(isolate, runMode == eExecuteString));
+  TRI_AddGlobalVariableVocbase(isolate, context, "IS_CHECK_SCRIPT",      v8::Boolean::New(isolate, runMode == eCheckScripts));
+  TRI_AddGlobalVariableVocbase(isolate, context, "IS_UNIT_TESTS",        v8::Boolean::New(isolate, runMode == eUnitTests));
+  TRI_AddGlobalVariableVocbase(isolate, context, "IS_JS_LINT",           v8::Boolean::New(isolate, runMode == eJsLint));
+
+}
+
+int warmupEnvironment(v8::Isolate *isolate,
+                      vector<string> &positionals,
+                      eRunMode runMode) {
+  auto context = isolate->GetCurrentContext();
   // .............................................................................
   // read files
   // .............................................................................
@@ -2199,37 +2168,6 @@ int main (int argc, char* args[]) {
   LOG_DEBUG("using JavaScript startup files at '%s'", StartupPath.c_str());
   StartupLoader.setDirectory(StartupPath);
 
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "ARANGO_QUIET", v8::Boolean::New(isolate, BaseClient.quiet()));
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "VALGRIND",     v8::Boolean::New(isolate, (RUNNING_ON_VALGRIND > 0)));
-
-  bool isExecuteScript = false;
-  bool isExecuteString = false;
-  bool isCheckScripts  = false;
-  bool isUnitTests     = false;
-  bool isJsLint        = false;
-
-  if (! ExecuteScripts.empty()) {
-    isExecuteScript = true;
-  }
-  else if (! ExecuteString.empty()) {
-    isExecuteString = true;
-  }
-  else if (! CheckScripts.empty()) {
-    isCheckScripts  = true;
-  }
-  else if (! UnitTests.empty()) {
-    isUnitTests     = true;
-  }
-  else if (! JsLint.empty()) {
-    isJsLint        = true;
-  }
-
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "IS_EXECUTE_SCRIPT", v8::Boolean::New(isolate, isExecuteScript));
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "IS_EXECUTE_STRING", v8::Boolean::New(isolate, isExecuteString));
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "IS_CHECK_SCRIPT",   v8::Boolean::New(isolate, isCheckScripts));
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "IS_UNIT_TESTS",     v8::Boolean::New(isolate, isUnitTests));
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "IS_JS_LINT",        v8::Boolean::New(isolate, isJsLint));
-
   // load all init files
   vector<string> files;
 
@@ -2239,7 +2177,7 @@ int main (int argc, char* args[]) {
   files.push_back("common/bootstrap/module-console.js");  // needs internal
   files.push_back("common/bootstrap/errors.js");
 
-  if (! isJsLint) {
+  if (runMode != eJsLint) {
     files.push_back("common/bootstrap/monkeypatches.js");
   }
 
@@ -2247,7 +2185,7 @@ int main (int argc, char* args[]) {
   files.push_back("client/client.js"); // needs internal
 
   for (size_t i = 0;  i < files.size();  ++i) {
-    bool ok = StartupLoader.loadScript(isolate, localContext, files[i]);
+    bool ok = StartupLoader.loadScript(isolate, context, files[i]);
 
     if (ok) {
       LOG_TRACE("loaded JavaScript file '%s'", files[i].c_str());
@@ -2267,76 +2205,155 @@ int main (int argc, char* args[]) {
     p->Set(v8::Number::New(isolate, i), TRI_V8_SYMBOL_STD_STRING(positionals[i]));
   }
 
-  TRI_AddGlobalVariableVocbase(isolate, localContext, "ARGUMENTS", p);
+  TRI_AddGlobalVariableVocbase(isolate, context, "ARGUMENTS", p);
+  return EXIT_SUCCESS;
+}
+
+int run(v8::Isolate *isolate, eRunMode runMode, bool promptError) {
+  auto context = isolate->GetCurrentContext();
+  bool ok = false;
+  try {
+    switch (runMode) {
+    case eInteractive: 
+       RunShell(isolate, context, promptError);
+       ok = true; /// TODO
+      break;
+    case eExecuteScript:
+      // we have scripts to execute
+      ok = RunScripts(isolate, context, ExecuteScripts, true);
+      break;
+    case eExecuteString:
+      // we have string to execute
+      ok = RunString(isolate, context, ExecuteString);
+      break;
+    case eCheckScripts:
+      // we have scripts to syntax check
+      ok = RunScripts(isolate, context, CheckScripts, false);
+      break;
+    case eUnitTests:
+      // we have unit tests
+      ok = RunUnitTests(isolate, context);
+      break;
+    case eJsLint:
+      // we don't have unittests, but we have files to jslint
+      ok = RunJsLint(isolate, context);
+      break;
+    }
+  }
+  catch (std::exception const& ex) {
+    cerr << "caught exception " << ex.what() << endl;
+    ok = false;
+  }
+  catch (...) {
+    cerr << "caught unknown exception" << endl;
+    ok = false;
+  }
+  return (ok)? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief main
+////////////////////////////////////////////////////////////////////////////////
+
+int main (int argc, char* args[]) {
+  int ret = EXIT_SUCCESS;
+  eRunMode runMode = eInteractive;
+  // reset the prompt error flag (will determine prompt colors)
+  bool promptError = false;
+
+  arangoshEntryFunction();
+
+  TRIAGENS_C_INITIALISE(argc, args);
+  TRIAGENS_REST_INITIALISE(argc, args);
+
+  TRI_InitialiseLogging(false);
+
+  BaseClient.setEndpointString(Endpoint::getDefaultEndpoint());
 
   // .............................................................................
-  // start logging
+  // parse the program options
   // .............................................................................
 
-  BaseClient.openLog();
+  vector<string> positionals = ParseProgramOptions(argc, args, &runMode);
 
   // .............................................................................
-  // run normal shell
+  // set-up client connection
   // .............................................................................
 
-  if (! (isExecuteScript || isExecuteString || isCheckScripts || isUnitTests || isJsLint)) {
-    RunShell(isolate, localContext, promptError);
+  // check if we want to connect to a server
+  bool useServer = (BaseClient.endpointString() != "none");
+
+  // if we are in jslint mode, we will not need the server at all
+  if (! JsLint.empty()) {
+    useServer = false;
+  }
+
+  if (useServer) {
+    BaseClient.createEndpoint();
+
+    if (BaseClient.endpointServer() == nullptr) {
+      ostringstream s;
+      s << "invalid value for --server.endpoint ('" << BaseClient.endpointString() << "')";
+
+      BaseClient.printErrLine(s.str());
+
+      TRI_EXIT_FUNCTION(EXIT_FAILURE, nullptr);
+    }
+
+    ClientConnection = CreateConnection();
   }
 
   // .............................................................................
-  // run unit tests or jslint
+  // set-up V8 objects
   // .............................................................................
 
-  else {
-    bool ok = false;
+  v8::V8::InitializeICU();
+  v8::Platform* platform = v8::platform::CreateDefaultPlatform();
+  v8::V8::InitializePlatform(platform);
+  v8::Isolate* isolate = v8::Isolate::New();
+  isolate->Enter();
+  {
+    v8::Isolate::Scope isolate_scope(isolate);
+    v8::HandleScope handle_scope(isolate);
+    {
+      // create the global template
+      v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
 
-    try {
-      if (isExecuteScript) {
-        // we have scripts to execute
-        ok = RunScripts(isolate, localContext, ExecuteScripts, true);
-      }
-      else if (isExecuteString) {
-        // we have string to execute
-        ok = RunString(isolate, localContext, ExecuteString);
-      }
-      else if (isCheckScripts) {
-        // we have scripts to syntax check
-        ok = RunScripts(isolate, localContext, CheckScripts, false);
-      }
-      else if (isUnitTests) {
-        // we have unit tests
-        ok = RunUnitTests(isolate, localContext);
-      }
-      else if (isJsLint) {
-        // we don't have unittests, but we have files to jslint
-        ok = RunJsLint(isolate, localContext);
-      }
-    }
-    catch (std::exception const& ex) {
-      cerr << "caught exception " << ex.what() << endl;
-      ok = false;
-    }
-    catch (...) {
-      cerr << "caught unknown exception" << endl;
-      ok = false;
-    }
+      // create the context
+      v8::Persistent<v8::Context> context;
+      context.Reset(isolate, v8::Context::New(isolate, 0, global));
+      auto localContext = v8::Local<v8::Context>::New(isolate, context);
 
-    if (! ok) {
-      ret = EXIT_FAILURE;
+      if (localContext.IsEmpty()) {
+        BaseClient.printErrLine("cannot initialize V8 engine");
+        TRI_EXIT_FUNCTION(EXIT_FAILURE, nullptr);
+      }
+
+      localContext->Enter();
+
+
+      InitCallbacks(isolate, useServer, runMode);
+
+      promptError = print_helo(useServer, promptError);
+
+      ret = warmupEnvironment(isolate, positionals, runMode);
+      if (ret == EXIT_SUCCESS) {
+        BaseClient.openLog();
+
+        ret = run(isolate, runMode, promptError);
+      }
+
+      isolate->LowMemoryNotification();
+
+      // todo 1000 was the old V8-default, is this really good?
+      while (! isolate->IdleNotification(1000)) {
+      }
+
+      localContext->Exit();
+      context.Reset();
     }
   }
-
-  // .............................................................................
-  // cleanup
-  // .............................................................................
-
-  isolate->LowMemoryNotification();
-  // todo 1000 was the old V8-default, is this really good?
-  while (! isolate->IdleNotification(1000)) {
-  }
-
-  localContext->Exit();
-  context.Reset();
   isolate->Exit();
   isolate->Dispose();
 

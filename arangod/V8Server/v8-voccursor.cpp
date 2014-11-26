@@ -66,6 +66,7 @@ static int32_t const WRP_GENERAL_CURSOR_TYPE = 3;
 ////////////////////////////////////////////////////////////////////////////////
 
 static void WeakGeneralCursorCallback (const v8::WeakCallbackData<v8::External, v8::Persistent<v8::External>>& data) {
+  fprintf(stderr, "WeakGeneralCursorCallback\n");
   auto isolate      = data.GetIsolate();
   auto persistent   = data.GetParameter();
   auto myConnection = v8::Local<v8::External>::New(isolate, *persistent);
@@ -80,6 +81,7 @@ static void WeakGeneralCursorCallback (const v8::WeakCallbackData<v8::External, 
 
   // decrease the reference-counter for the database
   TRI_ReleaseVocBase(cursor->_vocbase);
+  fprintf(stderr, "Done - WeakGeneralCursorCallback\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -117,6 +119,7 @@ void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,
     result->SetInternalField(SLOT_CLASS, externalCursor);
 
     persistent.SetWeak(&persistent, WeakGeneralCursorCallback);
+    fprintf(stderr, "TRI_WrapGeneralCursor - externalCursor %x cursor %x \n", externalCursor, cursor);
   }
 
   if (result.IsEmpty()) {

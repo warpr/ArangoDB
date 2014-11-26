@@ -1287,7 +1287,6 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
   persistentContext.Reset(isolate, v8::Context::New(isolate, 0, global));
   auto localContext = v8::Local<v8::Context>::New(isolate, persistentContext);
 
-  isolate->Enter();
   localContext->Enter();
   /// TODO  v8::Context::Scope contextScope(localContext);
 
@@ -1414,26 +1413,30 @@ void ApplicationV8::shutdownV8Instance (const string& name, size_t i) {
 
   context->_locker = new v8::Locker(context->_isolate);
   auto isolate = context->_isolate;
-  auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
-  v8::Context::Scope contextScope(localContext);
-  isolate->Enter();
-  localContext->Enter();
+  {
+    v8::HandleScope scope(isolate);
 
-  isolate->LowMemoryNotification();
-  // todo 1000 was the old V8-default, is this really good?
-  while(! isolate->IdleNotification(1000)) {
-  }
+    auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
+    //// TODO v8::Context::Scope contextScope(localContext);
+    isolate->Enter();
+    localContext->Enter();
 
-  TRI_GET_GLOBALS();
-  if (v8g != nullptr) {
-    if (v8g->_transactionContext != nullptr) {
-      delete static_cast<V8TransactionContext*>(v8g->_transactionContext);
-      v8g->_transactionContext = nullptr;
+    isolate->LowMemoryNotification();
+    // todo 1000 was the old V8-default, is this really good?
+    while(! isolate->IdleNotification(1000)) {
     }
-    delete v8g;
-  }
 
-  localContext->Exit();
+    TRI_GET_GLOBALS();
+    if (v8g != nullptr) {
+      if (v8g->_transactionContext != nullptr) {
+        delete static_cast<V8TransactionContext*>(v8g->_transactionContext);
+        v8g->_transactionContext = nullptr;
+      }
+      delete v8g;
+    }
+
+    localContext->Exit();
+  }
   context->_context.Reset();
 
   isolate->Exit();

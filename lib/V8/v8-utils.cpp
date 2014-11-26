@@ -3920,7 +3920,6 @@ v8::Handle<v8::Array> static TRI_V8PathList (v8::Isolate* isolate, string const&
   v8::Handle<v8::Array> result = v8::Array::New(isolate, n);
 
   for (uint32_t i = 0;  i < n;  ++i) {
-    fprintf(stderr, "%d: - %s\n", i, paths[i].c_str());
     result->Set(v8::Integer::New(isolate, i), TRI_V8_SYMBOL_STD_STRING(paths[i]));
   }
 

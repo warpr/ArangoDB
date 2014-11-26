@@ -187,6 +187,7 @@ class v8_action_t : public TRI_action_t {
 
         *data = (void*) context->_isolate;
       }
+      v8::HandleScope scope(context->_isolate);
       auto localFunction = v8::Local<v8::Function>::New(context->_isolate, i->second);
       result = ExecuteActionVocbase(vocbase, context->_isolate, this, localFunction, request);
 
