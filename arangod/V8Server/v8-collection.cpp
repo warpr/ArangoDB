@@ -3519,9 +3519,9 @@ static void JS_CheckPointersVocbaseCol (const v8::FunctionCallbackInfo<v8::Value
 /// `db._changeMode(<mode>)`
 ///
 /// Sets the server to the given mode.
-/// Possible parameters for mode are:
+/// Possible values for mode are:
 /// - Normal
-/// - ReadOnly
+/// - NoCreate
 ///
 /// `db._changeMode(<mode>)`
 ///

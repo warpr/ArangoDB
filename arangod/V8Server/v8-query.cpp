@@ -1594,11 +1594,11 @@ static void ByExampleHashIndexQuery (SingleCollectionReadOnlyTransaction& trx,
   }
 
   // find the matches
-  TRI_index_result_t list = TRI_LookupHashIndex(idx, &searchValue);
+  TRI_vector_pointer_t list = TRI_LookupHashIndex(idx, &searchValue);
   DestroySearchValue(shaper->_memoryZone, searchValue);
 
   // convert result
-  size_t total = list._length;
+  size_t total = TRI_LengthVectorPointer(&list);
   size_t count = 0;
   bool error = false;
 
@@ -1610,7 +1610,7 @@ static void ByExampleHashIndexQuery (SingleCollectionReadOnlyTransaction& trx,
 
     if (s < e) {
       for (size_t i = s;  i < e;  ++i) {
-        v8::Handle<v8::Value> doc = WRAP_SHAPED_JSON(trx, collection->_cid, list._documents[i]->getDataPtr());
+        v8::Handle<v8::Value> doc = WRAP_SHAPED_JSON(trx, collection->_cid, static_cast<TRI_doc_mptr_t*>(TRI_AtVectorPointer(&list, i))->getDataPtr());
 
         if (doc.IsEmpty()) {
           error = true;
@@ -1624,7 +1624,7 @@ static void ByExampleHashIndexQuery (SingleCollectionReadOnlyTransaction& trx,
   }
 
   // free data allocated by hash index result
-  TRI_DestroyIndexResult(&list);
+  TRI_DestroyVectorPointer(&list);
 
   result->Set(TRI_V8_SYMBOL("total"), v8::Number::New(isolate, (double) total));
   result->Set(TRI_V8_SYMBOL("count"), v8::Number::New(isolate, (double) count));
@@ -2534,7 +2534,7 @@ void TRI_InitV8Queries (v8::Isolate* isolate,
   TRI_AddMethodVocbase(isolate, VocbaseColTempl, "OFFSET", JS_OffsetQuery, true);
 
   TRI_AddMethodVocbase(isolate, VocbaseColTempl, "OUTEDGES", JS_OutEdgesQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "WITHIN", JS_WithinQuery);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "WITHIN", JS_WithinQuery, true);
 }
 
 // -----------------------------------------------------------------------------

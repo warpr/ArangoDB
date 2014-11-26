@@ -392,13 +392,13 @@ namespace triagens {
 /// @brief create an AST null value node
 ////////////////////////////////////////////////////////////////////////////////
 
-        AstNode* createNodeValueNull ();
+        static AstNode* createNodeValueNull ();
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief create an AST bool value node
 ////////////////////////////////////////////////////////////////////////////////
 
-        AstNode* createNodeValueBool (bool);
+        static AstNode* createNodeValueBool (bool);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief create an AST int value node
@@ -489,6 +489,12 @@ namespace triagens {
 
         AstNode* clone (AstNode const*);
 
+////////////////////////////////////////////////////////////////////////////////
+/// @brief get the reversed operator for a comparison operator
+////////////////////////////////////////////////////////////////////////////////
+
+        static AstNodeType ReverseOperator (AstNodeType);
+
 // -----------------------------------------------------------------------------
 // --SECTION--                                                   private methods
 // -----------------------------------------------------------------------------
@@ -537,7 +543,7 @@ namespace triagens {
 /// @brief optimizes the binary logical operators && and ||
 ////////////////////////////////////////////////////////////////////////////////
 
-        AstNode* optimizeBinaryOperatorLogical (AstNode*);
+        AstNode* optimizeBinaryOperatorLogical (AstNode*, bool);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief optimizes the binary relational operators <, <=, >, >=, ==, != and IN
@@ -596,7 +602,17 @@ namespace triagens {
         AstNode* nodeFromJson (TRI_json_t const*);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief traverse the AST
+/// @brief traverse the AST, using pre- and post-order visitors
+////////////////////////////////////////////////////////////////////////////////
+
+        static AstNode* traverse (AstNode*,
+                                  std::function<void(AstNode const*, void*)>,
+                                  std::function<AstNode*(AstNode*, void*)>,
+                                  std::function<void(AstNode const*, void*)>,
+                                  void*);
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief traverse the AST using a visitor
 ////////////////////////////////////////////////////////////////////////////////
 
         static AstNode* traverse (AstNode*,
@@ -604,7 +620,7 @@ namespace triagens {
                                   void*);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief traverse the AST, with const nodes
+/// @brief traverse the AST using a visitor, with const nodes
 ////////////////////////////////////////////////////////////////////////////////
 
         static void traverse (AstNode const*,
@@ -630,11 +646,16 @@ namespace triagens {
       public:
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief inverse comparison operators
+/// @brief negated comparison operators
 ////////////////////////////////////////////////////////////////////////////////
 
-        static std::unordered_map<int, AstNodeType> const ReverseOperators;
+        static std::unordered_map<int, AstNodeType> const NegatedOperators;
 
+////////////////////////////////////////////////////////////////////////////////
+/// @brief reverse comparison operators
+////////////////////////////////////////////////////////////////////////////////
+
+        static std::unordered_map<int, AstNodeType> const ReversedOperators;
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                                 private variables

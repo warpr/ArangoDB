@@ -281,6 +281,12 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION(TRI_ERROR_INTERNAL);
   }
 
+  bool embed = false;  
+  if (object->Has(TRI_V8_SYMBOL("embed"))) {
+    v8::Handle<v8::Value> v = v8::Handle<v8::Object>::Cast(object->Get(TRI_V8_SYMBOL("embed")));
+    embed = TRI_ObjectToBoolean(v);
+  }
+
   v8::Handle<v8::Object> current = isolate->GetCurrentContext()->Global();
 
   // callback function
@@ -314,7 +320,8 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
                           readCollections,
                           writeCollections,
                           lockTimeout,
-                          waitForSync);
+                          waitForSync,
+                          embed);
 
   int res = trx.begin();
 
