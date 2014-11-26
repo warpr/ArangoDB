@@ -131,7 +131,6 @@ bool ServerJob::cancel (bool running) {
 bool ServerJob::execute () {
   // default to system database
   TRI_vocbase_t* vocbase = TRI_UseDatabaseServer(_server, TRI_VOC_SYSTEM_DATABASE);
-  ISOLATE;
 
   if (vocbase == nullptr) {
     // database is gone
@@ -145,6 +144,7 @@ bool ServerJob::execute () {
     return false;
   }
 
+  auto isolate = context->isolate;
   try {
     v8::HandleScope scope(isolate);
     

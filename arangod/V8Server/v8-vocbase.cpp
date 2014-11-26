@@ -30,11 +30,11 @@
 #include "v8-vocbaseprivate.h"
 #include "v8-wrapshapedjson.h"
 #include "v8-replication.h"
-#include "v8-voccursor.h"
 #include "v8-vocindex.h"
 #include "v8-collection.h"
 
 #include "VocBase/general-cursor.h"
+#include "v8-voccursor.h"
 
 #include "Aql/Query.h"
 #include "Aql/QueryRegistry.h"
@@ -2440,7 +2440,8 @@ bool TRI_UpgradeDatabase (TRI_vocbase_t* vocbase,
                           JSLoader* startupLoader,
                           v8::Handle<v8::Context> context) {
   TRI_ASSERT(startupLoader != nullptr);
-  ISOLATE;
+  auto isolate = context->GetIsolate();
+
   v8::HandleScope scope(isolate);
   TRI_GET_GLOBALS();
   TRI_vocbase_t* orig = v8g->_vocbase;
@@ -2467,7 +2468,7 @@ int TRI_CheckDatabaseVersion (TRI_vocbase_t* vocbase,
                               v8::Handle<v8::Context> context) {
   TRI_ASSERT(startupLoader != nullptr);
 
-  ISOLATE;
+  auto isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   TRI_GET_GLOBALS();
   TRI_vocbase_t* orig = v8g->_vocbase;

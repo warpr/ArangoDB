@@ -27,9 +27,9 @@
 /// @author Copyright 2011-2013, triAGENS GmbH, Cologne, Germany
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "v8-voccursor.h"
 #include "v8-vocbaseprivate.h"
 #include "VocBase/general-cursor.h"
+#include "v8-voccursor.h"
 #include "Basics/conversions.h"
 #include "V8/v8-conv.h"
 #include "Utils/transactions.h"
@@ -89,7 +89,7 @@ static void WeakGeneralCursorCallback (const v8::WeakCallbackData<v8::External, 
 ////////////////////////////////////////////////////////////////////////////////
 
 void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,
-                            void* cursor) {
+                            TRI_general_cursor_t* cursor) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
@@ -102,11 +102,10 @@ void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,
 
   if (! result.IsEmpty()) {
     v8::Persistent<v8::External> persistent;
-    TRI_general_cursor_t* c = (TRI_general_cursor_t*) cursor;
-    TRI_UseGeneralCursor(c);
+    TRI_UseGeneralCursor(cursor);
 
     // increase the reference-counter for the database
-    TRI_UseVocBase(c->_vocbase);
+    TRI_UseVocBase(cursor->_vocbase);
 
     auto externalCursor = v8::External::New(isolate, cursor);
     persistent.Reset(isolate, externalCursor);

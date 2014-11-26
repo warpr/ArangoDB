@@ -179,7 +179,8 @@ bool V8Completer::isComplete(std::string const& source, size_t lineno, size_t co
 
 void V8Completer::getAlternatives(char const * text, vector<string> & result) {
   // locate global object or sub-object
-  ISOLATE;
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Handle<v8::Object> current = context->Global();
   string path;

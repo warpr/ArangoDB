@@ -117,7 +117,7 @@ void ConsoleThread::run () {
 ////////////////////////////////////////////////////////////////////////////////
 
 void ConsoleThread::inner () {
-  ISOLATE;
+  v8::Isolate* isolate = v8::Isolate::GetCurrent(); // TODO: this may go away.
   v8::HandleScope globalScope(isolate);
 
   // run the shell

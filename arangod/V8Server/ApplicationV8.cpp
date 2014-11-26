@@ -201,8 +201,6 @@ bool ApplicationV8::V8Context::addGlobalContextMethod (string const& method) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void ApplicationV8::V8Context::handleGlobalContextMethods () {
-  ISOLATE;
-  v8::HandleScope scope(isolate);
 
   vector<GlobalContextMethods::MethodType> copy;
 
@@ -250,7 +248,6 @@ void ApplicationV8::V8Context::handleGlobalContextMethods () {
 ////////////////////////////////////////////////////////////////////////////////
 
 void ApplicationV8::V8Context::handleCancelationCleanup () {
-  ISOLATE;
   v8::HandleScope scope(isolate);
 
   LOG_DEBUG("executing cancelation cleanup context %d", (int) _id);
@@ -366,14 +363,14 @@ ApplicationV8::V8Context* ApplicationV8::enterContext (std::string const& name,
   V8Context* context = _freeContexts[name].back();
 
   TRI_ASSERT(context != nullptr);
-  auto isolate = context->_isolate;
+  auto isolate = context->isolate;
   TRI_ASSERT(isolate != nullptr);
 
   _freeContexts[name].pop_back();
   _busyContexts[name].insert(context);
 
   context->_locker = new v8::Locker(isolate);
-  context->_isolate->Enter();
+  context->isolate->Enter();
 
   v8::HandleScope scope(isolate);
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
@@ -420,7 +417,7 @@ void ApplicationV8::exitContext (V8Context* context) {
   double lastGc = gc->getLastGcStamp();
 
   CONDITION_LOCKER(guard, _contextCondition);
-  auto isolate = context->_isolate;
+  auto isolate = context->isolate;
 
   TRI_ASSERT(context->_locker->IsLocked(isolate));
   TRI_ASSERT(v8::Locker::IsLocked(isolate));
@@ -639,7 +636,7 @@ void ApplicationV8::collectGarbage () {
 
     if (context != nullptr) {
       LOG_TRACE("collecting V8 garbage");
-      auto isolate = context->_isolate;
+      auto isolate = context->isolate;
       context->_locker = new v8::Locker(isolate);
       isolate->Enter();
       v8::HandleScope scope(isolate);
@@ -706,8 +703,8 @@ void ApplicationV8::upgradeDatabase (bool skip,
   // enter context and isolate
   V8Context* context = _contexts[name][0];
 
-  context->_locker = new v8::Locker(context->_isolate);
-  auto isolate = context->_isolate;
+  context->_locker = new v8::Locker(context->isolate);
+  auto isolate = context->isolate;
   v8::HandleScope scope(isolate);
 
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
@@ -811,8 +808,8 @@ void ApplicationV8::versionCheck () {
   // enter context and isolate
   V8Context* context = _contexts[name][0];
 
-  context->_locker = new v8::Locker(context->_isolate);
-  auto isolate = context->_isolate;
+  context->_locker = new v8::Locker(context->isolate);
+  auto isolate = context->isolate;
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
   v8::Context::Scope contextScope(localContext);
   isolate->Enter();
@@ -922,8 +919,8 @@ bool ApplicationV8::prepareNamedContexts (const string& name,
     // and generate MAIN
     V8Context* context = _contexts[name][i];
 
-    context->_locker = new v8::Locker(context->_isolate);
-    auto isolate = context->_isolate;
+    context->_locker = new v8::Locker(context->isolate);
+    auto isolate = context->isolate;
     auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
     v8::Context::Scope contextScope(localContext);
     isolate->Enter();
@@ -1136,7 +1133,7 @@ void ApplicationV8::stop () {
 
       for (auto it : _busyContexts[name]) {
         LOG_WARNING("sending termination signal to V8 context");
-        v8::V8::TerminateExecution((*it)._isolate);
+        v8::V8::TerminateExecution((*it).isolate);
       }
     }
   }
@@ -1274,9 +1271,9 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
   // enter a new isolate
   context->_name = name;
   context->_id = i;
-  context->_isolate = isolate;
+  context->isolate = isolate;
   context->_locker = new v8::Locker(isolate);
-  context->_isolate->Enter();
+  context->isolate->Enter();
 
   // create the context
   v8::HandleScope handle_scope(isolate);
@@ -1290,7 +1287,7 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
   localContext->Enter();
   /// TODO  v8::Context::Scope contextScope(localContext);
 
-  context->_context.Reset(context->_isolate, localContext);
+  context->_context.Reset(context->isolate, localContext);
 
   if (context->_context.IsEmpty()) {
     LOG_FATAL_AND_EXIT("cannot initialize V8 engine");
@@ -1378,8 +1375,8 @@ void ApplicationV8::prepareV8Server (const string& name, const size_t i, const s
   // enter context and isolate
   V8Context* context = _contexts[name][i];
 
-  context->_locker = new v8::Locker(context->_isolate);
-  auto isolate = context->_isolate;
+  auto isolate = context->isolate;
+  context->_locker = new v8::Locker(isolate);
   v8::HandleScope scope(isolate);
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
   /// TODO: do we need this? v8::Context::Scope contextScope(localContext);
@@ -1411,8 +1408,8 @@ void ApplicationV8::shutdownV8Instance (const string& name, size_t i) {
 
   V8Context* context = _contexts[name][i];
 
-  context->_locker = new v8::Locker(context->_isolate);
-  auto isolate = context->_isolate;
+  auto isolate = context->isolate;
+  context->_locker = new v8::Locker(isolate);
   {
     v8::HandleScope scope(isolate);
 

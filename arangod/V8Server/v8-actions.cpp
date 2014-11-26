@@ -160,7 +160,7 @@ class v8_action_t : public TRI_action_t {
       // locate the callback
       READ_LOCKER(_callbacksLock);
 
-      map< v8::Isolate*, v8::Persistent<v8::Function> >::iterator i = _callbacks.find(context->_isolate);
+      map< v8::Isolate*, v8::Persistent<v8::Function> >::iterator i = _callbacks.find(context->isolate);
 
       if (i == _callbacks.end()) {
         LOG_WARNING("no callback function for JavaScript action '%s'", _url.c_str());
@@ -185,11 +185,11 @@ class v8_action_t : public TRI_action_t {
           return result;
         }
 
-        *data = (void*) context->_isolate;
+        *data = (void*) context->isolate;
       }
-      v8::HandleScope scope(context->_isolate);
-      auto localFunction = v8::Local<v8::Function>::New(context->_isolate, i->second);
-      result = ExecuteActionVocbase(vocbase, context->_isolate, this, localFunction, request);
+      v8::HandleScope scope(context->isolate);
+      auto localFunction = v8::Local<v8::Function>::New(context->isolate, i->second);
+      result = ExecuteActionVocbase(vocbase, context->isolate, this, localFunction, request);
 
       {
         MUTEX_LOCKER(*dataLock);

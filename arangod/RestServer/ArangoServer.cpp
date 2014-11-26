@@ -1038,9 +1038,10 @@ int ArangoServer::runConsole (TRI_vocbase_t* vocbase) {
 ////////////////////////////////////////////////////////////////////////////////
 
 int ArangoServer::runUnitTests (TRI_vocbase_t* vocbase) {
-  ISOLATE;
+
   ApplicationV8::V8Context* context = _applicationV8->enterContext("STANDARD", vocbase, true, true);
 
+  auto isolate = context->isolate;
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
   v8::Context::Scope contextScope(localContext);
 
@@ -1089,8 +1090,8 @@ int ArangoServer::runUnitTests (TRI_vocbase_t* vocbase) {
 ////////////////////////////////////////////////////////////////////////////////
 
 int ArangoServer::runScript (TRI_vocbase_t* vocbase) {
-  ISOLATE;
   ApplicationV8::V8Context* context = _applicationV8->enterContext("STANDARD", vocbase, true, true);
+  auto isolate = context->isolate;
 
   v8::HandleScope globalScope(isolate);
 

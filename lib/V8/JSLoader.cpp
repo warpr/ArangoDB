@@ -88,7 +88,7 @@ v8::Handle<v8::Value> JSLoader::executeGlobalScript (v8::Isolate* isolate,
       return v8::Undefined(isolate);
     }
     else {
-      TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(v8::Isolate::GetCurrent()->GetData(V8DataSlot));
+      TRI_GET_GLOBALS();
 
       v8g->_canceled = true;
     }
@@ -131,7 +131,7 @@ bool JSLoader::loadScript (v8::Isolate* isolate,
       return false;
     }
     else {
-      TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(v8::Isolate::GetCurrent()->GetData(V8DataSlot));
+      TRI_GET_GLOBALS();
 
       v8g->_canceled = true;
       return false;

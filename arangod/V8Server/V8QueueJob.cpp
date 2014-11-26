@@ -114,7 +114,7 @@ Job::status_t V8QueueJob::work () {
 
   // now execute the function within this context
   {
-    ISOLATE;
+    auto isolate = context->isolate;
     v8::HandleScope scope(isolate);
 
     // get built-in Function constructor (see ECMA-262 5th edition 15.3.2)

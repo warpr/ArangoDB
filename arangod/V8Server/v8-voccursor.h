@@ -39,6 +39,6 @@ extern void TRI_InitV8cursor (v8::Handle<v8::Context> context,
                               TRI_v8_global_t* v8g);
 
 void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,
-                            void* cursor);
+                            TRI_general_cursor_t* cursor);
 
 #endif
