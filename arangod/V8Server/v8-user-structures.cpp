@@ -210,7 +210,7 @@ class KeySpace {
           auto element = static_cast<KeySpaceElement*>(_hash._table[i]);
 
           if (element != nullptr) {
-            result->Set(v8::Number::New(isolate, count++), TRI_V8_SYMBOL(element->key));
+            result->Set(v8::Number::New(isolate, count++), TRI_V8_STRING(element->key));
           }
         }
       }
@@ -233,7 +233,7 @@ class KeySpace {
 
           if (element != nullptr) {
             if (TRI_IsPrefixString(element->key, prefix.c_str())) {
-              result->Set(v8::Number::New(isolate, count++), TRI_V8_SYMBOL(element->key));
+              result->Set(v8::Number::New(isolate, count++), TRI_V8_STRING(element->key));
             }
           }
         }
@@ -254,7 +254,7 @@ class KeySpace {
           auto element = static_cast<KeySpaceElement*>(_hash._table[i]);
 
           if (element != nullptr) {
-            result->Set(TRI_V8_SYMBOL(element->key), TRI_ObjectJson(isolate, element->json));
+            result->Set(TRI_V8_STRING(element->key), TRI_ObjectJson(isolate, element->json));
           }
         }
       }
@@ -275,7 +275,7 @@ class KeySpace {
 
           if (element != nullptr) {
             if (TRI_IsPrefixString(element->key, prefix.c_str())) {
-              result->Set(TRI_V8_SYMBOL(element->key), TRI_ObjectJson(isolate, element->json));
+              result->Set(TRI_V8_STRING(element->key), TRI_ObjectJson(isolate, element->json));
             }
           }
         }
@@ -1860,34 +1860,34 @@ void TRI_InitV8UserStructures (v8::Isolate* isolate,
 
   // NOTE: the following functions are all experimental and might 
   // change without further notice
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEYSPACE_CREATE", JS_KeyspaceCreate, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEYSPACE_DROP", JS_KeyspaceDrop, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEYSPACE_COUNT", JS_KeyspaceCount, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEYSPACE_EXISTS", JS_KeyspaceExists, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEYSPACE_KEYS", JS_KeyspaceKeys, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEYSPACE_REMOVE", JS_KeyspaceRemove, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEYSPACE_GET", JS_KeyspaceGet, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEYSPACE_CREATE"), JS_KeyspaceCreate, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEYSPACE_DROP"), JS_KeyspaceDrop, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEYSPACE_COUNT"), JS_KeyspaceCount, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEYSPACE_EXISTS"), JS_KeyspaceExists, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEYSPACE_KEYS"), JS_KeyspaceKeys, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEYSPACE_REMOVE"), JS_KeyspaceRemove, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEYSPACE_GET"), JS_KeyspaceGet, true);
 
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_SET", JS_KeySet, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_SET_CAS", JS_KeySetCas, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_GET", JS_KeyGet, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_REMOVE", JS_KeyRemove, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_EXISTS", JS_KeyExists, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_TYPE", JS_KeyType, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_SET"), JS_KeySet, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_SET_CAS"), JS_KeySetCas, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_GET"), JS_KeyGet, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_REMOVE"), JS_KeyRemove, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_EXISTS"), JS_KeyExists, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_TYPE"), JS_KeyType, true);
 
   // numeric functions
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_INCR", JS_KeyIncr, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_INCR"), JS_KeyIncr, true);
 
   // list / array functions
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_UPDATE", JS_KeyUpdate, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_KEYS", JS_KeyKeys, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_VALUES", JS_KeyValues, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_COUNT", JS_KeyCount, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_PUSH", JS_KeyPush, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_POP", JS_KeyPop, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_TRANSFER", JS_KeyTransfer, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_GET_AT", JS_KeyGetAt, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "KEY_SET_AT", JS_KeySetAt, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_UPDATE"), JS_KeyUpdate, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_KEYS"), JS_KeyKeys, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_VALUES"), JS_KeyValues, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_COUNT"), JS_KeyCount, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_PUSH"), JS_KeyPush, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_POP"), JS_KeyPop, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_TRANSFER"), JS_KeyTransfer, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_GET_AT"), JS_KeyGetAt, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("KEY_SET_AT"), JS_KeySetAt, true);
 }
 
 // -----------------------------------------------------------------------------

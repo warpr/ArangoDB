@@ -288,7 +288,7 @@ static TRI_index_operator_t* SetupConditionsSkiplist (v8::Isolate* isolate,
 
   // iterate over all index fields
   for (size_t i = 1; i <= idx->_fields._length; ++i) {
-    v8::Handle<v8::String> key = TRI_V8_SYMBOL(idx->_fields._buffer[i - 1]);
+    v8::Handle<v8::String> key = TRI_V8_STRING(idx->_fields._buffer[i - 1]);
 
     if (! conditions->HasOwnProperty(key)) {
       break;
@@ -492,7 +492,7 @@ static TRI_index_operator_t* SetupExampleSkiplist (v8::Isolate* isolate,
   }
 
   for (size_t i = 0; i < idx->_fields._length; ++i) {
-    v8::Handle<v8::String> key = TRI_V8_SYMBOL(idx->_fields._buffer[i]);
+    v8::Handle<v8::String> key = TRI_V8_STRING(idx->_fields._buffer[i]);
 
     if (! example->HasOwnProperty(key)) {
       break;
@@ -577,7 +577,7 @@ static int SetupSearchValue (TRI_vector_t const* paths,
         TRI_ERROR_BAD_PARAMETER;
     }
 
-    v8::Handle<v8::String> key = TRI_V8_SYMBOL(name);
+    v8::Handle<v8::String> key = TRI_V8_STRING(name);
     int res;
 
     if (example->HasOwnProperty(key)) {
@@ -1222,7 +1222,7 @@ static void JS_Nth2Query (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   for (size_t i = 0; i < n; ++i) {
     char const* key = TRI_EXTRACT_MARKER_KEY(static_cast<TRI_df_marker_t const*>(docs[i].getDataPtr()));
-    documents->Set(v8::Number::New(isolate, count++), TRI_V8_SYMBOL(key));
+    documents->Set(v8::Number::New(isolate, count++), TRI_V8_STRING(key));
   }
 
   result->Set(TRI_V8_SYMBOL("total"), v8::Number::New(isolate, total));
@@ -2511,30 +2511,30 @@ void TRI_InitV8Queries (v8::Isolate* isolate,
   // generate the TRI_vocbase_col_t template
   // .............................................................................
 
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "ALL", JS_AllQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "ANY", JS_AnyQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "BY_CONDITION_SKIPLIST", JS_ByConditionSkiplist, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "BY_EXAMPLE", JS_ByExampleQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "BY_EXAMPLE_HASH", JS_ByExampleHashIndex, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "BY_EXAMPLE_SKIPLIST", JS_ByExampleSkiplist, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "checksum", JS_ChecksumCollection);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "EDGES", JS_EdgesQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "FIRST", JS_FirstQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "FULLTEXT", JS_FulltextQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "INEDGES", JS_InEdgesQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "LAST", JS_LastQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "NEAR", JS_NearQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("ALL"), JS_AllQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("ANY"), JS_AnyQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("BY_CONDITION_SKIPLIST"), JS_ByConditionSkiplist, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("BY_EXAMPLE"), JS_ByExampleQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("BY_EXAMPLE_HASH"), JS_ByExampleHashIndex, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("BY_EXAMPLE_SKIPLIST"), JS_ByExampleSkiplist, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("checksum"), JS_ChecksumCollection);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("EDGES"), JS_EdgesQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("FIRST"), JS_FirstQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("FULLTEXT"), JS_FulltextQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("INEDGES"), JS_InEdgesQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("LAST"), JS_LastQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("NEAR"), JS_NearQuery, true);
 
   // internal method. not intended to be used by end-users
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "NTH", JS_NthQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "NTH2", JS_Nth2Query, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "NTH3", JS_Nth3Query, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("NTH"), JS_NthQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("NTH2"), JS_Nth2Query, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("NTH3"), JS_Nth3Query, true);
 
   // internal method. not intended to be used by end-users
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "OFFSET", JS_OffsetQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("OFFSET"), JS_OffsetQuery, true);
 
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "OUTEDGES", JS_OutEdgesQuery, true);
-  TRI_AddMethodVocbase(isolate, VocbaseColTempl, "WITHIN", JS_WithinQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("OUTEDGES"), JS_OutEdgesQuery, true);
+  TRI_AddMethodVocbase(isolate, VocbaseColTempl, TRI_V8_SYMBOL("WITHIN"), JS_WithinQuery, true);
 }
 
 // -----------------------------------------------------------------------------

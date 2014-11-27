@@ -983,7 +983,7 @@ void ReplaceVocbaseCol (bool useCollection,
     result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
     result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
     result->Set(_OldRevKey, V8RevisionId(isolate, actualRevision));
-    result->Set(_KeyKey, TRI_V8_SYMBOL(docKey));
+    result->Set(_KeyKey, TRI_V8_STRING(docKey));
 
     TRI_V8_RETURN(result);
   }
@@ -1084,7 +1084,7 @@ static void InsertVocbaseCol (TRI_vocbase_col_t* col,
     TRI_GET_GLOBAL_STR(_KeyKey);
     result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
     result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
-    result->Set(_KeyKey, TRI_V8_SYMBOL(docKey));
+    result->Set(_KeyKey, TRI_V8_STRING(docKey));
 
     TRI_V8_RETURN(result);
   }
@@ -1293,7 +1293,7 @@ static void UpdateVocbaseCol (bool useCollection,
     result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
     result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
     result->Set(_OldRevKey, V8RevisionId(isolate, actualRevision));
-    result->Set(_KeyKey, TRI_V8_SYMBOL(docKey));
+    result->Set(_KeyKey, TRI_V8_STRING(docKey));
 
     TRI_V8_RETURN(result);
   }
@@ -1962,7 +1962,7 @@ static void JS_NameVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& args) 
   }
 
   if (! collection->_isLocal) {
-    v8::Handle<v8::Value> result = TRI_V8_SYMBOL(collection->_name);
+    v8::Handle<v8::Value> result = TRI_V8_STRING(collection->_name);
     TRI_V8_RETURN(result);
   }
 
@@ -1975,7 +1975,7 @@ static void JS_NameVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& args) 
     TRI_V8_RETURN_UNDEFINED();
   }
 
-  v8::Handle<v8::Value> result = TRI_V8_SYMBOL(name);
+  v8::Handle<v8::Value> result = TRI_V8_STRING(name);
   TRI_Free(TRI_UNKNOWN_MEM_ZONE, name);
 
   TRI_V8_RETURN(result);
@@ -3051,7 +3051,7 @@ static void InsertEdgeCol (TRI_vocbase_col_t* col,
     TRI_GET_GLOBAL_STR(_KeyKey);
     result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
     result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
-    result->Set(_KeyKey, TRI_V8_SYMBOL(docKey));
+    result->Set(_KeyKey, TRI_V8_STRING(docKey));
 
     TRI_V8_RETURN(result); 
   }
@@ -3785,7 +3785,7 @@ static void JS_CompletionsVocbase (const v8::FunctionCallbackInfo<v8::Value>& ar
     char const* name = TRI_AtVectorString(&names, i);
 
     if (name != nullptr) {
-      result->Set(v8::Number::New(isolate, j++), TRI_V8_SYMBOL(name));
+      result->Set(v8::Number::New(isolate, j++), TRI_V8_STRING(name));
     }
   }
 
@@ -4214,7 +4214,7 @@ static void JS_DatafilesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& a
   result->Set(TRI_V8_SYMBOL("journals"), journals);
 
   for (size_t i = 0;  i < structure._journals._length;  ++i) {
-    journals->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL(structure._journals._buffer[i]));
+    journals->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STRING(structure._journals._buffer[i]));
   }
 
   // compactors
@@ -4222,7 +4222,7 @@ static void JS_DatafilesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& a
   result->Set(TRI_V8_SYMBOL("compactors"), compactors);
 
   for (size_t i = 0;  i < structure._compactors._length;  ++i) {
-    compactors->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL(structure._compactors._buffer[i]));
+    compactors->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STRING(structure._compactors._buffer[i]));
   }
 
   // datafiles
@@ -4230,7 +4230,7 @@ static void JS_DatafilesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& a
   result->Set(TRI_V8_SYMBOL("datafiles"), datafiles);
 
   for (size_t i = 0;  i < structure._datafiles._length;  ++i) {
-    datafiles->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL(structure._datafiles._buffer[i]));
+    datafiles->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STRING(structure._datafiles._buffer[i]));
   }
 
   // free result
@@ -4328,16 +4328,16 @@ void TRI_InitV8collection (v8::Handle<v8::Context> context,
                            v8::Isolate* isolate,
                            v8::Handle<v8::ObjectTemplate>  ArangoDBNS){
 
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_changeMode", JS_ChangeOperationModeVocbase);
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_collection", JS_CollectionVocbase);
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_collections", JS_CollectionsVocbase);
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_COMPLETIONS", JS_CompletionsVocbase, true);
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_document", JS_DocumentVocbase);
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_exists", JS_ExistsVocbase);
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_remove", JS_RemoveVocbase);
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_replace", JS_ReplaceVocbase);
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_update", JS_UpdateVocbase);
-  TRI_AddMethodVocbase(isolate, ArangoDBNS, "_version", JS_VersionServer);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_changeMode"), JS_ChangeOperationModeVocbase);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_collection"), JS_CollectionVocbase);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_collections"), JS_CollectionsVocbase);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_COMPLETIONS"), JS_CompletionsVocbase, true);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_document"), JS_DocumentVocbase);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_exists"), JS_ExistsVocbase);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_remove"), JS_RemoveVocbase);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_replace"), JS_ReplaceVocbase);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_update"), JS_UpdateVocbase);
+  TRI_AddMethodVocbase(isolate, ArangoDBNS, TRI_V8_SYMBOL("_version"), JS_VersionServer);
 
   v8::Handle<v8::ObjectTemplate> rt;
   v8::Handle<v8::FunctionTemplate> ft;
@@ -4350,36 +4350,36 @@ void TRI_InitV8collection (v8::Handle<v8::Context> context,
 
 
 #ifdef TRI_ENABLE_MAINTAINER_MODE
-  TRI_AddMethodVocbase(isolate, rt, "checkPointers", JS_CheckPointersVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("checkPointers"), JS_CheckPointersVocbaseCol);
 #endif  
-  TRI_AddMethodVocbase(isolate, rt, "count", JS_CountVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "datafiles", JS_DatafilesVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "datafileScan", JS_DatafileScanVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "document", JS_DocumentVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "drop", JS_DropVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "exists", JS_ExistsVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "figures", JS_FiguresVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "insert", JS_InsertVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "load", JS_LoadVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "name", JS_NameVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "planId", JS_PlanIdVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "properties", JS_PropertiesVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "remove", JS_RemoveVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "revision", JS_RevisionVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "rename", JS_RenameVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "replace", JS_ReplaceVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "rotate", JS_RotateVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "save", JS_InsertVocbaseCol); // note: save is now an alias for insert
-  TRI_AddMethodVocbase(isolate, rt, "status", JS_StatusVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "TRUNCATE", JS_TruncateVocbaseCol, true);
-  TRI_AddMethodVocbase(isolate, rt, "truncateDatafile", JS_TruncateDatafileVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "type", JS_TypeVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "unload", JS_UnloadVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "update", JS_UpdateVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "version", JS_VersionVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("count"), JS_CountVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("datafiles"), JS_DatafilesVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("datafileScan"), JS_DatafileScanVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("document"), JS_DocumentVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("drop"), JS_DropVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("exists"), JS_ExistsVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("figures"), JS_FiguresVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("insert"), JS_InsertVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("load"), JS_LoadVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("name"), JS_NameVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("planId"), JS_PlanIdVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("properties"), JS_PropertiesVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("remove"), JS_RemoveVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("revision"), JS_RevisionVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("rename"), JS_RenameVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("replace"), JS_ReplaceVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("rotate"), JS_RotateVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("save"), JS_InsertVocbaseCol); // note: save is now an alias for insert
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("status"), JS_StatusVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("TRUNCATE"), JS_TruncateVocbaseCol, true);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("truncateDatafile"), JS_TruncateDatafileVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("type"), JS_TypeVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("unload"), JS_UnloadVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("update"), JS_UpdateVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("version"), JS_VersionVocbaseCol);
 
   TRI_InitV8indexCollection(isolate, rt);
 
   v8g->VocbaseColTempl.Reset(isolate, rt);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoCollection", ft->GetFunction());
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("ArangoCollection"), ft->GetFunction());
 }

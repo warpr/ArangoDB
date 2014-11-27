@@ -1709,7 +1709,7 @@ void TRI_InitV8Buffer (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
 
   TRI_V8_AddMethod(isolate, exports, "SlowBuffer", ft);
   TRI_V8_AddMethod(isolate, exports, "setFastBufferConstructor", JS_SetFastBufferConstructor);
-  TRI_AddGlobalVariableVocbase(isolate, context, "EXPORTS_SLOW_BUFFER", exports);
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("EXPORTS_SLOW_BUFFER"), exports);
 
   v8::HeapProfiler* heap_profiler = isolate->GetHeapProfiler();
   heap_profiler->SetWrapperClassInfoProvider(TRI_V8_BUFFER_CID, WrapperInfo);

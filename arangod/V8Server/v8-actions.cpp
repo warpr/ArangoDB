@@ -1394,13 +1394,13 @@ void TRI_InitV8Actions (v8::Isolate* isolate,
   // create the global functions
   // .............................................................................
 
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_DEFINE_ACTION", JS_DefineAction);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_EXECUTE_GLOBAL_CONTEXT_FUNCTION", JS_ExecuteGlobalContextFunction);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_GET_CURRENT_REQUEST", JS_GetCurrentRequest);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_GET_CURRENT_RESPONSE", JS_GetCurrentResponse);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_CLUSTER_TEST", JS_ClusterTest, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_RAW_REQUEST_BODY", JS_RawRequestBody, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_REQUEST_PARTS", JS_RequestParts, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_DEFINE_ACTION"), JS_DefineAction);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_EXECUTE_GLOBAL_CONTEXT_FUNCTION"), JS_ExecuteGlobalContextFunction);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_GET_CURRENT_REQUEST"), JS_GetCurrentRequest);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_GET_CURRENT_RESPONSE"), JS_GetCurrentResponse);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_CLUSTER_TEST"), JS_ClusterTest, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_RAW_REQUEST_BODY"), JS_RawRequestBody, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_REQUEST_PARTS"), JS_RequestParts, true);
 }
 
 // -----------------------------------------------------------------------------

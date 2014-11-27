@@ -199,7 +199,7 @@ static bool LoadJavaScriptFile (v8::Isolate* isolate,
     return false;
   }
 
-  v8::Handle<v8::String> name =   TRI_V8_SYMBOL(filename);
+  v8::Handle<v8::String> name =   TRI_V8_STRING(filename);
   v8::Handle<v8::String> source = TRI_V8_SYMBOL_PAIR(content, (int) length);
 
   TRI_FreeString(TRI_UNKNOWN_MEM_ZONE, content);
@@ -305,7 +305,7 @@ static v8::Handle<v8::Array> DistributionList (v8::Isolate* isolate,
 
 static void FillDistribution (v8::Isolate* isolate,
                               v8::Handle<v8::Object> list,
-                              char const* name,
+                              v8::Handle<v8::String> name,
                               StatisticsDistribution const& dist) {
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
 
@@ -321,7 +321,7 @@ static void FillDistribution (v8::Isolate* isolate,
 
   result->Set(TRI_V8_SYMBOL("counts"), counts);
 
-  list->Set(TRI_V8_SYMBOL(name), result);
+  list->Set(name, result);
 }
 
 // -----------------------------------------------------------------------------
@@ -1077,7 +1077,7 @@ static void JS_GetTempPath (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_MEMORY();
   }
 
-  v8::Handle<v8::Value> result = TRI_V8_SYMBOL(path);
+  v8::Handle<v8::Value> result = TRI_V8_STRING(path);
   TRI_Free(TRI_CORE_MEM_ZONE, path);
 
   TRI_V8_RETURN(result);
@@ -1230,7 +1230,7 @@ static void JS_MakeAbsolute(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Handle<v8::String> res;
 
   if (0 != abs) {
-    res = TRI_V8_SYMBOL(abs);
+    res = TRI_V8_STRING(abs);
     TRI_Free(TRI_UNKNOWN_MEM_ZONE, abs);
   }
   else {
@@ -1279,7 +1279,7 @@ static void JS_List (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   for (size_t i = 0;  i < list._length;  ++i) {
     const char* f = list._buffer[i];
-    result->Set(v8::Number::New(isolate, j++), TRI_V8_SYMBOL(f));
+    result->Set(v8::Number::New(isolate, j++), TRI_V8_STRING(f));
   }
 
   TRI_DestroyVectorString(&list);
@@ -1324,7 +1324,7 @@ static void JS_ListTree (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   for (size_t i = 0;  i < list._length;  ++i) {
     const char* f = list._buffer[i];
-    result->Set(v8::Number::New(isolate,j++), TRI_V8_SYMBOL(f));
+    result->Set(v8::Number::New(isolate,j++), TRI_V8_STRING(f));
   }
 
   TRI_DestroyVectorString(&list);
@@ -2930,7 +2930,7 @@ static void JS_ClientStatistics (const v8::FunctionCallbackInfo<v8::Value>& args
   TRI_FillConnectionStatistics(httpConnections, totalRequests, methodRequests, asyncRequests, connectionTime);
 
   result->Set(TRI_V8_SYMBOL("httpConnections"), v8::Number::New(isolate, (double) httpConnections._count));
-  FillDistribution(isolate, result, "connectionTime", connectionTime);
+  FillDistribution(isolate, result, TRI_V8_SYMBOL("connectionTime"), connectionTime);
 
   StatisticsDistribution totalTime;
   StatisticsDistribution requestTime;
@@ -2941,12 +2941,12 @@ static void JS_ClientStatistics (const v8::FunctionCallbackInfo<v8::Value>& args
 
   TRI_FillRequestStatistics(totalTime, requestTime, queueTime, ioTime, bytesSent, bytesReceived);
 
-  FillDistribution(isolate, result, "totalTime",     totalTime);
-  FillDistribution(isolate, result, "requestTime",   requestTime);
-  FillDistribution(isolate, result, "queueTime",     queueTime);
-  FillDistribution(isolate, result, "ioTime",        ioTime);
-  FillDistribution(isolate, result, "bytesSent",     bytesSent);
-  FillDistribution(isolate, result, "bytesReceived", bytesReceived);
+  FillDistribution(isolate, result, TRI_V8_SYMBOL("totalTime"),     totalTime);
+  FillDistribution(isolate, result, TRI_V8_SYMBOL("requestTime"),   requestTime);
+  FillDistribution(isolate, result, TRI_V8_SYMBOL("queueTime"),     queueTime);
+  FillDistribution(isolate, result, TRI_V8_SYMBOL("ioTime"),        ioTime);
+  FillDistribution(isolate, result, TRI_V8_SYMBOL("bytesSent"),     bytesSent);
+  FillDistribution(isolate, result, TRI_V8_SYMBOL("bytesReceived"), bytesReceived);
 
   TRI_V8_RETURN(result);
 }
@@ -3208,7 +3208,7 @@ static void JS_StatusExternal (const v8::FunctionCallbackInfo<v8::Value>& args) 
   TRI_external_status_t external = TRI_CheckExternalProcess(pid, wait);
 
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
-  const char* status = "UNKNOWN";
+  const char * status = "UNKNOWN";
 
   switch (external._status) {
     case TRI_EXT_NOT_STARTED: status = "NOT-STARTED"; break;
@@ -3221,7 +3221,7 @@ static void JS_StatusExternal (const v8::FunctionCallbackInfo<v8::Value>& args) 
     case TRI_EXT_STOPPED: status = "STOPPED"; break;
   }
 
-  result->Set(TRI_V8_SYMBOL("status"), TRI_V8_SYMBOL(status));
+  result->Set(TRI_V8_SYMBOL("status"), TRI_V8_STRING(status));
 
   if (external._status == TRI_EXT_TERMINATED) {
     result->Set(TRI_V8_SYMBOL("exit"), v8::Number::New(isolate, external._exitStatus));
@@ -3578,7 +3578,7 @@ void TRI_AugmentObject (v8::Isolate* isolate, v8::Handle<v8::Value> value, TRI_j
     TRI_json_t* j = (TRI_json_t*) TRI_AtVector(&json->_value._objects, i + 1);
     v8::Handle<v8::Value> val = TRI_ObjectJson(isolate, j);
 
-    object->Set(TRI_V8_SYMBOL(key->_value._string.data), val);
+    object->Set(TRI_V8_STRING(key->_value._string.data), val);
   }
 }
 
@@ -3982,12 +3982,12 @@ void TRI_InitV8Utils (v8::Isolate* isolate,
 
   // ArangoError is a "sub-class" of Error
   v8::Handle<v8::Function> ArangoErrorFunc = ft->GetFunction();
-  v8::Handle<v8::Value> ErrorObject = context->Global()->Get(TRI_V8_STRING("Error"));
-  v8::Handle<v8::Value> ErrorPrototype = ErrorObject->ToObject()->Get(TRI_V8_STRING("prototype"));
+  v8::Handle<v8::Value> ErrorObject = context->Global()->Get(TRI_V8_SYMBOL("Error"));
+  v8::Handle<v8::Value> ErrorPrototype = ErrorObject->ToObject()->Get(TRI_V8_SYMBOL("prototype"));
 
   ArangoErrorFunc->Get(TRI_V8_SYMBOL("prototype"))->ToObject()->SetPrototype(ErrorPrototype);
 
-  TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoError", ArangoErrorFunc);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("ArangoError"), ArangoErrorFunc);
 
   rt = ft->InstanceTemplate();
   v8g->ArangoErrorTempl.Reset(isolate, rt);
@@ -4004,7 +4004,7 @@ void TRI_InitV8Utils (v8::Isolate* isolate,
 
   SleepAndRequeueFunc->Get(TRI_V8_SYMBOL("prototype"))->ToObject()->SetPrototype(ErrorPrototype);
 
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SleepAndRequeue", SleepAndRequeueFunc);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SleepAndRequeue"), SleepAndRequeueFunc);
   
   rt = ft->InstanceTemplate();
   v8g->SleepAndRequeueTempl.Reset(isolate, rt);
@@ -4012,100 +4012,100 @@ void TRI_InitV8Utils (v8::Isolate* isolate,
   // .............................................................................
   // create the global functions
   // .............................................................................
-  TRI_AddGlobalFunctionVocbase(isolate, context, "PPP", printdebug); //// debug - todo remove me
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("PPP"), printdebug); //// debug - todo remove me
 
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_EXISTS", JS_Exists);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_GET_TEMP_FILE", JS_GetTempFile);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_GET_TEMP_PATH", JS_GetTempPath);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_IS_DIRECTORY", JS_IsDirectory);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_IS_FILE", JS_IsFile);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_MAKE_ABSOLUTE", JS_MakeAbsolute);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_LIST", JS_List);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_LIST_TREE", JS_ListTree);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_MAKE_DIRECTORY", JS_MakeDirectory);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_MOVE", JS_Move);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_MTIME", JS_MTime);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_REMOVE", JS_Remove);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_REMOVE_DIRECTORY", JS_RemoveDirectory);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_REMOVE_RECURSIVE_DIRECTORY", JS_RemoveRecursiveDirectory);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_FILESIZE", JS_SizeFile);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_UNZIP_FILE", JS_UnzipFile);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "FS_ZIP_FILE", JS_ZipFile);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_EXISTS"), JS_Exists);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_GET_TEMP_FILE"), JS_GetTempFile);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_GET_TEMP_PATH"), JS_GetTempPath);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_IS_DIRECTORY"), JS_IsDirectory);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_IS_FILE"), JS_IsFile);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_MAKE_ABSOLUTE"), JS_MakeAbsolute);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_LIST"), JS_List);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_LIST_TREE"), JS_ListTree);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_MAKE_DIRECTORY"), JS_MakeDirectory);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_MOVE"), JS_Move);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_MTIME"), JS_MTime);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_REMOVE"), JS_Remove);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_REMOVE_DIRECTORY"), JS_RemoveDirectory);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_REMOVE_RECURSIVE_DIRECTORY"), JS_RemoveRecursiveDirectory);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_FILESIZE"), JS_SizeFile);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_UNZIP_FILE"), JS_UnzipFile);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("FS_ZIP_FILE"), JS_ZipFile);
 
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_BASE64DECODE", JS_Base64Decode);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_BASE64ENCODE", JS_Base64Encode);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_CHECK_AND_MARK_NONCE", JS_MarkNonce);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_CLIENT_STATISTICS", JS_ClientStatistics);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_CREATE_NONCE", JS_CreateNonce);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_DOWNLOAD", JS_Download);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_EXECUTE", JS_Execute);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_EXECUTE_EXTERNAL", JS_ExecuteExternal);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_EXECUTE_EXTERNAL_AND_WAIT", JS_ExecuteAndWaitExternal);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_GEN_RANDOM_ALPHA_NUMBERS", JS_RandomAlphaNum);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_GEN_RANDOM_NUMBERS", JS_RandomNumbers);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_GEN_RANDOM_SALT", JS_RandomSalt);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_GETLINE", JS_Getline);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_HMAC", JS_HMAC);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_PBKDF2", JS_PBKDF2);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_HTTP_STATISTICS", JS_HttpStatistics);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_IS_IP", JS_IsIP);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_KILL_EXTERNAL", JS_KillExternal);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_LOAD", JS_Load);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_LOG", JS_Log);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_LOG_LEVEL", JS_LogLevel);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_MD5", JS_Md5);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_OUTPUT", JS_Output);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_PARSE", JS_Parse);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_PARSE_FILE", JS_ParseFile);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_PROCESS_STATISTICS", JS_ProcessStatistics);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_RAND", JS_Rand);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_READ", JS_Read);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_READ_BUFFER", JS_ReadBuffer);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_READ64", JS_Read64);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_SAVE", JS_Save);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_SERVER_STATISTICS", JS_ServerStatistics);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_SHA1", JS_Sha1);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_SHA224", JS_Sha224);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_SHA256", JS_Sha256);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_SHA384", JS_Sha384);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_SHA512", JS_Sha512);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_SLEEP", JS_Sleep);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_SPRINTF", JS_SPrintF);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_STATUS_EXTERNAL", JS_StatusExternal);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_TEST_PORT", JS_TestPort);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_TIME", JS_Time);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_WAIT", JS_Wait);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_BASE64DECODE"), JS_Base64Decode);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_BASE64ENCODE"), JS_Base64Encode);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_CHECK_AND_MARK_NONCE"), JS_MarkNonce);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_CLIENT_STATISTICS"), JS_ClientStatistics);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_CREATE_NONCE"), JS_CreateNonce);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_DOWNLOAD"), JS_Download);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_EXECUTE"), JS_Execute);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_EXECUTE_EXTERNAL"), JS_ExecuteExternal);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_EXECUTE_EXTERNAL_AND_WAIT"), JS_ExecuteAndWaitExternal);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_GEN_RANDOM_ALPHA_NUMBERS"), JS_RandomAlphaNum);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_GEN_RANDOM_NUMBERS"), JS_RandomNumbers);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_GEN_RANDOM_SALT"), JS_RandomSalt);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_GETLINE"), JS_Getline);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_HMAC"), JS_HMAC);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_PBKDF2"), JS_PBKDF2);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_HTTP_STATISTICS"), JS_HttpStatistics);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_IS_IP"), JS_IsIP);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_KILL_EXTERNAL"), JS_KillExternal);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_LOAD"), JS_Load);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_LOG"), JS_Log);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_LOG_LEVEL"), JS_LogLevel);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_MD5"), JS_Md5);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_OUTPUT"), JS_Output);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_PARSE"), JS_Parse);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_PARSE_FILE"), JS_ParseFile);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_PROCESS_STATISTICS"), JS_ProcessStatistics);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_RAND"), JS_Rand);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_READ"), JS_Read);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_READ_BUFFER"), JS_ReadBuffer);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_READ64"), JS_Read64);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_SAVE"), JS_Save);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_SERVER_STATISTICS"), JS_ServerStatistics);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_SHA1"), JS_Sha1);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_SHA224"), JS_Sha224);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_SHA256"), JS_Sha256);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_SHA384"), JS_Sha384);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_SHA512"), JS_Sha512);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_SLEEP"), JS_Sleep);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_SPRINTF"), JS_SPrintF);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_STATUS_EXTERNAL"), JS_StatusExternal);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_TEST_PORT"), JS_TestPort);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_TIME"), JS_Time);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_WAIT"), JS_Wait);
 
   // register callback functions
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REGISTER_EXECUTE_FILE", JS_RegisterExecuteFile);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REGISTER_EXECUTE_FILE"), JS_RegisterExecuteFile);
 
   // debugging functions
 #ifdef TRI_ENABLE_FAILURE_TESTS
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_DEBUG_SEGFAULT", JS_DebugSegfault);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_DEBUG_SET_FAILAT", JS_DebugSetFailAt);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_DEBUG_REMOVE_FAILAT", JS_DebugRemoveFailAt);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_DEBUG_CLEAR_FAILAT", JS_DebugClearFailAt);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_DEBUG_SEGFAULT"), JS_DebugSegfault);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_DEBUG_SET_FAILAT"), JS_DebugSetFailAt);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_DEBUG_REMOVE_FAILAT"), JS_DebugRemoveFailAt);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_DEBUG_CLEAR_FAILAT"), JS_DebugClearFailAt);
 #endif
-  TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_DEBUG_CAN_USE_FAILAT", JS_DebugCanUseFailAt);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_DEBUG_CAN_USE_FAILAT"), JS_DebugCanUseFailAt);
 
   // .............................................................................
   // create the global variables
   // .............................................................................
 
-  TRI_AddGlobalVariableVocbase(isolate, context, "HOME", TRI_V8_SYMBOL_STD_STRING(FileUtils::homeDirectory()));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("HOME"), TRI_V8_SYMBOL_STD_STRING(FileUtils::homeDirectory()));
 
-  TRI_AddGlobalVariableVocbase(isolate, context, "MODULES_PATH", TRI_V8PathList(isolate, modules));
-  TRI_AddGlobalVariableVocbase(isolate, context, "STARTUP_PATH", TRI_V8_SYMBOL_STD_STRING(startupPath));
-  TRI_AddGlobalVariableVocbase(isolate, context, "PATH_SEPARATOR", TRI_V8_SYMBOL(TRI_DIR_SEPARATOR_STR));
-  TRI_AddGlobalVariableVocbase(isolate, context, "VALGRIND", RUNNING_ON_VALGRIND > 0 ? v8::True(isolate) : v8::False(isolate));
-  TRI_AddGlobalVariableVocbase(isolate, context, "VERSION", TRI_V8_SYMBOL(TRI_VERSION));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("MODULES_PATH"), TRI_V8PathList(isolate, modules));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("STARTUP_PATH"), TRI_V8_SYMBOL_STD_STRING(startupPath));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("PATH_SEPARATOR"), TRI_V8_SYMBOL(TRI_DIR_SEPARATOR_STR));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("VALGRIND"), RUNNING_ON_VALGRIND > 0 ? v8::True(isolate) : v8::False(isolate));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("VERSION"), TRI_V8_SYMBOL(TRI_VERSION));
 
-  TRI_AddGlobalVariableVocbase(isolate, context, "CONNECTION_TIME_DISTRIBUTION", DistributionList(isolate, TRI_ConnectionTimeDistributionVectorStatistics));
-  TRI_AddGlobalVariableVocbase(isolate, context, "REQUEST_TIME_DISTRIBUTION", DistributionList(isolate, TRI_RequestTimeDistributionVectorStatistics));
-  TRI_AddGlobalVariableVocbase(isolate, context, "BYTES_SENT_DISTRIBUTION", DistributionList(isolate, TRI_BytesSentDistributionVectorStatistics));
-  TRI_AddGlobalVariableVocbase(isolate, context, "BYTES_RECEIVED_DISTRIBUTION", DistributionList(isolate, TRI_BytesReceivedDistributionVectorStatistics));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("CONNECTION_TIME_DISTRIBUTION"), DistributionList(isolate, TRI_ConnectionTimeDistributionVectorStatistics));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("REQUEST_TIME_DISTRIBUTION"), DistributionList(isolate, TRI_RequestTimeDistributionVectorStatistics));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("BYTES_SENT_DISTRIBUTION"), DistributionList(isolate, TRI_BytesSentDistributionVectorStatistics));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("BYTES_RECEIVED_DISTRIBUTION"), DistributionList(isolate, TRI_BytesReceivedDistributionVectorStatistics));
 
-  TRI_AddGlobalVariableVocbase(isolate, context, "SYS_PLATFORM", TRI_V8_SYMBOL(TRI_PLATFORM));
+  TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("SYS_PLATFORM"), TRI_V8_SYMBOL(TRI_PLATFORM));
 }
 
 // -----------------------------------------------------------------------------

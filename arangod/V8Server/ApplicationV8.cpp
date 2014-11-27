@@ -943,7 +943,7 @@ bool ApplicationV8::prepareNamedContexts (const string& name,
       }
       else {
         if (! wfunc.IsEmpty() && wfunc->IsFunction()) {
-          TRI_AddGlobalVariableVocbase(isolate, localContext, "MAIN", wfunc);
+          TRI_AddGlobalVariableVocbase(isolate, localContext, TRI_V8_SYMBOL("MAIN"), wfunc);
         }
         else {
           result = false;
@@ -1321,15 +1321,15 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
 
     char const* logfile = TRI_GetFilenameLogging();
     if (logfile != 0) {
-      TRI_AddGlobalVariableVocbase(isolate, localContext, "LOGFILE_PATH",        TRI_V8_SYMBOL(logfile));
+      TRI_AddGlobalVariableVocbase(isolate, localContext, TRI_V8_SYMBOL("LOGFILE_PATH"),        TRI_V8_STRING(logfile));
     }
     else {
-      TRI_AddGlobalVariableVocbase(isolate, localContext, "LOGFILE_PATH",        v8::Null(isolate));
+      TRI_AddGlobalVariableVocbase(isolate, localContext, TRI_V8_SYMBOL("LOGFILE_PATH"),        v8::Null(isolate));
     }
-    TRI_AddGlobalVariableVocbase(isolate, localContext,   "APP_PATH",            TRI_V8_SYMBOL_STD_STRING(_appPath));
-    TRI_AddGlobalVariableVocbase(isolate, localContext,   "DEV_APP_PATH",        TRI_V8_SYMBOL_STD_STRING(_devAppPath));
-    TRI_AddGlobalVariableVocbase(isolate, localContext,   "DEVELOPMENT_MODE",    v8::Boolean::New(isolate, _developmentMode));
-    TRI_AddGlobalVariableVocbase(isolate, localContext,   "FE_DEVELOPMENT_MODE", v8::Boolean::New(isolate, _frontendDevelopmentMode));
+    TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("APP_PATH"),            TRI_V8_SYMBOL_STD_STRING(_appPath));
+    TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("DEV_APP_PATH"),        TRI_V8_SYMBOL_STD_STRING(_devAppPath));
+    TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("DEVELOPMENT_MODE"),    v8::Boolean::New(isolate, _developmentMode));
+    TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("FE_DEVELOPMENT_MODE"), v8::Boolean::New(isolate, _frontendDevelopmentMode));
 
     for (auto j : _definedBooleans) {
       localContext->Global()->ForceSet(TRI_V8_SYMBOL_STD_STRING(j.first), v8::Boolean::New(isolate, j.second), v8::ReadOnly);

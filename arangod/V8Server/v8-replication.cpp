@@ -58,19 +58,19 @@ static void JS_StateLoggerReplication (const v8::FunctionCallbackInfo<v8::Value>
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
 
   v8::Handle<v8::Object> state = v8::Object::New(isolate);
-  state->Set(TRI_V8_STRING("running"),     v8::True(isolate));
-  state->Set(TRI_V8_STRING("lastLogTick"), V8TickId(isolate, s.lastTick));
-  state->Set(TRI_V8_STRING("totalEvents"), v8::Number::New(isolate, (double) s.numEvents));
-  state->Set(TRI_V8_STRING("time"),        TRI_V8_SYMBOL_STD_STRING(s.timeString));
-  result->Set(TRI_V8_STRING("state"),      state);
+  state->Set(TRI_V8_SYMBOL("running"),     v8::True(isolate));
+  state->Set(TRI_V8_SYMBOL("lastLogTick"), V8TickId(isolate, s.lastTick));
+  state->Set(TRI_V8_SYMBOL("totalEvents"), v8::Number::New(isolate, (double) s.numEvents));
+  state->Set(TRI_V8_SYMBOL("time"),        TRI_V8_SYMBOL_STD_STRING(s.timeString));
+  result->Set(TRI_V8_SYMBOL("state"),      state);
 
   v8::Handle<v8::Object> server = v8::Object::New(isolate);
-  server->Set(TRI_V8_STRING("version"),  TRI_V8_SYMBOL(TRI_VERSION));
-  server->Set(TRI_V8_STRING("serverId"), TRI_V8_SYMBOL_STD_STRING(StringUtils::itoa(TRI_GetIdServer()))); /// TODO
-  result->Set(TRI_V8_STRING("server"), server);
+  server->Set(TRI_V8_SYMBOL("version"),  TRI_V8_SYMBOL(TRI_VERSION));
+  server->Set(TRI_V8_SYMBOL("serverId"), TRI_V8_SYMBOL_STD_STRING(StringUtils::itoa(TRI_GetIdServer()))); /// TODO
+  result->Set(TRI_V8_SYMBOL("server"), server);
   
   v8::Handle<v8::Object> clients = v8::Object::New(isolate);
-  result->Set(TRI_V8_STRING("clients"), clients);
+  result->Set(TRI_V8_SYMBOL("clients"), clients);
 
   TRI_V8_RETURN(result);
 }
@@ -86,10 +86,10 @@ static void JS_ConfigureLoggerReplication (const v8::FunctionCallbackInfo<v8::Va
   // the replication logger is actually non-existing in ArangoDB 2.2 and higher
   // as there is the WAL. To be downwards-compatible, we'll return dummy values
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
-  result->Set(TRI_V8_STRING("autoStart"),        v8::True(isolate));
-  result->Set(TRI_V8_STRING("logRemoteChanges"), v8::True(isolate));
-  result->Set(TRI_V8_STRING("maxEvents"),        v8::Number::New(isolate, 0));
-  result->Set(TRI_V8_STRING("maxEventsSize"),    v8::Number::New(isolate, 0));
+  result->Set(TRI_V8_SYMBOL("autoStart"),        v8::True(isolate));
+  result->Set(TRI_V8_SYMBOL("logRemoteChanges"), v8::True(isolate));
+  result->Set(TRI_V8_SYMBOL("maxEvents"),        v8::Number::New(isolate, 0));
+  result->Set(TRI_V8_SYMBOL("maxEventsSize"),    v8::Number::New(isolate, 0));
 
   TRI_V8_RETURN(result);
 }
@@ -608,16 +608,16 @@ void TRI_InitV8replication (v8::Isolate* isolate,
                             TRI_v8_global_t* v8g){
 
   // replication functions. not intended to be used by end users
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_LOGGER_STATE", JS_StateLoggerReplication, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_LOGGER_CONFIGURE", JS_ConfigureLoggerReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_LOGGER_STATE"), JS_StateLoggerReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_LOGGER_CONFIGURE"), JS_ConfigureLoggerReplication, true);
 #ifdef TRI_ENABLE_MAINTAINER_MODE
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_LOGGER_LAST", JS_LastLoggerReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_LOGGER_LAST"), JS_LastLoggerReplication, true);
 #endif
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_SYNCHRONISE", JS_SynchroniseReplication, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_SERVER_ID", JS_ServerIdReplication, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_APPLIER_CONFIGURE", JS_ConfigureApplierReplication, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_APPLIER_START", JS_StartApplierReplication, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_APPLIER_SHUTDOWN", JS_ShutdownApplierReplication, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_APPLIER_STATE", JS_StateApplierReplication, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "REPLICATION_APPLIER_FORGET", JS_ForgetApplierReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_SYNCHRONISE"), JS_SynchroniseReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_SERVER_ID"), JS_ServerIdReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_APPLIER_CONFIGURE"), JS_ConfigureApplierReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_APPLIER_START"), JS_StartApplierReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_APPLIER_SHUTDOWN"), JS_ShutdownApplierReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_APPLIER_STATE"), JS_StateApplierReplication, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("REPLICATION_APPLIER_FORGET"), JS_ForgetApplierReplication, true);
 }

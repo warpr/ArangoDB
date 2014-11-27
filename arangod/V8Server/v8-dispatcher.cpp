@@ -477,11 +477,11 @@ void TRI_InitV8Dispatcher (v8::Isolate* isolate,
   GlobalDispatcher = dispatcher->dispatcher();
 
   if (GlobalScheduler != nullptr && GlobalDispatcher != nullptr) {
-    TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_REGISTER_TASK", JS_RegisterTask);
-    TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_UNREGISTER_TASK", JS_UnregisterTask);
-    TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_GET_TASK", JS_GetTask);
-    TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_CREATE_NAMED_QUEUE", JS_CreateNamedQueue);
-    TRI_AddGlobalFunctionVocbase(isolate, context, "SYS_ADD_JOB", JS_AddJob);
+    TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_REGISTER_TASK"), JS_RegisterTask);
+    TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_UNREGISTER_TASK"), JS_UnregisterTask);
+    TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_GET_TASK"), JS_GetTask);
+    TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_CREATE_NAMED_QUEUE"), JS_CreateNamedQueue);
+    TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("SYS_ADD_JOB"), JS_AddJob);
   }
   else {
     LOG_ERROR("cannot initialise tasks, scheduler or dispatcher unknown");

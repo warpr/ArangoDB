@@ -419,7 +419,7 @@ static void KeysOfShapedJson (const v8::PropertyCallbackInfo<v8::Array>& args) {
     char const* att = shaper->lookupAttributeId(shaper, *aids);
 
     if (att != nullptr) {
-      result->Set(v8::Number::New(isolate, count++), TRI_V8_SYMBOL(att));
+      result->Set(v8::Number::New(isolate, count++), TRI_V8_STRING(att));
     }
   }
 
@@ -502,7 +502,7 @@ static void CopyAttributes (v8::Isolate* isolate,
   
         if (ok && shape != nullptr) {
           /// TODO: avoid strlen
-          self->ForceSet(TRI_V8_SYMBOL(att), TRI_JsonShapeData(isolate, shaper, shape, json._data.data, json._data.length));
+          self->ForceSet(TRI_V8_STRING(att), TRI_JsonShapeData(isolate, shaper, shape, json._data.data, json._data.length));
         }
       }
     }
@@ -842,6 +842,6 @@ void TRI_InitV8ShapedJson (v8::Isolate *isolate,
                                );
 
   v8g->ShapedJsonTempl.Reset(isolate, rt);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "ShapedJson", ft->GetFunction());
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("ShapedJson"), ft->GetFunction());
 }
 

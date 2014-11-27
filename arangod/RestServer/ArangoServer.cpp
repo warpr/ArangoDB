@@ -1063,8 +1063,8 @@ int ArangoServer::runUnitTests (TRI_vocbase_t* vocbase) {
     v8::Local<v8::String> name(TRI_V8_SYMBOL("(arango)"));
 
     // run tests
-    char const* input = "require(\"org/arangodb/testrunner\").runCommandLineTests();";
-    TRI_ExecuteJavaScriptString(isolate, localContext, TRI_V8_SYMBOL(input), name, true);
+    auto input = TRI_V8_SYMBOL("require(\"org/arangodb/testrunner\").runCommandLineTests();");
+    TRI_ExecuteJavaScriptString(isolate, localContext, input, name, true);
 
     if (tryCatch.HasCaught()) {
       if (tryCatch.CanContinue()) {

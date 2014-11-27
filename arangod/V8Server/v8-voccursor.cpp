@@ -52,7 +52,7 @@ using namespace triagens::rest;
 ////////////////////////////////////////////////////////////////////////////////
 
 static int32_t const WRP_GENERAL_CURSOR_TYPE = 3;
-
+static int const SLOT_CURSOR = 3;
 // -----------------------------------------------------------------------------
 // --SECTION--                                                   GENERAL CURSORS
 // -----------------------------------------------------------------------------
@@ -66,11 +66,10 @@ static int32_t const WRP_GENERAL_CURSOR_TYPE = 3;
 ////////////////////////////////////////////////////////////////////////////////
 
 static void WeakGeneralCursorCallback (const v8::WeakCallbackData<v8::External, v8::Persistent<v8::External>>& data) {
-  fprintf(stderr, "WeakGeneralCursorCallback\n");
   auto isolate      = data.GetIsolate();
   auto persistent   = data.GetParameter();
-  auto myConnection = v8::Local<v8::External>::New(isolate, *persistent);
-  auto cursor       = static_cast<TRI_general_cursor_t*>(myConnection->Value());
+  auto myCursor     = v8::Local<v8::External>::New(isolate, *persistent);
+  auto cursor       = static_cast<TRI_general_cursor_t*>(myCursor->Value());
 
   v8::HandleScope scope(isolate);
 
@@ -81,7 +80,17 @@ static void WeakGeneralCursorCallback (const v8::WeakCallbackData<v8::External, 
 
   // decrease the reference-counter for the database
   TRI_ReleaseVocBase(cursor->_vocbase);
-  fprintf(stderr, "Done - WeakGeneralCursorCallback\n");
+
+  // find the persistent handle
+#if TRI_ENABLE_MAINTAINER_MODE
+  map<void*, v8::Persistent<v8::External>>::iterator it = v8g->JSCursors.find(cursor);
+  TRI_ASSERT(it != v8g->JSCursors.end())
+#endif
+
+  // dispose and clear the persistent handle
+  v8g->JSCursors[cursor].Reset();
+  v8g->JSCursors.erase(cursor);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,24 +110,32 @@ void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,
   v8::Handle<v8::Object> result = GeneralCursorTempl->NewInstance();
 
   if (! result.IsEmpty()) {
-    v8::Persistent<v8::External> persistent;
     TRI_UseGeneralCursor(cursor);
 
-    // increase the reference-counter for the database
-    TRI_UseVocBase(cursor->_vocbase);
 
-    auto externalCursor = v8::External::New(isolate, cursor);
-    persistent.Reset(isolate, externalCursor);
+    result->SetInternalField(SLOT_CLASS_TYPE, v8::Integer::New(isolate, WRP_GENERAL_CURSOR_TYPE));
+    result->SetInternalField(SLOT_CLASS, v8::External::New(isolate, cursor));
+
+    map<void*, v8::Persistent<v8::External>>::iterator it = v8g->JSCursors.find(cursor);
+    if (it == v8g->JSCursors.end()) {
+      // increase the reference-counter for the database
+      TRI_UseVocBase(cursor->_vocbase);
+      auto externalCursor = v8::External::New(isolate, cursor);
+
+      result->SetInternalField(SLOT_CURSOR, externalCursor);
+
+      v8g->JSCursors[cursor].Reset(isolate, externalCursor);
+      v8g->JSCursors[cursor].SetWeak(&v8g->JSCursors[cursor],  WeakGeneralCursorCallback);
+    }
+    else {
+      auto myCursor = v8::Local<v8::External>::New(isolate, it->second);
+      
+      result->SetInternalField(SLOT_CURSOR, myCursor);
+    }
 
     if (tryCatch.HasCaught()) {
       TRI_V8_RETURN_UNDEFINED();
     }
-
-    result->SetInternalField(SLOT_CLASS_TYPE, v8::Integer::New(isolate, WRP_GENERAL_CURSOR_TYPE));
-    result->SetInternalField(SLOT_CLASS, externalCursor);
-
-    persistent.SetWeak(&persistent, WeakGeneralCursorCallback);
-    fprintf(stderr, "TRI_WrapGeneralCursor - externalCursor %x cursor %x \n", externalCursor, cursor);
   }
 
   if (result.IsEmpty()) {
@@ -126,7 +143,6 @@ void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,
   }
 
   TRI_V8_RETURN(result);
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -656,25 +672,25 @@ void TRI_InitV8cursor (v8::Handle<v8::Context> context,
   ft->SetClassName(TRI_V8_SYMBOL("ArangoCursor"));
 
   rt = ft->InstanceTemplate();
-  rt->SetInternalFieldCount(2);
+  rt->SetInternalFieldCount(4);
 
-  TRI_AddMethodVocbase(isolate, rt, "count", JS_CountGeneralCursor);
-  TRI_AddMethodVocbase(isolate, rt, "dispose", JS_DisposeGeneralCursor);
-  TRI_AddMethodVocbase(isolate, rt, "getBatchSize", JS_GetBatchSizeGeneralCursor);
-  TRI_AddMethodVocbase(isolate, rt, "getExtra", JS_GetExtraGeneralCursor);
-  TRI_AddMethodVocbase(isolate, rt, "getRows", JS_GetRowsGeneralCursor, true); // DEPRECATED, use toArray
-  TRI_AddMethodVocbase(isolate, rt, "hasCount", JS_HasCountGeneralCursor);
-  TRI_AddMethodVocbase(isolate, rt, "hasNext", JS_HasNextGeneralCursor);
-  TRI_AddMethodVocbase(isolate, rt, "id", JS_IdGeneralCursor);
-  TRI_AddMethodVocbase(isolate, rt, "next", JS_NextGeneralCursor);
-  TRI_AddMethodVocbase(isolate, rt, "persist", JS_PersistGeneralCursor);
-  TRI_AddMethodVocbase(isolate, rt, "toArray", JS_ToArrayGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("count"), JS_CountGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("dispose"), JS_DisposeGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getBatchSize"), JS_GetBatchSizeGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getExtra"), JS_GetExtraGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getRows"), JS_GetRowsGeneralCursor, true); // DEPRECATED, use toArray
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("hasCount"), JS_HasCountGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("hasNext"), JS_HasNextGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("id"), JS_IdGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("next"), JS_NextGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("persist"), JS_PersistGeneralCursor);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("toArray"), JS_ToArrayGeneralCursor);
 
   v8g->GeneralCursorTempl.Reset(isolate, rt);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoCursor", ft->GetFunction());
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("ArangoCursor"), ft->GetFunction());
 
   // cursor functions. not intended to be used by end users
-  TRI_AddGlobalFunctionVocbase(isolate, context, "CURSOR", JS_Cursor, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "CREATE_CURSOR", JS_CreateCursor, true);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "DELETE_CURSOR", JS_DeleteCursor, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("CURSOR"), JS_Cursor, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("CREATE_CURSOR"), JS_CreateCursor, true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("DELETE_CURSOR"), JS_DeleteCursor, true);
 }

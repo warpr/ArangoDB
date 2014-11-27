@@ -217,7 +217,7 @@ v8::Handle<v8::Object> WrapCollection (v8::Isolate* isolate,
     TRI_GET_GLOBAL_STR(_DbNameKey);
     TRI_GET_GLOBAL_STR(VersionKey);
     result->ForceSet(_IdKey, V8CollectionId(isolate, collection->_cid), v8::ReadOnly);
-    result->Set(_DbNameKey, TRI_V8_SYMBOL(collection->_dbName));
+    result->Set(_DbNameKey, TRI_V8_STRING(collection->_dbName));
     result->ForceSet(VersionKey, v8::Number::New(isolate, (double) collection->_internalVersion), v8::DontEnum);
   }
 

@@ -339,6 +339,12 @@ typedef struct TRI_v8_global_s {
 
   std::map< void*, v8::Persistent<v8::External> > JSCollections;
 
+////////////////////////////////////////////////////////////////////////////////
+/// @brief cursor mapping for weak pointers
+////////////////////////////////////////////////////////////////////////////////
+
+  std::map< void*, v8::Persistent<v8::External> > JSCursors;
+
 // -----------------------------------------------------------------------------
 // --SECTION--                                       JAVASCRIPT OBJECT TEMPLATES
 // -----------------------------------------------------------------------------
@@ -1030,7 +1036,7 @@ inline void TRI_V8_AddMethod (v8::Isolate* isolate,
 
 void TRI_AddMethodVocbase (v8::Isolate* isolate,
                            v8::Handle<v8::ObjectTemplate> tpl,
-                           char const* name,
+                           v8::Handle<v8::String> name,
                            void(*func)(v8::FunctionCallbackInfo<v8::Value> const&),
                            bool isHidden = false);
 
@@ -1040,7 +1046,7 @@ void TRI_AddMethodVocbase (v8::Isolate* isolate,
 
 void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
                                    v8::Handle<v8::Context> context,
-                                   char const* name,
+                                   v8::Handle<v8::String> name,
                                    void(*func)(v8::FunctionCallbackInfo<v8::Value> const&),
                                    bool isHidden = false);
 
@@ -1050,7 +1056,7 @@ void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
 
 void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
                                    v8::Handle<v8::Context> context,
-                                   char const* name,
+                                   v8::Handle<v8::String> name,
                                    v8::Handle<v8::Function> func,
                                    bool isHidden = false);
 
@@ -1060,7 +1066,7 @@ void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
 
 void TRI_AddGlobalVariableVocbase (v8::Isolate* isolate,
                                    v8::Handle<v8::Context> context,
-                                   char const* name,
+                                   v8::Handle<v8::String> name,
                                    v8::Handle<v8::Value> value);
 
 #endif

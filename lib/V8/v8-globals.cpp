@@ -40,6 +40,7 @@
 TRI_v8_global_s::TRI_v8_global_s (v8::Isolate* isolate)
   : JSBarriers(),
     JSCollections(),
+    JSCursors(),
 
     AgencyTempl(),
     ClusterInfoTempl(),
@@ -260,16 +261,16 @@ TRI_v8_global_t* TRI_GetV8Globals (v8::Isolate* isolate) {
 
 void TRI_AddMethodVocbase (v8::Isolate* isolate,
                            v8::Handle<v8::ObjectTemplate> tpl,
-                           char const* name,
+                           v8::Handle<v8::String> name,
                            void(*func)(v8::FunctionCallbackInfo<v8::Value> const&),
                            bool isHidden) {
   if (isHidden) {
     // hidden method
-    tpl->Set(TRI_V8_SYMBOL(name), v8::FunctionTemplate::New(isolate, func), v8::DontEnum);
+    tpl->Set(name, v8::FunctionTemplate::New(isolate, func), v8::DontEnum);
   }
   else {
     // normal method
-    tpl->Set(TRI_V8_SYMBOL(name), v8::FunctionTemplate::New(isolate, func));
+    tpl->Set(name, v8::FunctionTemplate::New(isolate, func));
   }
 }
 
@@ -279,17 +280,17 @@ void TRI_AddMethodVocbase (v8::Isolate* isolate,
 
 void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
                                    v8::Handle<v8::Context> context,
-                                   char const* name,
+                                   v8::Handle<v8::String> name,
                                    void(*func)(v8::FunctionCallbackInfo<v8::Value> const&),
                                    bool isHidden) {
   // all global functions are read-only
   if (isHidden) {
-    context->Global()->ForceSet(TRI_V8_SYMBOL(name),
+    context->Global()->ForceSet(name,
                                 v8::FunctionTemplate::New(isolate, func)->GetFunction(),
                                 static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontEnum));
   }
   else {
-    context->Global()->ForceSet(TRI_V8_SYMBOL(name),
+    context->Global()->ForceSet(name,
                                 v8::FunctionTemplate::New(isolate, func)->GetFunction(),
                                 v8::ReadOnly);
   }
@@ -301,17 +302,17 @@ void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
 
 void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
                                    v8::Handle<v8::Context> context,
-                                   char const* name,
+                                   v8::Handle<v8::String> name,
                                    v8::Handle<v8::Function> func,
                                    bool isHidden) {
   // all global functions are read-only
   if (isHidden) {
-    context->Global()->ForceSet(TRI_V8_SYMBOL(name),
+    context->Global()->ForceSet(name,
                                 func,
                                 static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontEnum));
   }
   else {
-    context->Global()->ForceSet(TRI_V8_SYMBOL(name),
+    context->Global()->ForceSet(name,
                                 func,
                                 v8::ReadOnly);
   }
@@ -323,10 +324,10 @@ void TRI_AddGlobalFunctionVocbase (v8::Isolate* isolate,
 
 void TRI_AddGlobalVariableVocbase (v8::Isolate* isolate,
                                    v8::Handle<v8::Context> context,
-                                   char const* name,
+                                   v8::Handle<v8::String> name,
                                    v8::Handle<v8::Value> value) {
   // all global variables are read-only
-  context->Global()->ForceSet(TRI_V8_SYMBOL(name), value, v8::ReadOnly);
+  context->Global()->ForceSet(name, value, v8::ReadOnly);
 }
 
 // -----------------------------------------------------------------------------

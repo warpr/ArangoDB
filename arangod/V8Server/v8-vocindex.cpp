@@ -51,11 +51,11 @@ using namespace triagens::rest;
 
 bool ExtractBoolFlag (v8::Isolate* isolate,
                       v8::Handle<v8::Object> const obj,
-                      char const* name,
+                      v8::Handle<v8::String> name,
                       bool defaultValue) {
   // extract unique flag
-  if (obj->Has(TRI_V8_SYMBOL(name))) {
-    return TRI_ObjectToBoolean(obj->Get(TRI_V8_SYMBOL(name)));
+  if (obj->Has(name)) {
+    return TRI_ObjectToBoolean(obj->Get(name));
   }
 
   return defaultValue;
@@ -182,7 +182,7 @@ int ProcessIndexFields (v8::Isolate* isolate,
 int ProcessIndexGeoJsonFlag (v8::Isolate* isolate,
                              v8::Handle<v8::Object> const obj,
                              TRI_json_t* json) {
-  bool geoJson = ExtractBoolFlag(isolate, obj, "geoJson", false);
+  bool geoJson = ExtractBoolFlag(isolate, obj, TRI_V8_SYMBOL("geoJson"), false);
   TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "geoJson", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, geoJson));
 
   return TRI_ERROR_NO_ERROR;
@@ -196,7 +196,7 @@ int ProcessIndexUniqueFlag (v8::Isolate* isolate,
                             v8::Handle<v8::Object> const obj,
                             TRI_json_t* json,
                             bool fillConstraint = false) {
-  bool unique = ExtractBoolFlag(isolate, obj, "unique", false);
+  bool unique = ExtractBoolFlag(isolate, obj, TRI_V8_SYMBOL("unique"), false);
   TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "unique", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, unique));
   if (fillConstraint) {
     TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "constraint", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, unique));
@@ -212,7 +212,7 @@ int ProcessIndexUniqueFlag (v8::Isolate* isolate,
 int ProcessIndexIgnoreNullFlag (v8::Isolate* isolate,
                                 v8::Handle<v8::Object> const obj,
                                 TRI_json_t* json) {
-  bool ignoreNull = ExtractBoolFlag(isolate, obj, "ignoreNull", false);
+  bool ignoreNull = ExtractBoolFlag(isolate, obj, TRI_V8_SYMBOL("ignoreNull"), false);
   TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "ignoreNull", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, ignoreNull));
 
   return TRI_ERROR_NO_ERROR;
@@ -225,7 +225,7 @@ int ProcessIndexIgnoreNullFlag (v8::Isolate* isolate,
 int ProcessIndexUndefinedFlag (v8::Isolate* isolate,
                                v8::Handle<v8::Object> const obj,
                                TRI_json_t* json) {
-  bool undefined = ExtractBoolFlag(isolate, obj, "undefined", false);
+  bool undefined = ExtractBoolFlag(isolate, obj, TRI_V8_SYMBOL("undefined"), false);
   TRI_Insert3ArrayJson(TRI_UNKNOWN_MEM_ZONE, json, "undefined", TRI_CreateBooleanJson(TRI_UNKNOWN_MEM_ZONE, undefined));
 
   return TRI_ERROR_NO_ERROR;
@@ -1847,9 +1847,9 @@ static void JS_CreateEdgeCollectionVocbase (const v8::FunctionCallbackInfo<v8::V
 void TRI_InitV8indexArangoDB (v8::Isolate* isolate,
                               v8::Handle<v8::ObjectTemplate> rt){
 
-  TRI_AddMethodVocbase(isolate, rt, "_create", JS_CreateVocbase, true);
-  TRI_AddMethodVocbase(isolate, rt, "_createEdgeCollection", JS_CreateEdgeCollectionVocbase);
-  TRI_AddMethodVocbase(isolate, rt, "_createDocumentCollection", JS_CreateDocumentCollectionVocbase);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("_create"), JS_CreateVocbase, true);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("_createEdgeCollection"), JS_CreateEdgeCollectionVocbase);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("_createDocumentCollection"), JS_CreateDocumentCollectionVocbase);
 
 }
 
@@ -1857,9 +1857,9 @@ void TRI_InitV8indexArangoDB (v8::Isolate* isolate,
 void TRI_InitV8indexCollection (v8::Isolate* isolate,
                                 v8::Handle<v8::ObjectTemplate> rt){
 
-  TRI_AddMethodVocbase(isolate, rt, "dropIndex", JS_DropIndexVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "ensureIndex", JS_EnsureIndexVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "lookupIndex", JS_LookupIndexVocbaseCol);
-  TRI_AddMethodVocbase(isolate, rt, "getIndexes", JS_GetIndexesVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("dropIndex"), JS_DropIndexVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("ensureIndex"), JS_EnsureIndexVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("lookupIndex"), JS_LookupIndexVocbaseCol);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getIndexes"), JS_GetIndexesVocbaseCol);
 
 }

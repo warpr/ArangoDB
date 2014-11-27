@@ -967,8 +967,8 @@ static void JS_GetResponsibleShardClusterInfo (const v8::FunctionCallbackInfo<v8
   }
 
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
-  result->Set(TRI_V8_STRING("shardId"), TRI_V8_SYMBOL_STD_STRING(shardId));
-  result->Set(TRI_V8_STRING("usesDefaultShardingAttributes"), v8::Boolean::New(isolate, usesDefaultShardingAttributes));
+  result->Set(TRI_V8_SYMBOL("shardId"), TRI_V8_SYMBOL_STD_STRING(shardId));
+  result->Set(TRI_V8_SYMBOL("usesDefaultShardingAttributes"), v8::Boolean::New(isolate, usesDefaultShardingAttributes));
 
   TRI_V8_RETURN(result);
 }
@@ -1950,34 +1950,34 @@ void TRI_InitV8Cluster (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   rt = ft->InstanceTemplate();
   rt->SetInternalFieldCount(2);
 
-  TRI_AddMethodVocbase(isolate, rt, "cas", JS_CasAgency);
-  TRI_AddMethodVocbase(isolate, rt, "createDirectory", JS_CreateDirectoryAgency);
-  TRI_AddMethodVocbase(isolate, rt, "get", JS_GetAgency);
-  TRI_AddMethodVocbase(isolate, rt, "isEnabled", JS_IsEnabledAgency);
-  TRI_AddMethodVocbase(isolate, rt, "increaseVersion", JS_IncreaseVersionAgency);
-  TRI_AddMethodVocbase(isolate, rt, "list", JS_ListAgency);
-  TRI_AddMethodVocbase(isolate, rt, "lockRead", JS_LockReadAgency);
-  TRI_AddMethodVocbase(isolate, rt, "lockWrite", JS_LockWriteAgency);
-  TRI_AddMethodVocbase(isolate, rt, "remove", JS_RemoveAgency);
-  TRI_AddMethodVocbase(isolate, rt, "set", JS_SetAgency);
-  TRI_AddMethodVocbase(isolate, rt, "watch", JS_WatchAgency);
-  TRI_AddMethodVocbase(isolate, rt, "endpoints", JS_EndpointsAgency);
-  TRI_AddMethodVocbase(isolate, rt, "prefix", JS_PrefixAgency);
-  TRI_AddMethodVocbase(isolate, rt, "setPrefix", JS_SetPrefixAgency, true);
-  TRI_AddMethodVocbase(isolate, rt, "uniqid", JS_UniqidAgency);
-  TRI_AddMethodVocbase(isolate, rt, "unlockRead", JS_UnlockReadAgency);
-  TRI_AddMethodVocbase(isolate, rt, "unlockWrite", JS_UnlockWriteAgency);
-  TRI_AddMethodVocbase(isolate, rt, "version", JS_VersionAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("cas"), JS_CasAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("createDirectory"), JS_CreateDirectoryAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("get"), JS_GetAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("isEnabled"), JS_IsEnabledAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("increaseVersion"), JS_IncreaseVersionAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("list"), JS_ListAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("lockRead"), JS_LockReadAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("lockWrite"), JS_LockWriteAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("remove"), JS_RemoveAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("set"), JS_SetAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("watch"), JS_WatchAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("endpoints"), JS_EndpointsAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("prefix"), JS_PrefixAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("setPrefix"), JS_SetPrefixAgency, true);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("uniqid"), JS_UniqidAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("unlockRead"), JS_UnlockReadAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("unlockWrite"), JS_UnlockWriteAgency);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("version"), JS_VersionAgency);
 
   v8g->AgencyTempl.Reset(isolate, rt);
   ft->SetClassName(TRI_V8_SYMBOL("ArangoAgencyCtor"));
 
-  TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoAgencyCtor", ft->GetFunction(), true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("ArangoAgencyCtor"), ft->GetFunction(), true);
 
   // register the global object
   v8::Handle<v8::Object> aa = rt->NewInstance();
   if (! aa.IsEmpty()) {
-    TRI_AddGlobalVariableVocbase(isolate, context, "ArangoAgency", aa);
+    TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("ArangoAgency"), aa);
   }
 
   // .............................................................................
@@ -1990,25 +1990,25 @@ void TRI_InitV8Cluster (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   rt = ft->InstanceTemplate();
   rt->SetInternalFieldCount(2);
 
-  TRI_AddMethodVocbase(isolate, rt, "doesDatabaseExist", JS_DoesDatabaseExistClusterInfo);
-  TRI_AddMethodVocbase(isolate, rt, "listDatabases", JS_ListDatabases);
-  TRI_AddMethodVocbase(isolate, rt, "flush", JS_FlushClusterInfo, true);
-  TRI_AddMethodVocbase(isolate, rt, "getCollectionInfo", JS_GetCollectionInfoClusterInfo);
-  TRI_AddMethodVocbase(isolate, rt, "getCollectionInfoCurrent", JS_GetCollectionInfoCurrentClusterInfo);
-  TRI_AddMethodVocbase(isolate, rt, "getResponsibleServer", JS_GetResponsibleServerClusterInfo);
-  TRI_AddMethodVocbase(isolate, rt, "getResponsibleShard", JS_GetResponsibleShardClusterInfo);
-  TRI_AddMethodVocbase(isolate, rt, "getServerEndpoint", JS_GetServerEndpointClusterInfo);
-  TRI_AddMethodVocbase(isolate, rt, "getDBServers", JS_GetDBServers);
-  TRI_AddMethodVocbase(isolate, rt, "reloadDBServers", JS_ReloadDBServers);
-  TRI_AddMethodVocbase(isolate, rt, "uniqid", JS_UniqidClusterInfo);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("doesDatabaseExist"), JS_DoesDatabaseExistClusterInfo);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("listDatabases"), JS_ListDatabases);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("flush"), JS_FlushClusterInfo, true);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getCollectionInfo"), JS_GetCollectionInfoClusterInfo);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getCollectionInfoCurrent"), JS_GetCollectionInfoCurrentClusterInfo);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getResponsibleServer"), JS_GetResponsibleServerClusterInfo);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getResponsibleShard"), JS_GetResponsibleShardClusterInfo);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getServerEndpoint"), JS_GetServerEndpointClusterInfo);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getDBServers"), JS_GetDBServers);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("reloadDBServers"), JS_ReloadDBServers);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("uniqid"), JS_UniqidClusterInfo);
 
   v8g->ClusterInfoTempl.Reset(isolate, rt);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoClusterInfoCtor", ft->GetFunction(), true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("ArangoClusterInfoCtor"), ft->GetFunction(), true);
 
   // register the global object
   v8::Handle<v8::Object> ci = rt->NewInstance();
   if (! ci.IsEmpty()) {
-    TRI_AddGlobalVariableVocbase(isolate, context, "ArangoClusterInfo", ci);
+    TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("ArangoClusterInfo"), ci);
   }
 
   // .............................................................................
@@ -2021,33 +2021,33 @@ void TRI_InitV8Cluster (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   rt = ft->InstanceTemplate();
   rt->SetInternalFieldCount(2);
 
-  TRI_AddMethodVocbase(isolate, rt, "address", JS_AddressServerState);
-  TRI_AddMethodVocbase(isolate, rt, "flush", JS_FlushServerState, true);
-  TRI_AddMethodVocbase(isolate, rt, "id", JS_IdServerState);
-  TRI_AddMethodVocbase(isolate, rt, "dataPath", JS_DataPathServerState);
-  TRI_AddMethodVocbase(isolate, rt, "logPath", JS_LogPathServerState);
-  TRI_AddMethodVocbase(isolate, rt, "agentPath", JS_AgentPathServerState);
-  TRI_AddMethodVocbase(isolate, rt, "arangodPath", JS_ArangodPathServerState);
-  TRI_AddMethodVocbase(isolate, rt, "javaScriptPath", JS_JavaScriptPathServerState);
-  TRI_AddMethodVocbase(isolate, rt, "dbserverConfig", JS_DBserverConfigServerState);
-  TRI_AddMethodVocbase(isolate, rt, "coordinatorConfig", JS_CoordinatorConfigServerState);
-  TRI_AddMethodVocbase(isolate, rt, "disableDispatcherFrontend", JS_DisableDipatcherFrontendServerState);
-  TRI_AddMethodVocbase(isolate, rt, "disableDispatcherKickstarter", JS_DisableDipatcherKickstarterServerState);
-  TRI_AddMethodVocbase(isolate, rt, "initialised", JS_InitialisedServerState);
-  TRI_AddMethodVocbase(isolate, rt, "isCoordinator", JS_IsCoordinatorServerState);
-  TRI_AddMethodVocbase(isolate, rt, "role", JS_RoleServerState);
-  TRI_AddMethodVocbase(isolate, rt, "setId", JS_SetIdServerState, true);
-  TRI_AddMethodVocbase(isolate, rt, "setRole", JS_SetRoleServerState, true);
-  TRI_AddMethodVocbase(isolate, rt, "status", JS_StatusServerState);
-  TRI_AddMethodVocbase(isolate, rt, "getClusterAuthentication", JS_GetClusterAuthentication);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("address"), JS_AddressServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("flush"), JS_FlushServerState, true);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("id"), JS_IdServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("dataPath"), JS_DataPathServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("logPath"), JS_LogPathServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("agentPath"), JS_AgentPathServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("arangodPath"), JS_ArangodPathServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("javaScriptPath"), JS_JavaScriptPathServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("dbserverConfig"), JS_DBserverConfigServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("coordinatorConfig"), JS_CoordinatorConfigServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("disableDispatcherFrontend"), JS_DisableDipatcherFrontendServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("disableDispatcherKickstarter"), JS_DisableDipatcherKickstarterServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("initialised"), JS_InitialisedServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("isCoordinator"), JS_IsCoordinatorServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("role"), JS_RoleServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("setId"), JS_SetIdServerState, true);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("setRole"), JS_SetRoleServerState, true);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("status"), JS_StatusServerState);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("getClusterAuthentication"), JS_GetClusterAuthentication);
 
   v8g->ServerStateTempl.Reset(isolate, rt);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoServerStateCtor", ft->GetFunction(), true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("ArangoServerStateCtor"), ft->GetFunction(), true);
 
   // register the global object
   v8::Handle<v8::Object> ss = rt->NewInstance();
   if (! ss.IsEmpty()) {
-    TRI_AddGlobalVariableVocbase(isolate, context, "ArangoServerState", ss);
+    TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("ArangoServerState"), ss);
   }
 
   // ...........................................................................
@@ -2060,19 +2060,19 @@ void TRI_InitV8Cluster (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   rt = ft->InstanceTemplate();
   rt->SetInternalFieldCount(2);
 
-  TRI_AddMethodVocbase(isolate, rt, "asyncRequest", JS_AsyncRequest);
-  TRI_AddMethodVocbase(isolate, rt, "syncRequest", JS_SyncRequest);
-  TRI_AddMethodVocbase(isolate, rt, "enquire", JS_Enquire);
-  TRI_AddMethodVocbase(isolate, rt, "wait", JS_Wait);
-  TRI_AddMethodVocbase(isolate, rt, "drop", JS_Drop);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("asyncRequest"), JS_AsyncRequest);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("syncRequest"), JS_SyncRequest);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("enquire"), JS_Enquire);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("wait"), JS_Wait);
+  TRI_AddMethodVocbase(isolate, rt, TRI_V8_SYMBOL("drop"), JS_Drop);
 
   v8g->ClusterCommTempl.Reset(isolate, rt);
-  TRI_AddGlobalFunctionVocbase(isolate, context, "ArangoClusterCommCtor", ft->GetFunction(), true);
+  TRI_AddGlobalFunctionVocbase(isolate, context, TRI_V8_SYMBOL("ArangoClusterCommCtor"), ft->GetFunction(), true);
 
   // register the global object
   ss = rt->NewInstance();
   if (! ss.IsEmpty()) {
-    TRI_AddGlobalVariableVocbase(isolate, context, "ArangoClusterComm", ss);
+    TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("ArangoClusterComm"), ss);
   }
 }
 
@@ -2082,5 +2082,5 @@ void TRI_InitV8Cluster (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
 
 // Local Variables:
 // mode: outline-minor
-// outline-regexp: "/// @brief\\|/// {@inheritDoc}\\|/// @page\\|// --SECTION--\\|/// @\\}"
+// outline-regexp: /// @brief\\|/// {@inheritDoc}\\|/// @page\\|// --SECTION--\\|/// @\\}"
 // End:
