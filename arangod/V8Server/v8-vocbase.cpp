@@ -143,8 +143,8 @@ static v8::Handle<v8::Object> WrapClass (v8::Isolate *isolate,
 
 static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
+  v8::HandleScope scope(isolate);
 
   if (args.Length() != 1 || ! args[0]->IsObject()) {
     TRI_V8_EXCEPTION_USAGE("TRANSACTION(<object>)");
@@ -1159,8 +1159,8 @@ static void JS_ExecuteAqlJson (const v8::FunctionCallbackInfo<v8::Value>& args) 
 
 static void JS_ExecuteAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
+  v8::HandleScope scope(isolate);
 
   TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
 

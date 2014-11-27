@@ -1047,8 +1047,8 @@ int ArangoServer::runUnitTests (TRI_vocbase_t* vocbase) {
 
   bool ok = false;
   {
-    v8::HandleScope scope(isolate);
     v8::TryCatch tryCatch;
+    v8::HandleScope scope(isolate);
 
     // set-up unit tests array
     v8::Handle<v8::Array> sysTestFiles = v8::Array::New(isolate);
@@ -1093,12 +1093,11 @@ int ArangoServer::runScript (TRI_vocbase_t* vocbase) {
   ApplicationV8::V8Context* context = _applicationV8->enterContext("STANDARD", vocbase, true, true);
   auto isolate = context->isolate;
 
+  v8::TryCatch tryCatch;
   v8::HandleScope globalScope(isolate);
 
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
   v8::Context::Scope contextScope(localContext);
-
-  v8::TryCatch tryCatch;
 
   for (size_t i = 0;  i < _scriptFile.size();  ++i) {
     bool r = TRI_ExecuteGlobalJavaScriptFile(isolate, _scriptFile[i].c_str());

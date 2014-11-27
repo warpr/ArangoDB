@@ -100,8 +100,8 @@ static void WeakGeneralCursorCallback (const v8::WeakCallbackData<v8::External, 
 void TRI_WrapGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args,
                             TRI_general_cursor_t* cursor) {
   v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
+  v8::HandleScope scope(isolate);
 
   TRI_ASSERT(cursor != nullptr);
 
@@ -298,6 +298,7 @@ static void JS_CountGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& ar
 
 static void JS_NextGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
+  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
 
@@ -324,7 +325,6 @@ static void JS_NextGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& arg
 
     // exceptions must be caught in the following part because we hold an exclusive
     // lock that might otherwise not be freed
-    v8::TryCatch tryCatch;
 
     try {
       TRI_general_cursor_row_t row = cursor->next(cursor);
@@ -390,6 +390,7 @@ static void JS_PersistGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& 
 
 static void JS_ToArrayGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
+  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
 
@@ -407,7 +408,6 @@ static void JS_ToArrayGeneralCursor (const v8::FunctionCallbackInfo<v8::Value>& 
 
     // exceptions must be caught in the following part because we hold an exclusive
     // lock that might otherwise not be freed
-    v8::TryCatch tryCatch;
 
     try {
       uint32_t max = (uint32_t) cursor->getBatchSize(cursor);

@@ -180,8 +180,8 @@ void ConsoleThread::inner () {
     nrCommands++;
     console.addHistory(input);
 
-    v8::HandleScope scope(isolate);
     v8::TryCatch tryCatch;
+    v8::HandleScope scope(isolate);
 
     TRI_ExecuteJavaScriptString(isolate, localContext, TRI_V8_STRING(input), name, true);
     TRI_FreeString(TRI_UNKNOWN_MEM_ZONE, input);

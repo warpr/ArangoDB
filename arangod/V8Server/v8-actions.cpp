@@ -713,8 +713,8 @@ static TRI_action_result_t ExecuteActionVocbase (TRI_vocbase_t* vocbase,
                                                  HttpRequest* request) {
   TRI_action_result_t result;
 
-  v8::HandleScope scope(isolate);
   v8::TryCatch tryCatch;
+  v8::HandleScope scope(isolate);
 
   TRI_GET_GLOBALS();
 

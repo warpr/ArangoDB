@@ -927,8 +927,8 @@ bool ApplicationV8::prepareNamedContexts (const string& name,
     localContext->Enter();
 
     {
-      v8::HandleScope scope(isolate);
       v8::TryCatch tryCatch;
+      v8::HandleScope scope(isolate);
 
       v8::Handle<v8::Value> wfunc = TRI_ExecuteJavaScriptString(
         isolate, 

@@ -278,9 +278,9 @@ V8Expression* Executor::generateExpression (AstNode const* node) {
   
   // std::cout << "Executor::generateExpression: " << _buffer->c_str() << "\n";
   ISOLATE;
+  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
-  v8::TryCatch tryCatch;
   // compile the expression
   v8::Handle<v8::Value> func(compileExpression());
   
@@ -299,9 +299,9 @@ TRI_json_t* Executor::executeExpression (Query* query,
   generateCodeExpression(node);
   ISOLATE;
   // std::cout << "Executor::ExecuteExpression: " << _buffer->c_str() << "\n";
+  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
-  v8::TryCatch tryCatch;
   // compile the expression
   v8::Handle<v8::Value> func(compileExpression());
 

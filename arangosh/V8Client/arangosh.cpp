@@ -1135,6 +1135,7 @@ static void ClientConnection_httpPatchRaw (const v8::FunctionCallbackInfo<v8::Va
 
 static void ClientConnection_httpSendFile (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
+  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
 
@@ -1165,7 +1166,6 @@ static void ClientConnection_httpSendFile (const v8::FunctionCallbackInfo<v8::Va
     TRI_V8_EXCEPTION_MESSAGE(TRI_errno(), "could not read file");
   }
 
-  v8::TryCatch tryCatch;
 
   // check header fields
   map<string, string> headerFields;
@@ -1661,9 +1661,9 @@ static void RunShell (v8::Isolate* isolate, v8::Handle<v8::Context> context, boo
 ////////////////////////////////////////////////////////////////////////////////
 
 static bool RunUnitTests (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
+  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
-  v8::TryCatch tryCatch;
   bool ok;
 
   // set-up unit tests array
@@ -1702,9 +1702,9 @@ static bool RunScripts (v8::Isolate* isolate,
                         v8::Handle<v8::Context> context,
                         const vector<string>& scripts,
                         const bool execute) {
+  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
-  v8::TryCatch tryCatch;
   bool ok;
 
   ok = true;
@@ -1767,10 +1767,8 @@ static bool RunScripts (v8::Isolate* isolate,
 static bool RunString (v8::Isolate* isolate,
                        v8::Handle<v8::Context> context,
                        const string& script) {
-  v8::HandleScope scope(isolate);
-
-
   v8::TryCatch tryCatch;
+  v8::HandleScope scope(isolate);
   bool ok = true;
 
   v8::Handle<v8::Value> result = TRI_ExecuteJavaScriptString(isolate, 
@@ -1807,9 +1805,8 @@ static bool RunString (v8::Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////////////
 
 static bool RunJsLint (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
-  v8::HandleScope scope(isolate);
-
   v8::TryCatch tryCatch;
+  v8::HandleScope scope(isolate);
   bool ok;
 
   // set-up jslint files array
