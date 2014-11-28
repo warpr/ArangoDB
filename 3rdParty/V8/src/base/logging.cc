@@ -31,7 +31,7 @@ void DumpBacktrace() {
     OS::PrintError("(no symbols)\n");
   } else {
     for (int i = 1; i < size; ++i) {
-      OS::PrintError("%2d: ", i);
+      OS::PrintError("%2d: (%p)", i, trace[i]);
       char mangled[201];
       if (sscanf(symbols[i], "%*[^(]%*[(]%200[^)+]", mangled) == 1) {  // NOLINT
         int status;
@@ -40,7 +40,7 @@ void DumpBacktrace() {
         OS::PrintError("%s\n", demangled != NULL ? demangled : mangled);
         free(demangled);
       } else {
-        OS::PrintError("??\n");
+        OS::PrintError("%s\n", symbols[i]);
       }
     }
   }
