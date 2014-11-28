@@ -105,7 +105,7 @@ class V8Buffer : public V8Wrapper<V8Buffer, TRI_V8_BUFFER_CID> {
 /// @brief checks if the object is an instance
 ////////////////////////////////////////////////////////////////////////////////
 
-    static bool hasInstance (v8::Handle<v8::Value> val);
+    static bool hasInstance (v8::Isolate *isolate, v8::Handle<v8::Value> val);
 
 // -----------------------------------------------------------------------------
 // --SECTION--                                             static public methods

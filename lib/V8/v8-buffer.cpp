@@ -188,7 +188,7 @@ static void Encode (const v8::FunctionCallbackInfo<v8::Value>& args,
                     TRI_V8_encoding_t enc) {
   v8::Isolate* isolate = args.GetIsolate();
   if (enc == BUFFER) {
-    TRI_V8_RETURN(TRI_V8_SYMBOL_PAIR(static_cast<const char*>(buf), len));
+    TRI_V8_RETURN(TRI_V8_PAIR_STRING(static_cast<const char*>(buf), len));
   }
 
   if (!len) {
@@ -211,7 +211,7 @@ static void Encode (const v8::FunctionCallbackInfo<v8::Value>& args,
   }
 
   // utf8 or ascii enc
-  v8::Local<v8::String> chunk = TRI_V8_SYMBOL_PAIR((const char*) buf, (int) len);
+  v8::Local<v8::String> chunk = TRI_V8_PAIR_STRING((const char*) buf, (int) len);
   TRI_V8_RETURN(chunk);
 }
 
@@ -402,7 +402,7 @@ static ssize_t DecodeWrite (v8::Isolate* isolate,
     return -1;
   }
 
-  bool is_buffer = V8Buffer::hasInstance(val);
+  bool is_buffer = V8Buffer::hasInstance(isolate, val);
 
   if (is_buffer && (encoding == BINARY || encoding == BUFFER)) {
     // fast path, copy buffer data
@@ -587,8 +587,9 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
   v8::RetainedObjectInfo* WrapperInfo (uint16_t classId, v8::Handle<v8::Value> wrapper) {
+    ISOLATE;
     TRI_ASSERT(classId == TRI_V8_BUFFER_CID);
-    TRI_ASSERT(V8Buffer::hasInstance(wrapper));
+    TRI_ASSERT(V8Buffer::hasInstance(isolate, wrapper));
 
     V8Buffer* buffer = V8Buffer::unwrap(wrapper.As<v8::Object>());
     return new RetainedBufferInfo(buffer);
@@ -788,8 +789,8 @@ V8Buffer::V8Buffer (v8::Isolate* isolate,
 /// @brief
 ////////////////////////////////////////////////////////////////////////////////
 
-bool V8Buffer::hasInstance (v8::Handle<v8::Value> val) {
-  TRI_V8_CURRENT_GLOBALS;
+bool V8Buffer::hasInstance (v8::Isolate *isolate, v8::Handle<v8::Value> val) {
+  TRI_V8_CURRENT_GLOBALS_AND_SCOPE;
 
   if (! val->IsObject()) {
     return false;
@@ -904,12 +905,12 @@ static void JS_AsciiSlice (const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (ContainsNonAscii(data, len)) {
     char* out = new char[len];
     ForceAscii(data, out, len);
-    v8::Local<v8::String> rc = TRI_V8_SYMBOL_PAIR(out, (int) len);
+    v8::Local<v8::String> rc = TRI_V8_PAIR_STRING(out, (int) len);
     delete[] out;
     TRI_V8_RETURN(rc);
   }
 
-  TRI_V8_RETURN(TRI_V8_SYMBOL_PAIR(data, (int) len));
+  TRI_V8_RETURN(TRI_V8_PAIR_STRING(data, (int) len));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -925,7 +926,7 @@ static void JS_Utf8Slice (const v8::FunctionCallbackInfo<v8::Value>& args) {
   SLICE_ARGS(args[0], args[1]);
 
   char* data = parent->_data + start;
-  TRI_V8_RETURN(TRI_V8_SYMBOL_PAIR(data, end - start));
+  TRI_V8_RETURN(TRI_V8_PAIR_STRING(data, end - start));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -972,7 +973,7 @@ static void JS_HexSlice (const v8::FunctionCallbackInfo<v8::Value>& args) {
     dst[k + 1] = hex[val & 15];
   }
 
-  v8::Local<v8::String> string = TRI_V8_SYMBOL_PAIR(dst, dstlen);
+  v8::Local<v8::String> string = TRI_V8_PAIR_STRING(dst, dstlen);
   delete[] dst;
   TRI_V8_RETURN(string);
 }
@@ -1045,7 +1046,7 @@ static void JS_Base64Slice (const v8::FunctionCallbackInfo<v8::Value>& args) {
     }
   }
 
-  v8::Local<v8::String> string = TRI_V8_SYMBOL_PAIR(dst, dlen);
+  v8::Local<v8::String> string = TRI_V8_PAIR_STRING(dst, dlen);
   delete[] dst;
   TRI_V8_RETURN(string);
 }
@@ -1085,7 +1086,7 @@ static void JS_Copy (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   V8Buffer* source = V8Buffer::unwrap(args.This());
 
-  if (! V8Buffer::hasInstance(args[0])) {
+  if (! V8Buffer::hasInstance(isolate, args[0])) {
     TRI_V8_EXCEPTION_USAGE("copy(<buffer>, [<start>], [<end>])");
   }
 
@@ -1596,7 +1597,7 @@ static void JS_MakeFastBuffer (const v8::FunctionCallbackInfo<v8::Value>& args) 
   v8::HandleScope scope(isolate);
 
 
-  if (! V8Buffer::hasInstance(args[0])) {
+  if (! V8Buffer::hasInstance(isolate, args[0])) {
     TRI_V8_EXCEPTION_USAGE("makeFastBuffer(<buffer>, <fastBuffer>, <offset>, <length>");
   }
 

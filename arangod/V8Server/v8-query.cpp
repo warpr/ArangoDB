@@ -1880,7 +1880,7 @@ static void JS_ChecksumCollection (const v8::FunctionCallbackInfo<v8::Value>& ar
 
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
   result->Set(TRI_V8_SYMBOL("checksum"), v8::Number::New(isolate, helper._checksum));
-  result->Set(TRI_V8_SYMBOL("revision"), TRI_V8_SYMBOL_STD_STRING(rid));
+  result->Set(TRI_V8_SYMBOL("revision"), TRI_V8_STD_STRING(rid));
 
   TRI_V8_RETURN(result);
 }

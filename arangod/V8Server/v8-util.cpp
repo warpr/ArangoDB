@@ -56,7 +56,7 @@ v8::Handle<v8::Value> V8TickId (v8::Isolate* isolate, TRI_voc_tick_t tick) {
   char buffer[21];
   size_t len = TRI_StringUInt64InPlace((uint64_t) tick, (char*) &buffer);
 
-  return TRI_V8_SYMBOL_PAIR((const char*) buffer, (int) len);
+  return TRI_V8_PAIR_STRING((const char*) buffer, (int) len);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -67,7 +67,7 @@ v8::Handle<v8::Value> V8RevisionId (v8::Isolate* isolate, TRI_voc_rid_t rid) {
   char buffer[21];
   size_t len = TRI_StringUInt64InPlace((uint64_t) rid, (char*) &buffer);
 
-  return TRI_V8_SYMBOL_PAIR((const char*) buffer, (int) len);
+  return TRI_V8_PAIR_STRING((const char*) buffer, (int) len);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +79,7 @@ v8::Handle<v8::Value> V8DocumentId (v8::Isolate* isolate,
                                     string const& key) {
   string const&& id = DocumentHelper::assembleDocumentId(collectionName, key);
 
-  return TRI_V8_SYMBOL_STD_STRING(id);
+  return TRI_V8_STD_STRING(id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -151,8 +151,8 @@ bool ExtractDocumentHandle (v8::Isolate* isolate,
     TRI_GET_GLOBALS();
 
     v8::Handle<v8::Object> obj = val->ToObject();
-    TRI_GET_GLOBAL_STR(_IdKey);
-    TRI_GET_GLOBAL_STR(_KeyKey);
+    TRI_GET_GLOBAL_STRING(_IdKey);
+    TRI_GET_GLOBAL_STRING(_KeyKey);
     if (obj->Has(_IdKey)) {
       v8::Handle<v8::Value> didVal = obj->Get(_IdKey);
 
@@ -171,7 +171,7 @@ bool ExtractDocumentHandle (v8::Isolate* isolate,
       return false;
     }
 
-    TRI_GET_GLOBAL_STR(_RevKey);
+    TRI_GET_GLOBAL_STRING(_RevKey);
     if (! obj->Has(_RevKey)) {
       return true;
     }

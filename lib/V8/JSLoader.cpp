@@ -78,8 +78,8 @@ v8::Handle<v8::Value> JSLoader::executeGlobalScript (v8::Isolate* isolate,
 
   result = TRI_ExecuteJavaScriptString(isolate,
                                        context,
-                                       TRI_V8_SYMBOL_STD_STRING(i->second),
-                                       TRI_V8_SYMBOL_STD_STRING(name),
+                                       TRI_V8_STD_STRING(i->second),
+                                       TRI_V8_STD_STRING(name),
                                        false);
 
   if (tryCatch.HasCaught()) {
@@ -121,8 +121,8 @@ bool JSLoader::loadScript (v8::Isolate* isolate,
   
   TRI_ExecuteJavaScriptString(isolate,
                               context,
-                              TRI_V8_SYMBOL_STD_STRING(i->second),
-                              TRI_V8_SYMBOL_STD_STRING(name),
+                              TRI_V8_STD_STRING(i->second),
+                              TRI_V8_STD_STRING(name),
                               true); //// todo false);
 
   if (tryCatch.HasCaught()) {
@@ -189,8 +189,8 @@ bool JSLoader::executeScript (v8::Isolate* isolate,
 
   TRI_ExecuteJavaScriptString(isolate,
                               context,
-                              TRI_V8_SYMBOL_STD_STRING(content),
-                              TRI_V8_SYMBOL_STD_STRING(name),
+                              TRI_V8_STD_STRING(content),
+                              TRI_V8_STD_STRING(name),
                               false);
 
   if (! tryCatch.HasCaught()) {

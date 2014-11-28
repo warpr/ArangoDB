@@ -1204,7 +1204,7 @@ static void ClientConnection_getEndpoint (const v8::FunctionCallbackInfo<v8::Val
   }
 
   const string endpoint = BaseClient.endpointString();
-  TRI_V8_RETURN_STDSTR(endpoint);
+  TRI_V8_RETURN_STD_STRING(endpoint);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1252,7 +1252,7 @@ static void ClientConnection_lastErrorMessage (const v8::FunctionCallbackInfo<v8
     TRI_V8_EXCEPTION_USAGE("lastErrorMessage()");
   }
 
-  TRI_V8_RETURN_STDSTR(connection->getErrorMessage());
+  TRI_V8_RETURN_STD_STRING(connection->getErrorMessage());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1314,7 +1314,7 @@ static void ClientConnection_toString (const v8::FunctionCallbackInfo<v8::Value>
     result += ",unconnected]";
   }
 
-  TRI_V8_RETURN_STDSTR(result);
+  TRI_V8_RETURN_STD_STRING(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1337,7 +1337,7 @@ static void ClientConnection_getVersion (const v8::FunctionCallbackInfo<v8::Valu
     TRI_V8_EXCEPTION_USAGE("getVersion()");
   }
 
-  TRI_V8_RETURN_STDSTR(connection->getVersion());
+  TRI_V8_RETURN_STD_STRING(connection->getVersion());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1360,7 +1360,7 @@ static void ClientConnection_getDatabaseName (const v8::FunctionCallbackInfo<v8:
     TRI_V8_EXCEPTION_USAGE("getDatabaseName()");
   }
 
-  TRI_V8_RETURN_STDSTR(connection->getDatabaseName());
+  TRI_V8_RETURN_STD_STRING(connection->getDatabaseName());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1670,7 +1670,7 @@ static bool RunUnitTests (v8::Isolate* isolate, v8::Handle<v8::Context> context)
   v8::Handle<v8::Array> sysTestFiles = v8::Array::New(isolate);
 
   for (size_t i = 0;  i < UnitTests.size();  ++i) {
-    sysTestFiles->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(UnitTests[i]));
+    sysTestFiles->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STD_STRING(UnitTests[i]));
   }
 
   TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("SYS_UNIT_TESTS"), sysTestFiles);
@@ -1735,7 +1735,7 @@ static bool RunScripts (v8::Isolate* isolate,
     }
 
     if (execute) {
-      v8::Handle<v8::String> name = TRI_V8_SYMBOL_STD_STRING(scripts[i]);
+      v8::Handle<v8::String> name = TRI_V8_STD_STRING(scripts[i]);
       v8::Handle<v8::Value> args[] = { name };
 
       ExecuteFileCallback->Call(ExecuteFileCallback, 1, args);
@@ -1773,7 +1773,7 @@ static bool RunString (v8::Isolate* isolate,
 
   v8::Handle<v8::Value> result = TRI_ExecuteJavaScriptString(isolate, 
                                                              context,
-                                                             TRI_V8_SYMBOL_STD_STRING(script),
+                                                             TRI_V8_STD_STRING(script),
                                                              TRI_V8_SYMBOL("(command-line)"),
                                                              false);
 
@@ -1813,7 +1813,7 @@ static bool RunJsLint (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   v8::Handle<v8::Array> sysTestFiles = v8::Array::New(isolate);
 
   for (size_t i = 0;  i < JsLint.size();  ++i) {
-    sysTestFiles->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(JsLint[i]));
+    sysTestFiles->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STD_STRING(JsLint[i]));
   }
 
   context->Global()->Set(TRI_V8_SYMBOL("SYS_UNIT_TESTS"), sysTestFiles);
@@ -2199,7 +2199,7 @@ int warmupEnvironment(v8::Isolate *isolate,
   v8::Handle<v8::Array> p = v8::Array::New(isolate, (int) positionals.size());
 
   for (uint32_t i = 0;  i < positionals.size();  ++i) {
-    p->Set(v8::Number::New(isolate, i), TRI_V8_SYMBOL_STD_STRING(positionals[i]));
+    p->Set(v8::Number::New(isolate, i), TRI_V8_STD_STRING(positionals[i]));
   }
 
   TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("ARGUMENTS"), p);

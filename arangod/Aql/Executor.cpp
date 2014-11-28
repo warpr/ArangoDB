@@ -417,7 +417,7 @@ v8::Handle<v8::Value> Executor::compileExpression () {
   TRI_ASSERT(_buffer != nullptr);
   ISOLATE;
 
-  v8::Handle<v8::Script> compiled = v8::Script::Compile(TRI_V8_SYMBOL_PAIR(_buffer->c_str(), (int) _buffer->length()),
+  v8::Handle<v8::Script> compiled = v8::Script::Compile(TRI_V8_PAIR_STRING(_buffer->c_str(), (int) _buffer->length()),
                                                         TRI_V8_SYMBOL("--script--"));
   
   if (compiled.IsEmpty()) {

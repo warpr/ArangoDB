@@ -61,7 +61,7 @@ static void CreateAgencyException (const v8::FunctionCallbackInfo<v8::Value>& ar
   TRI_V8_CURRENT_GLOBALS_AND_SCOPE;
 
   const std::string errorDetails = result.errorDetails();
-  v8::Handle<v8::String> errorMessage = TRI_V8_SYMBOL_STD_STRING(errorDetails);
+  v8::Handle<v8::String> errorMessage = TRI_V8_STD_STRING(errorDetails);
   v8::Handle<v8::Object> errorObject = v8::Exception::Error(errorMessage)->ToObject();
 
   errorObject->Set(TRI_V8_SYMBOL("code"), v8::Number::New(isolate, result.httpCode()));
@@ -252,9 +252,9 @@ static void JS_GetAgency (const v8::FunctionCallbackInfo<v8::Value>& args) {
         v8::Handle<v8::Object> sub = v8::Object::New(isolate);
 
         sub->Set(TRI_V8_SYMBOL("value"), TRI_ObjectJson(isolate, json));
-        sub->Set(TRI_V8_SYMBOL("index"), TRI_V8_SYMBOL_STD_STRING(idx));
+        sub->Set(TRI_V8_SYMBOL("index"), TRI_V8_STD_STRING(idx));
 
-        l->Set(TRI_V8_SYMBOL_STD_STRING(key), sub);
+        l->Set(TRI_V8_STD_STRING(key), sub);
       }
 
       ++it;
@@ -269,7 +269,7 @@ static void JS_GetAgency (const v8::FunctionCallbackInfo<v8::Value>& args) {
       TRI_json_t const* json = (*it).second._json;
 
       if (json != 0) {
-        l->ForceSet(TRI_V8_SYMBOL_STD_STRING(key), TRI_ObjectJson(isolate, json));
+        l->ForceSet(TRI_V8_STD_STRING(key), TRI_ObjectJson(isolate, json));
       }
 
       ++it;
@@ -326,7 +326,7 @@ static void JS_ListAgency (const v8::FunctionCallbackInfo<v8::Value>& args) {
     while (it != result._values.end()) {
       const std::string key = (*it).first;
 
-      l->Set(v8::Number::New(isolate, i++), TRI_V8_SYMBOL_STD_STRING(key));
+      l->Set(v8::Number::New(isolate, i++), TRI_V8_STD_STRING(key));
       ++it;
     }
     TRI_V8_RETURN(l);
@@ -339,7 +339,7 @@ static void JS_ListAgency (const v8::FunctionCallbackInfo<v8::Value>& args) {
       const std::string key = (*it).first;
       const bool isDirectory = (*it).second._isDir;
 
-      l->Set(TRI_V8_SYMBOL_STD_STRING(key), v8::Boolean::New(isolate, isDirectory));
+      l->Set(TRI_V8_STD_STRING(key), v8::Boolean::New(isolate, isDirectory));
       ++it;
     }
     TRI_V8_RETURN(l);
@@ -579,7 +579,7 @@ static void JS_WatchAgency (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_json_t* json = (*it).second._json;
 
     if (json != 0) {
-      l->Set(TRI_V8_SYMBOL_STD_STRING(key), TRI_ObjectJson(isolate, json));
+      l->Set(TRI_V8_STD_STRING(key), TRI_ObjectJson(isolate, json));
     }
 
     ++it;
@@ -610,7 +610,7 @@ static void JS_EndpointsAgency (const v8::FunctionCallbackInfo<v8::Value>& args)
   for (size_t i = 0; i < endpoints.size(); ++i) {
     const std::string endpoint = endpoints[i];
 
-    l->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(endpoint));
+    l->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STD_STRING(endpoint));
   }
 
   TRI_V8_RETURN(l);
@@ -636,10 +636,10 @@ static void JS_PrefixAgency (const v8::FunctionCallbackInfo<v8::Value>& args) {
   const std::string prefix = AgencyComm::prefix();
 
   if (strip && prefix.size() > 2) {
-    TRI_V8_RETURN_PAIR(prefix.c_str() + 1, (int) prefix.size() - 2);
+    TRI_V8_RETURN_PAIR_STRING(prefix.c_str() + 1, (int) prefix.size() - 2);
   }
 
-  TRI_V8_RETURN_STDSTR(prefix);
+  TRI_V8_RETURN_STD_STRING(prefix);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -701,7 +701,7 @@ static void JS_UniqidAgency (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   const std::string value = StringUtils::itoa(result._index);
 
-  TRI_V8_RETURN_STDSTR(value);
+  TRI_V8_RETURN_STD_STRING(value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -719,7 +719,7 @@ static void JS_VersionAgency (const v8::FunctionCallbackInfo<v8::Value>& args) {
   AgencyComm comm;
   const std::string version = comm.getVersion();
 
-  TRI_V8_RETURN_STDSTR(version);
+  TRI_V8_RETURN_STD_STRING(version);
 }
 
 // -----------------------------------------------------------------------------
@@ -765,7 +765,7 @@ static void JS_ListDatabases (const v8::FunctionCallbackInfo<v8::Value>& args) {
   vector<DatabaseID>::iterator it;
   int count = 0;
   for (it = res.begin(); it != res.end(); ++it) {
-    a->Set(v8::Number::New(isolate, count++), TRI_V8_SYMBOL_STD_STRING((*it)));
+    a->Set(v8::Number::New(isolate, count++), TRI_V8_STD_STRING((*it)));
   }
   TRI_V8_RETURN(a);
 }
@@ -806,13 +806,13 @@ static void JS_GetCollectionInfoClusterInfo (const v8::FunctionCallbackInfo<v8::
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
   const std::string cid = triagens::basics::StringUtils::itoa(ci->id());
   const std::string& name = ci->name();
-  result->Set(TRI_V8_SYMBOL("id"), TRI_V8_SYMBOL_STD_STRING(cid));
-  result->Set(TRI_V8_SYMBOL("name"), TRI_V8_SYMBOL_STD_STRING(name));
+  result->Set(TRI_V8_SYMBOL("id"), TRI_V8_STD_STRING(cid));
+  result->Set(TRI_V8_SYMBOL("name"), TRI_V8_STD_STRING(name));
   result->Set(TRI_V8_SYMBOL("type"), v8::Number::New(isolate, (int) ci->type()));
   result->Set(TRI_V8_SYMBOL("status"), v8::Number::New(isolate, (int) ci->status()));
 
   const string statusString = ci->statusString();
-  result->Set(TRI_V8_SYMBOL("statusString"), TRI_V8_SYMBOL_STD_STRING(statusString));
+  result->Set(TRI_V8_SYMBOL("statusString"), TRI_V8_STD_STRING(statusString));
 
   result->Set(TRI_V8_SYMBOL("deleted"), v8::Boolean::New(isolate, ci->deleted()));
   result->Set(TRI_V8_SYMBOL("doCompact"), v8::Boolean::New(isolate, ci->doCompact()));
@@ -824,7 +824,7 @@ static void JS_GetCollectionInfoClusterInfo (const v8::FunctionCallbackInfo<v8::
   const std::vector<std::string>& sks = ci->shardKeys();
   v8::Handle<v8::Array> shardKeys = v8::Array::New(isolate, (int) sks.size());
   for (uint32_t i = 0, n = (uint32_t) sks.size(); i < n; ++i) {
-    shardKeys->Set(v8::Number::New(isolate, i), TRI_V8_SYMBOL_STD_STRING(sks[i]));
+    shardKeys->Set(v8::Number::New(isolate, i), TRI_V8_STD_STRING(sks[i]));
   }
   result->Set(TRI_V8_SYMBOL("shardKeys"), shardKeys);
 
@@ -832,8 +832,8 @@ static void JS_GetCollectionInfoClusterInfo (const v8::FunctionCallbackInfo<v8::
   v8::Handle<v8::Object> shardIds = v8::Object::New(isolate);
   std::map<std::string, std::string>::const_iterator it = sis.begin();
   while (it != sis.end()) {
-    shardIds->Set(TRI_V8_SYMBOL_STD_STRING((*it).first),
-                  TRI_V8_SYMBOL_STD_STRING((*it).second));
+    shardIds->Set(TRI_V8_STD_STRING((*it).first),
+                  TRI_V8_STD_STRING((*it).second));
     ++it;
   }
   result->Set(TRI_V8_SYMBOL("shards"), shardIds);
@@ -866,8 +866,8 @@ static void JS_GetCollectionInfoCurrentClusterInfo (const v8::FunctionCallbackIn
   // First some stuff from Plan for which Current does not make sense:
   const std::string cid = triagens::basics::StringUtils::itoa(ci->id());
   const std::string& name = ci->name();
-  result->Set(TRI_V8_SYMBOL("id"), TRI_V8_SYMBOL_STD_STRING(cid));
-  result->Set(TRI_V8_SYMBOL("name"), TRI_V8_SYMBOL_STD_STRING(name));
+  result->Set(TRI_V8_SYMBOL("id"), TRI_V8_STD_STRING(cid));
+  result->Set(TRI_V8_SYMBOL("name"), TRI_V8_STD_STRING(name));
 
   shared_ptr<CollectionInfoCurrent> cic
           = ClusterInfo::instance()->getCollectionCurrent(
@@ -881,7 +881,7 @@ static void JS_GetCollectionInfoCurrentClusterInfo (const v8::FunctionCallbackIn
     TRI_V8_RETURN(result);
   }
   const string statusString = TRI_GetStatusStringCollectionVocBase(s);
-  result->Set(TRI_V8_SYMBOL("statusString"),TRI_V8_SYMBOL_STD_STRING(statusString));
+  result->Set(TRI_V8_SYMBOL("statusString"),TRI_V8_STD_STRING(statusString));
   result->Set(TRI_V8_SYMBOL("deleted"),     v8::Boolean::New(isolate, cic->deleted(shardID)));
   result->Set(TRI_V8_SYMBOL("doCompact"),   v8::Boolean::New(isolate, cic->doCompact(shardID)));
   result->Set(TRI_V8_SYMBOL("isSystem"),    v8::Boolean::New(isolate, cic->isSystem(shardID)));
@@ -889,7 +889,7 @@ static void JS_GetCollectionInfoCurrentClusterInfo (const v8::FunctionCallbackIn
   result->Set(TRI_V8_SYMBOL("waitForSync"), v8::Boolean::New(isolate, cic->waitForSync(shardID)));
   result->Set(TRI_V8_SYMBOL("journalSize"), v8::Number::New (isolate, cic->journalSize(shardID)));
   const std::string serverID = cic->responsibleServer(shardID);
-  result->Set(TRI_V8_SYMBOL("DBServer"),    TRI_V8_SYMBOL_STD_STRING(serverID));
+  result->Set(TRI_V8_SYMBOL("DBServer"),    TRI_V8_STD_STRING(serverID));
 
   // TODO: fill "indexes"
   v8::Handle<v8::Array> indexes = v8::Array::New(isolate);
@@ -901,7 +901,7 @@ static void JS_GetCollectionInfoCurrentClusterInfo (const v8::FunctionCallbackIn
   if (error) {
     result->Set(TRI_V8_SYMBOL("errorNum"), v8::Number::New(isolate, cic->errorNum(shardID)));
     const string errorMessage = cic->errorMessage(shardID);
-    result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(errorMessage));
+    result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_STD_STRING(errorMessage));
   }
 
   TRI_V8_RETURN(result);
@@ -921,7 +921,7 @@ static void JS_GetResponsibleServerClusterInfo (const v8::FunctionCallbackInfo<v
 
   std::string const result = ClusterInfo::instance()->getResponsibleServer(TRI_ObjectToString(args[0]));
 
-  TRI_V8_RETURN_STDSTR(result);
+  TRI_V8_RETURN_STD_STRING(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -967,7 +967,7 @@ static void JS_GetResponsibleShardClusterInfo (const v8::FunctionCallbackInfo<v8
   }
 
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
-  result->Set(TRI_V8_SYMBOL("shardId"), TRI_V8_SYMBOL_STD_STRING(shardId));
+  result->Set(TRI_V8_SYMBOL("shardId"), TRI_V8_STD_STRING(shardId));
   result->Set(TRI_V8_SYMBOL("usesDefaultShardingAttributes"), v8::Boolean::New(isolate, usesDefaultShardingAttributes));
 
   TRI_V8_RETURN(result);
@@ -987,7 +987,7 @@ static void JS_GetServerEndpointClusterInfo (const v8::FunctionCallbackInfo<v8::
 
   const std::string result = ClusterInfo::instance()->getServerEndpoint(TRI_ObjectToString(args[0]));
 
-  TRI_V8_RETURN_STDSTR(result);
+  TRI_V8_RETURN_STD_STRING(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1009,7 +1009,7 @@ static void JS_GetDBServers (const v8::FunctionCallbackInfo<v8::Value>& args) {
   for (size_t i = 0; i < DBServers.size(); ++i) {
     ServerID const sid = DBServers[i];
 
-    l->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(sid));
+    l->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STD_STRING(sid));
   }
 
   TRI_V8_RETURN(l);
@@ -1060,7 +1060,7 @@ static void JS_UniqidClusterInfo (const v8::FunctionCallbackInfo<v8::Value>& arg
 
   const std::string id = StringUtils::itoa(value);
 
-  TRI_V8_RETURN_STDSTR(id);
+  TRI_V8_RETURN_STD_STRING(id);
 }
 
 // -----------------------------------------------------------------------------
@@ -1080,7 +1080,7 @@ static void JS_AddressServerState (const v8::FunctionCallbackInfo<v8::Value>& ar
   }
 
   const std::string address = ServerState::instance()->getAddress();
-  TRI_V8_RETURN_STDSTR(address);
+  TRI_V8_RETURN_STD_STRING(address);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1113,7 +1113,7 @@ static void JS_IdServerState (const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 
   const std::string id = ServerState::instance()->getId();
-  TRI_V8_RETURN_STDSTR(id);
+  TRI_V8_RETURN_STD_STRING(id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1129,7 +1129,7 @@ static void JS_DataPathServerState (const v8::FunctionCallbackInfo<v8::Value>& a
   }
 
   const std::string path = ServerState::instance()->getDataPath();
-  TRI_V8_RETURN_STDSTR(path);
+  TRI_V8_RETURN_STD_STRING(path);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1145,7 +1145,7 @@ static void JS_LogPathServerState (const v8::FunctionCallbackInfo<v8::Value>& ar
   }
 
   const std::string path = ServerState::instance()->getLogPath();
-  TRI_V8_RETURN_STDSTR(path);
+  TRI_V8_RETURN_STD_STRING(path);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1161,7 +1161,7 @@ static void JS_AgentPathServerState (const v8::FunctionCallbackInfo<v8::Value>& 
   }
 
   const std::string path = ServerState::instance()->getAgentPath();
-  TRI_V8_RETURN_STDSTR(path);
+  TRI_V8_RETURN_STD_STRING(path);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1177,7 +1177,7 @@ static void JS_ArangodPathServerState (const v8::FunctionCallbackInfo<v8::Value>
   }
 
   const std::string path = ServerState::instance()->getArangodPath();
-  TRI_V8_RETURN_STDSTR(path);
+  TRI_V8_RETURN_STD_STRING(path);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1193,7 +1193,7 @@ static void JS_JavaScriptPathServerState (const v8::FunctionCallbackInfo<v8::Val
   }
 
   const std::string path = ServerState::instance()->getJavaScriptPath();
-  TRI_V8_RETURN_STDSTR(path);
+  TRI_V8_RETURN_STD_STRING(path);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1209,7 +1209,7 @@ static void JS_DBserverConfigServerState (const v8::FunctionCallbackInfo<v8::Val
   }
 
   const std::string path = ServerState::instance()->getDBserverConfig();
-  TRI_V8_RETURN_STDSTR(path);
+  TRI_V8_RETURN_STD_STRING(path);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1225,7 +1225,7 @@ static void JS_CoordinatorConfigServerState (const v8::FunctionCallbackInfo<v8::
   }
 
   const std::string path = ServerState::instance()->getCoordinatorConfig();
-  TRI_V8_RETURN_STDSTR(path);
+  TRI_V8_RETURN_STD_STRING(path);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1322,7 +1322,7 @@ static void JS_RoleServerState (const v8::FunctionCallbackInfo<v8::Value>& args)
 
   const std::string role = ServerState::roleToString(ServerState::instance()->getRole());
 
-  TRI_V8_RETURN_STDSTR(role);
+  TRI_V8_RETURN_STD_STRING(role);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1383,7 +1383,7 @@ static void JS_StatusServerState (const v8::FunctionCallbackInfo<v8::Value>& arg
 
   const std::string state = ServerState::stateToString(ServerState::instance()->getState());
 
-  TRI_V8_RETURN_STDSTR(state);
+  TRI_V8_RETURN_STD_STRING(state);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1404,7 +1404,7 @@ static void JS_GetClusterAuthentication (const v8::FunctionCallbackInfo<v8::Valu
     auth = ServerState::instance()->getAuthentication();
   }
 
-  TRI_V8_RETURN_STDSTR(auth);
+  TRI_V8_RETURN_STD_STRING(auth);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1517,19 +1517,19 @@ void PrepareClusterCommResultForJS(const v8::FunctionCallbackInfo<v8::Value>& ar
   } else {
     TRI_GET_GLOBAL(ClientTransactionIDKey, v8::String);
     r->Set(ClientTransactionIDKey,
-           TRI_V8_SYMBOL_STD_STRING(res->clientTransactionID));
+           TRI_V8_STD_STRING(res->clientTransactionID));
 
     // convert the ids to strings as uint64_t might be too big for JavaScript numbers
     TRI_GET_GLOBAL(CoordTransactionIDKey, v8::String);
     std::string id = StringUtils::itoa(res->coordTransactionID);
-    r->Set(CoordTransactionIDKey, TRI_V8_SYMBOL_STD_STRING(id));
+    r->Set(CoordTransactionIDKey, TRI_V8_STD_STRING(id));
 
     id = StringUtils::itoa(res->operationID);
     TRI_GET_GLOBAL(OperationIDKey, v8::String);
-    r->Set(OperationIDKey, TRI_V8_SYMBOL_STD_STRING(id));
+    r->Set(OperationIDKey, TRI_V8_STD_STRING(id));
 
     TRI_GET_GLOBAL(ShardIDKey, v8::String);
-    r->Set(ShardIDKey, TRI_V8_SYMBOL_STD_STRING(res->shardID));
+    r->Set(ShardIDKey, TRI_V8_STD_STRING(res->shardID));
     if (res->status == CL_COMM_SUBMITTED) {
       TRI_GET_GLOBAL(StatusKey, v8::String);
       r->Set(StatusKey, TRI_V8_SYMBOL("SUBMITTED"));
@@ -1549,15 +1549,15 @@ void PrepareClusterCommResultForJS(const v8::FunctionCallbackInfo<v8::Value>& ar
       // The headers:
       v8::Handle<v8::Object> h = v8::Object::New(isolate);
       for (auto const& i : res->result->getHeaderFields()) {
-        h->Set(TRI_V8_SYMBOL_STD_STRING(i.first),
-               TRI_V8_SYMBOL_STD_STRING(i.second));
+        h->Set(TRI_V8_STD_STRING(i.first),
+               TRI_V8_STD_STRING(i.second));
       }
       r->Set(TRI_V8_SYMBOL("headers"), h);
 
       // The body:
       triagens::basics::StringBuffer& body = res->result->getBody();
       if (body.length() != 0) {
-        r->Set(TRI_V8_SYMBOL("body"), TRI_V8_SYMBOL_STD_STRING(body));
+        r->Set(TRI_V8_SYMBOL("body"), TRI_V8_STD_STRING(body));
       }
     }
     else if (res->status == CL_COMM_TIMEOUT) {
@@ -1573,8 +1573,8 @@ void PrepareClusterCommResultForJS(const v8::FunctionCallbackInfo<v8::Value>& ar
       if (res->result && res->result->isComplete()) {
         v8::Handle<v8::Object> details = v8::Object::New(isolate);
         details->Set(TRI_V8_SYMBOL("code"), v8::Number::New(isolate, res->result->getHttpReturnCode()));
-        details->Set(TRI_V8_SYMBOL("message"), TRI_V8_SYMBOL_STD_STRING(res->result->getHttpReturnMessage()));
-        details->Set(TRI_V8_SYMBOL("body"), TRI_V8_SYMBOL_STD_STRING(res->result->getBody()));
+        details->Set(TRI_V8_SYMBOL("message"), TRI_V8_STD_STRING(res->result->getHttpReturnMessage()));
+        details->Set(TRI_V8_SYMBOL("body"), TRI_V8_STD_STRING(res->result->getBody()));
 
         r->Set(TRI_V8_SYMBOL("details"), details);
         TRI_GET_GLOBAL(ErrorMessageKey, v8::String);
@@ -1600,15 +1600,15 @@ void PrepareClusterCommResultForJS(const v8::FunctionCallbackInfo<v8::Value>& ar
       map<string,string> headers = res->answer->headers();
       map<string,string>::iterator i;
       for (i = headers.begin(); i != headers.end(); ++i) {
-        h->Set(TRI_V8_SYMBOL_STD_STRING(i->first),
-               TRI_V8_SYMBOL_STD_STRING(i->second));
+        h->Set(TRI_V8_STD_STRING(i->first),
+               TRI_V8_STD_STRING(i->second));
       }
       r->Set(TRI_V8_SYMBOL("headers"), h);
 
       // The body:
       if (0 != res->answer->body()) {
         r->Set(TRI_V8_SYMBOL("body"),
-               TRI_V8_SYMBOL_PAIR(res->answer->body(), (int) res->answer->bodySize()));
+               TRI_V8_PAIR_STRING(res->answer->body(), (int) res->answer->bodySize()));
       }
     }
   }

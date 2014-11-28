@@ -470,7 +470,7 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
     }
 
     result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, errorNumber));
-    result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(_lastErrorMessage));
+    result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_STD_STRING(_lastErrorMessage));
 
     return scope.Escape<v8::Value>(result);
   }
@@ -489,7 +489,7 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
       }
 
       // return body as string
-      return scope.Escape<v8::Value>(TRI_V8_SYMBOL_STD_STRING(sb));
+      return scope.Escape<v8::Value>(TRI_V8_STD_STRING(sb));
     }
     else {
       // no body
@@ -503,7 +503,7 @@ v8::Handle<v8::Value> V8ClientConnection::handleResult (v8::Isolate* isolate) {
 
         result->Set(TRI_V8_SYMBOL("error"),        v8::Boolean::New(isolate, true));
         result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, _lastHttpReturnCode));
-        result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(returnMessage));
+        result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_STD_STRING(returnMessage));
       }
       else {
         result->Set(TRI_V8_SYMBOL("error"),        v8::Boolean::New(isolate, false));
@@ -572,7 +572,7 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (v8::Isolate* isolate,
     }
 
     result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, errorNumber));
-    result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(_lastErrorMessage));
+    result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_STD_STRING(_lastErrorMessage));
 
     return scope.Escape<v8::Value>(result);
   }
@@ -590,7 +590,7 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (v8::Isolate* isolate,
 
       result->Set(TRI_V8_SYMBOL("error"),        v8::Boolean::New(isolate, true));
       result->Set(TRI_V8_SYMBOL("errorNum"),     v8::Integer::New(isolate, _lastHttpReturnCode));
-      result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_SYMBOL_STD_STRING(returnMessage));
+      result->Set(TRI_V8_SYMBOL("errorMessage"), TRI_V8_STD_STRING(returnMessage));
     }
     else {
       result->Set(TRI_V8_SYMBOL("error"), v8::Boolean::New(isolate, false));
@@ -599,7 +599,7 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (v8::Isolate* isolate,
     // got a body, copy it into the result
     StringBuffer& sb = _httpResult->getBody();
     if (sb.length() > 0) {
-      v8::Handle<v8::String> b = TRI_V8_SYMBOL_STD_STRING(sb);
+      v8::Handle<v8::String> b = TRI_V8_STD_STRING(sb);
 
       result->Set(TRI_V8_SYMBOL("body"), b);
     }
@@ -609,8 +609,8 @@ v8::Handle<v8::Value> V8ClientConnection::requestDataRaw (v8::Isolate* isolate,
     const map<string, string>& hf = _httpResult->getHeaderFields();
 
     for (map<string, string>::const_iterator i = hf.begin();  i != hf.end();  ++i) {
-      v8::Handle<v8::String> key = TRI_V8_SYMBOL_STD_STRING(i->first);
-      v8::Handle<v8::String> val = TRI_V8_SYMBOL_STD_STRING(i->second);
+      v8::Handle<v8::String> key = TRI_V8_STD_STRING(i->first);
+      v8::Handle<v8::String> val = TRI_V8_STD_STRING(i->second);
 
       headers->Set(key, val);
     }

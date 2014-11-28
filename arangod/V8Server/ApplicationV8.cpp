@@ -229,7 +229,7 @@ void ApplicationV8::V8Context::handleGlobalContextMethods () {
 
     TRI_ExecuteJavaScriptString(isolate,
                                 isolate->GetCurrentContext(),
-                                TRI_V8_SYMBOL_STD_STRING(func),
+                                TRI_V8_STD_STRING(func),
                                 TRI_V8_SYMBOL("global context method"),
                                 false);
 
@@ -933,8 +933,8 @@ bool ApplicationV8::prepareNamedContexts (const string& name,
       v8::Handle<v8::Value> wfunc = TRI_ExecuteJavaScriptString(
         isolate, 
         localContext,
-        TRI_V8_SYMBOL_STD_STRING(worker),
-        TRI_V8_SYMBOL_STD_STRING(name),
+        TRI_V8_STD_STRING(worker),
+        TRI_V8_STD_STRING(name),
         false);
 
       if (tryCatch.HasCaught()) {
@@ -1326,17 +1326,17 @@ bool ApplicationV8::prepareV8Instance (const string& name, size_t i, bool useAct
     else {
       TRI_AddGlobalVariableVocbase(isolate, localContext, TRI_V8_SYMBOL("LOGFILE_PATH"),        v8::Null(isolate));
     }
-    TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("APP_PATH"),            TRI_V8_SYMBOL_STD_STRING(_appPath));
-    TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("DEV_APP_PATH"),        TRI_V8_SYMBOL_STD_STRING(_devAppPath));
+    TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("APP_PATH"),            TRI_V8_STD_STRING(_appPath));
+    TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("DEV_APP_PATH"),        TRI_V8_STD_STRING(_devAppPath));
     TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("DEVELOPMENT_MODE"),    v8::Boolean::New(isolate, _developmentMode));
     TRI_AddGlobalVariableVocbase(isolate, localContext,   TRI_V8_SYMBOL("FE_DEVELOPMENT_MODE"), v8::Boolean::New(isolate, _frontendDevelopmentMode));
 
     for (auto j : _definedBooleans) {
-      localContext->Global()->ForceSet(TRI_V8_SYMBOL_STD_STRING(j.first), v8::Boolean::New(isolate, j.second), v8::ReadOnly);
+      localContext->Global()->ForceSet(TRI_V8_STD_STRING(j.first), v8::Boolean::New(isolate, j.second), v8::ReadOnly);
     }
 
     for (auto j : _definedDoubles) {
-      localContext->Global()->ForceSet(TRI_V8_SYMBOL_STD_STRING(j.first), v8::Number::New(isolate, j.second), v8::ReadOnly);
+      localContext->Global()->ForceSet(TRI_V8_STD_STRING(j.first), v8::Number::New(isolate, j.second), v8::ReadOnly);
     }
   }
 

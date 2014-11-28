@@ -182,7 +182,7 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
   bool waitForSync = false;
 
   TRI_GET_GLOBALS();
-  TRI_GET_GLOBAL_STR(WaitForSyncKey);
+  TRI_GET_GLOBAL_STRING(WaitForSyncKey);
   if (object->Has(WaitForSyncKey)) {
     if (! object->Get(WaitForSyncKey)->IsBoolean() &&
         ! object->Get(WaitForSyncKey)->IsBooleanObject()) {
@@ -302,7 +302,7 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
     // Invoke Function constructor to create function with the given body and no arguments
     string body = TRI_ObjectToString(object->Get(TRI_V8_SYMBOL("action"))->ToString());
     body = "return (" + body + ")(params);";
-    v8::Handle<v8::Value> args[2] = { TRI_V8_SYMBOL("params"), TRI_V8_SYMBOL_STD_STRING(body) };
+    v8::Handle<v8::Value> args[2] = { TRI_V8_SYMBOL("params"), TRI_V8_STD_STRING(body) };
     v8::Local<v8::Object> function = ctor->NewInstance(2, args);
 
     action = v8::Local<v8::Function>::Cast(function);
@@ -610,7 +610,7 @@ static void JS_getIcuTimezones (const v8::FunctionCallbackInfo<v8::Value>& args)
     for (int32_t i = 0; i < idsCount && U_ZERO_ERROR == status; ++i) {
       int32_t resultLength;
       const char* str = timeZones->next(&resultLength, status);
-      result->Set(v8::Number::New(isolate, i), TRI_V8_SYMBOL_PAIR(str, resultLength));
+      result->Set(v8::Number::New(isolate, i), TRI_V8_PAIR_STRING(str, resultLength));
     }
 
     delete timeZones;
@@ -704,7 +704,7 @@ static void JS_formatDatetime (const v8::FunctionCallbackInfo<v8::Value>& args) 
   delete s;
   delete tz;
 
-  TRI_V8_RETURN_STDSTR(resultString);
+  TRI_V8_RETURN_STD_STRING(resultString);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -872,7 +872,7 @@ static void JS_ParseAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
     result->Set(TRI_V8_SYMBOL("collections"), collections);
     uint32_t i = 0;
     for (auto it = parseResult.collectionNames.begin(); it != parseResult.collectionNames.end(); ++it) {
-      collections->Set(v8::Number::New(isolate, i++), TRI_V8_SYMBOL_STD_STRING((*it)));
+      collections->Set(v8::Number::New(isolate, i++), TRI_V8_STD_STRING((*it)));
     }
   }
 
@@ -880,7 +880,7 @@ static void JS_ParseAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
     v8::Handle<v8::Array> bindVars = v8::Array::New(isolate);
     uint32_t i = 0;
     for (auto it = parseResult.bindParameters.begin(); it != parseResult.bindParameters.end(); ++it) {
-      bindVars->Set(v8::Number::New(isolate, i++), TRI_V8_SYMBOL_STD_STRING((*it)));
+      bindVars->Set(v8::Number::New(isolate, i++), TRI_V8_STD_STRING((*it)));
     }
     result->Set(TRI_V8_SYMBOL("parameters"), bindVars); 
   }
@@ -1396,12 +1396,12 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
   string cacheKey(key, keyLength);
   cacheKey.push_back('*');
 
-  v8::Local<v8::String> cacheName = TRI_V8_SYMBOL_STD_STRING(cacheKey);
+  v8::Local<v8::String> cacheName = TRI_V8_STD_STRING(cacheKey);
   v8::Handle<v8::Object> holder = args.Holder()->ToObject();
 
   if (*key == '_') {
     // special treatment for all properties starting with _
-    v8::Local<v8::String> const l = TRI_V8_SYMBOL_PAIR(key, (int) keyLength);
+    v8::Local<v8::String> const l = TRI_V8_PAIR_STRING(key, (int) keyLength);
 
     if (holder->HasRealNamedProperty(l)) {
       // some internal function inside db
@@ -1436,8 +1436,8 @@ static void MapGetVocBase (v8::Local<v8::String> const name,
       if (status != TRI_VOC_COL_STATUS_DELETED && cid > 0 && collection->_isLocal) {
         TRI_GET_GLOBALS();
 
-        TRI_GET_GLOBAL_STR(_IdKey);
-        TRI_GET_GLOBAL_STR(VersionKey);
+        TRI_GET_GLOBAL_STRING(_IdKey);
+        TRI_GET_GLOBAL_STRING(VersionKey);
         if (value->Has(_IdKey)) {
           TRI_voc_cid_t cachedCid = static_cast<TRI_voc_cid_t>(TRI_ObjectToUInt64(value->Get(_IdKey), true));
           uint32_t cachedVersion = (uint32_t) TRI_ObjectToInt64(value->Get(VersionKey));
@@ -1536,7 +1536,7 @@ static void JS_PathDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
   }
 
-  TRI_V8_RETURN_STR(vocbase->_path);
+  TRI_V8_RETURN_STRING(vocbase->_path);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1580,7 +1580,7 @@ static void JS_NameDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DATABASE_NOT_FOUND);
   }
 
-  TRI_V8_RETURN_STR(vocbase->_name);
+  TRI_V8_RETURN_STRING(vocbase->_name);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1698,7 +1698,7 @@ static void ListDatabasesCoordinator (const v8::FunctionCallbackInfo<v8::Value>&
     vector<DatabaseID> list = ci->listDatabases(true);
     v8::Handle<v8::Array> result = v8::Array::New(isolate);
     for (size_t i = 0;  i < list.size();  ++i) {
-      result->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(list[i]));
+      result->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STD_STRING(list[i]));
     }
     TRI_V8_RETURN(result);
   }
@@ -1734,7 +1734,7 @@ static void ListDatabasesCoordinator (const v8::FunctionCallbackInfo<v8::Value>&
               TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, json);
               v8::Handle<v8::Array> result = v8::Array::New(isolate);
               for (size_t i = 0;  i < list.size();  ++i) {
-                result->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(list[i]));
+                result->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STD_STRING(list[i]));
               }
               TRI_V8_RETURN(result);
             }
@@ -2049,7 +2049,7 @@ static void JS_CreateDatabase (const v8::FunctionCallbackInfo<v8::Value>& args) 
       defaults.forceSyncProperties = options->Get(keyForceSyncProperties)->BooleanValue();
     }
     
-    TRI_GET_GLOBAL_STR(IdKey);
+    TRI_GET_GLOBAL_STRING(IdKey);
     if (options->Has(IdKey)) {
       // only used for testing to create database with a specific id
       id = TRI_ObjectToUInt64(options->Get(IdKey), true);
@@ -2360,11 +2360,11 @@ static void JS_ListEndpoints (const v8::FunctionCallbackInfo<v8::Value>& args) {
     v8::Handle<v8::Array> dbNames = v8::Array::New(isolate);
 
     for (uint32_t i = 0; i < (*it).second.size(); ++i) {
-      dbNames->Set(v8::Number::New(isolate, i), TRI_V8_SYMBOL_STD_STRING((*it).second.at(i)));
+      dbNames->Set(v8::Number::New(isolate, i), TRI_V8_STD_STRING((*it).second.at(i)));
     }
 
     v8::Handle<v8::Object> item = v8::Object::New(isolate);
-    item->Set(TRI_V8_SYMBOL("endpoint"), TRI_V8_SYMBOL_STD_STRING((*it).first));
+    item->Set(TRI_V8_SYMBOL("endpoint"), TRI_V8_STD_STRING((*it).first));
     item->Set(TRI_V8_SYMBOL("databases"), dbNames);
 
     result->Set(j++, item);

@@ -1054,7 +1054,7 @@ int ArangoServer::runUnitTests (TRI_vocbase_t* vocbase) {
     v8::Handle<v8::Array> sysTestFiles = v8::Array::New(isolate);
 
     for (size_t i = 0;  i < _unitTests.size();  ++i) {
-      sysTestFiles->Set(v8::Number::New(isolate,(uint32_t) i), TRI_V8_SYMBOL_STD_STRING(_unitTests[i]));
+      sysTestFiles->Set(v8::Number::New(isolate,(uint32_t) i), TRI_V8_STD_STRING(_unitTests[i]));
     }
 
     localContext->Global()->Set(TRI_V8_SYMBOL("SYS_UNIT_TESTS"), sysTestFiles);
@@ -1114,10 +1114,10 @@ int ArangoServer::runScript (TRI_vocbase_t* vocbase) {
   // parameter array
   v8::Handle<v8::Array> params = v8::Array::New(isolate);
 
-  params->Set(0, TRI_V8_SYMBOL_STD_STRING(_scriptFile[_scriptFile.size() - 1]));
+  params->Set(0, TRI_V8_STD_STRING(_scriptFile[_scriptFile.size() - 1]));
 
   for (size_t i = 0;  i < _scriptParameters.size();  ++i) {
-    params->Set(v8::Number::New(isolate,(uint32_t) (i + 1)), TRI_V8_SYMBOL_STD_STRING(_scriptParameters[i]));
+    params->Set(v8::Number::New(isolate,(uint32_t) (i + 1)), TRI_V8_STD_STRING(_scriptParameters[i]));
   }
 
   // call main

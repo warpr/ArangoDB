@@ -146,7 +146,7 @@ static inline v8::Handle<v8::Value> V8CollectionId (v8::Isolate* isolate, TRI_vo
   char buffer[21];
   size_t len = TRI_StringUInt64InPlace((uint64_t) cid, (char*) &buffer);
 
-  return TRI_V8_SYMBOL_PAIR((const char*) buffer, (int) len);
+  return TRI_V8_PAIR_STRING((const char*) buffer, (int) len);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -213,9 +213,9 @@ v8::Handle<v8::Object> WrapCollection (v8::Isolate* isolate,
       
       result->SetInternalField(SLOT_COLLECTION, myCollection);
     }
-    TRI_GET_GLOBAL_STR(_IdKey);
-    TRI_GET_GLOBAL_STR(_DbNameKey);
-    TRI_GET_GLOBAL_STR(VersionKey);
+    TRI_GET_GLOBAL_STRING(_IdKey);
+    TRI_GET_GLOBAL_STRING(_DbNameKey);
+    TRI_GET_GLOBAL_STRING(VersionKey);
     result->ForceSet(_IdKey, V8CollectionId(isolate, collection->_cid), v8::ReadOnly);
     result->Set(_DbNameKey, TRI_V8_STRING(collection->_dbName));
     result->ForceSet(VersionKey, v8::Number::New(isolate, (double) collection->_internalVersion), v8::DontEnum);

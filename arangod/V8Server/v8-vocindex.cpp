@@ -116,7 +116,7 @@ static v8::Handle<v8::Value> IndexRep (v8::Isolate* isolate,
 
   string iid = TRI_ObjectToString(rep->Get(TRI_V8_SYMBOL("id")));
   string const id = collectionName + TRI_INDEX_HANDLE_SEPARATOR_STR + iid;
-  rep->Set(TRI_V8_SYMBOL("id"), TRI_V8_SYMBOL_STD_STRING(id));
+  rep->Set(TRI_V8_SYMBOL("id"), TRI_V8_STD_STRING(id));
 
   return rep; /// TODO ok?
 }
@@ -1186,7 +1186,7 @@ static void DropIndexCoordinator (const v8::FunctionCallbackInfo<v8::Value>& arg
     TRI_GET_GLOBALS();
 
     v8::Handle<v8::Object> obj = val->ToObject();
-    TRI_GET_GLOBAL_STR(IdKey);
+    TRI_GET_GLOBAL_STRING(IdKey);
     v8::Handle<v8::Value> iidVal = obj->Get(IdKey);
 
     if (! IsIndexHandle(iidVal, collectionName, iid)) {
@@ -1488,7 +1488,7 @@ TRI_index_t* TRI_LookupIndexByHandle (v8::Isolate* isolate,
     TRI_GET_GLOBALS();
 
     v8::Handle<v8::Object> obj = val->ToObject();
-    TRI_GET_GLOBAL_STR(IdKey);
+    TRI_GET_GLOBAL_STRING(IdKey);
     v8::Handle<v8::Value> iidVal = obj->Get(IdKey);
 
     if (! IsIndexHandle(iidVal, collectionName, iid)) {
@@ -1569,7 +1569,7 @@ static void CreateVocBase (const v8::FunctionCallbackInfo<v8::Value>& args,
     v8::Handle<v8::Object> p = args[1]->ToObject();
     TRI_GET_GLOBALS();
 
-    TRI_GET_GLOBAL_STR(JournalSizeKey);
+    TRI_GET_GLOBAL_STRING(JournalSizeKey);
     if (p->Has(JournalSizeKey)) {
       double s = TRI_ObjectToDouble(p->Get(JournalSizeKey));
 
@@ -1583,7 +1583,7 @@ static void CreateVocBase (const v8::FunctionCallbackInfo<v8::Value>& args,
 
     // get optional values
     TRI_json_t* keyOptions = nullptr;
-    TRI_GET_GLOBAL_STR(KeyOptionsKey);
+    TRI_GET_GLOBAL_STRING(KeyOptionsKey);
     if (p->Has(KeyOptionsKey)) {
       keyOptions = TRI_ObjectToJson(isolate, p->Get(KeyOptionsKey));
     }
@@ -1599,12 +1599,12 @@ static void CreateVocBase (const v8::FunctionCallbackInfo<v8::Value>& args,
       parameter._planId = TRI_ObjectToUInt64(p->Get(TRI_V8_SYMBOL("planId")), true);
     }
 
-    TRI_GET_GLOBAL_STR(WaitForSyncKey);
+    TRI_GET_GLOBAL_STRING(WaitForSyncKey);
     if (p->Has(WaitForSyncKey)) {
       parameter._waitForSync = TRI_ObjectToBoolean(p->Get(WaitForSyncKey));
     }
 
-    TRI_GET_GLOBAL_STR(DoCompactKey);
+    TRI_GET_GLOBAL_STRING(DoCompactKey);
     if (p->Has(DoCompactKey)) {
       parameter._doCompact = TRI_ObjectToBoolean(p->Get(DoCompactKey));
     }
@@ -1613,12 +1613,12 @@ static void CreateVocBase (const v8::FunctionCallbackInfo<v8::Value>& args,
       parameter._doCompact = true;
     }
 
-    TRI_GET_GLOBAL_STR(IsSystemKey);
+    TRI_GET_GLOBAL_STRING(IsSystemKey);
     if (p->Has(IsSystemKey)) {
       parameter._isSystem = TRI_ObjectToBoolean(p->Get(IsSystemKey));
     }
 
-    TRI_GET_GLOBAL_STR(IsVolatileKey);
+    TRI_GET_GLOBAL_STRING(IsVolatileKey);
     if (p->Has(IsVolatileKey)) {
 #ifdef TRI_HAVE_ANONYMOUS_MMAP
       parameter._isVolatile = TRI_ObjectToBoolean(p->Get(IsVolatileKey));
@@ -1634,7 +1634,7 @@ static void CreateVocBase (const v8::FunctionCallbackInfo<v8::Value>& args,
       TRI_V8_EXCEPTION_PARAMETER("volatile collections do not support the waitForSync option");
     }
     
-    TRI_GET_GLOBAL_STR(IdKey);
+    TRI_GET_GLOBAL_STRING(IdKey);
     if (p->Has(IdKey)) {
       // specify collection id - used for testing only
       cid = TRI_ObjectToUInt64(p->Get(IdKey), true);

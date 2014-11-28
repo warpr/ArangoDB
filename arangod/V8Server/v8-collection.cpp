@@ -138,7 +138,7 @@ static inline v8::Handle<v8::Value> V8CollectionId (v8::Isolate* isolate, TRI_vo
   char buffer[21];
   size_t len = TRI_StringUInt64InPlace((uint64_t) cid, (char*) &buffer);
 
-  return TRI_V8_SYMBOL_PAIR((const char*) buffer, (int) len);
+  return TRI_V8_PAIR_STRING((const char*) buffer, (int) len);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -154,7 +154,7 @@ static int ExtractDocumentKey (v8::Isolate* isolate,
 
   v8::Local<v8::Object> obj = arg->ToObject();
 
-  TRI_GET_GLOBAL_STR(_KeyKey);
+  TRI_GET_GLOBAL_STRING(_KeyKey);
   if (obj->Has(_KeyKey)) {
     v8::Handle<v8::Value> v = obj->Get(_KeyKey);
 
@@ -282,9 +282,9 @@ static int ParseKeyAndRef (v8::Isolate* isolate,
     TRI_GET_GLOBALS();
     v8::Handle<v8::Object> obj = v8::Handle<v8::Object>::Cast(arg);
 
-    TRI_GET_GLOBAL_STR(_KeyKey);
-    TRI_GET_GLOBAL_STR(_IdKey);
-    TRI_GET_GLOBAL_STR(_RevKey);
+    TRI_GET_GLOBAL_STRING(_KeyKey);
+    TRI_GET_GLOBAL_STRING(_IdKey);
+    TRI_GET_GLOBAL_STRING(_RevKey);
     if (obj->Has(_KeyKey) && obj->Get(_KeyKey)->IsString()) {
       key = TRI_ObjectToString(obj->Get(_KeyKey));
     }
@@ -816,16 +816,16 @@ void ReplaceVocbaseCol (bool useCollection,
   if (args.Length() > 2) {
     if (args[2]->IsObject()) {
       v8::Handle<v8::Object> optionsObject = args[2].As<v8::Object>();
-      TRI_GET_GLOBAL_STR(OverwriteKey);
+      TRI_GET_GLOBAL_STRING(OverwriteKey);
       if (optionsObject->Has(OverwriteKey)) {
         options.overwrite = TRI_ObjectToBoolean(optionsObject->Get(OverwriteKey));
         policy = ExtractUpdatePolicy(options.overwrite);
       }
-      TRI_GET_GLOBAL_STR(WaitForSyncKey);
+      TRI_GET_GLOBAL_STRING(WaitForSyncKey);
       if (optionsObject->Has(WaitForSyncKey)) {
         options.waitForSync = TRI_ObjectToBoolean(optionsObject->Get(WaitForSyncKey));
       }
-      TRI_GET_GLOBAL_STR(SilentKey);
+      TRI_GET_GLOBAL_STRING(SilentKey);
       if (optionsObject->Has(SilentKey)) {
         options.silent = TRI_ObjectToBoolean(optionsObject->Get(SilentKey));
       }
@@ -976,10 +976,10 @@ void ReplaceVocbaseCol (bool useCollection,
     char const* docKey = TRI_EXTRACT_MARKER_KEY(&mptr);  // PROTECTED by trx here
 
     v8::Handle<v8::Object> result = v8::Object::New(isolate);
-    TRI_GET_GLOBAL_STR(_IdKey);
-    TRI_GET_GLOBAL_STR(_RevKey);
-    TRI_GET_GLOBAL_STR(_OldRevKey);
-    TRI_GET_GLOBAL_STR(_KeyKey);
+    TRI_GET_GLOBAL_STRING(_IdKey);
+    TRI_GET_GLOBAL_STRING(_RevKey);
+    TRI_GET_GLOBAL_STRING(_OldRevKey);
+    TRI_GET_GLOBAL_STRING(_KeyKey);
     result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
     result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
     result->Set(_OldRevKey, V8RevisionId(isolate, actualRevision));
@@ -1008,11 +1008,11 @@ static void InsertVocbaseCol (TRI_vocbase_col_t* col,
   InsertOptions options;
   if (argLength > 1 && args[1]->IsObject()) {
     v8::Handle<v8::Object> optionsObject = args[1].As<v8::Object>();
-    TRI_GET_GLOBAL_STR(WaitForSyncKey);
+    TRI_GET_GLOBAL_STRING(WaitForSyncKey);
     if (optionsObject->Has(WaitForSyncKey)) {
       options.waitForSync = TRI_ObjectToBoolean(optionsObject->Get(WaitForSyncKey));
     }
-    TRI_GET_GLOBAL_STR(SilentKey);
+    TRI_GET_GLOBAL_STRING(SilentKey);
     if (optionsObject->Has(SilentKey)) {
       options.silent = TRI_ObjectToBoolean(optionsObject->Get(SilentKey));
     }
@@ -1079,9 +1079,9 @@ static void InsertVocbaseCol (TRI_vocbase_col_t* col,
     char const* docKey = TRI_EXTRACT_MARKER_KEY(&mptr);  // PROTECTED by trx here
 
     v8::Handle<v8::Object> result = v8::Object::New(isolate);
-    TRI_GET_GLOBAL_STR(_IdKey);
-    TRI_GET_GLOBAL_STR(_RevKey);
-    TRI_GET_GLOBAL_STR(_KeyKey);
+    TRI_GET_GLOBAL_STRING(_IdKey);
+    TRI_GET_GLOBAL_STRING(_RevKey);
+    TRI_GET_GLOBAL_STRING(_KeyKey);
     result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
     result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
     result->Set(_KeyKey, TRI_V8_STRING(docKey));
@@ -1113,20 +1113,20 @@ static void UpdateVocbaseCol (bool useCollection,
   if (argLength > 2) {
     if (args[2]->IsObject()) {
       v8::Handle<v8::Object> optionsObject = args[2].As<v8::Object>();
-      TRI_GET_GLOBAL_STR(OverwriteKey);
+      TRI_GET_GLOBAL_STRING(OverwriteKey);
       if (optionsObject->Has(OverwriteKey)) {
         options.overwrite = TRI_ObjectToBoolean(optionsObject->Get(OverwriteKey));
         policy = ExtractUpdatePolicy(options.overwrite);
       }
-      TRI_GET_GLOBAL_STR(KeepNullKey);
+      TRI_GET_GLOBAL_STRING(KeepNullKey);
       if (optionsObject->Has(KeepNullKey)) {
         options.keepNull = TRI_ObjectToBoolean(optionsObject->Get(KeepNullKey));
       }
-      TRI_GET_GLOBAL_STR(WaitForSyncKey);
+      TRI_GET_GLOBAL_STRING(WaitForSyncKey);
       if (optionsObject->Has(WaitForSyncKey)) {
         options.waitForSync = TRI_ObjectToBoolean(optionsObject->Get(WaitForSyncKey));
       }
-      TRI_GET_GLOBAL_STR(SilentKey);
+      TRI_GET_GLOBAL_STRING(SilentKey);
       if (optionsObject->Has(SilentKey)) {
         options.silent = TRI_ObjectToBoolean(optionsObject->Get(SilentKey));
       }
@@ -1286,10 +1286,10 @@ static void UpdateVocbaseCol (bool useCollection,
     char const* docKey = TRI_EXTRACT_MARKER_KEY(&mptr);  // PROTECTED by trx here
 
     v8::Handle<v8::Object> result = v8::Object::New(isolate);
-    TRI_GET_GLOBAL_STR(_IdKey);
-    TRI_GET_GLOBAL_STR(_RevKey);
-    TRI_GET_GLOBAL_STR(_OldRevKey);
-    TRI_GET_GLOBAL_STR(_KeyKey);
+    TRI_GET_GLOBAL_STRING(_IdKey);
+    TRI_GET_GLOBAL_STRING(_RevKey);
+    TRI_GET_GLOBAL_STRING(_OldRevKey);
+    TRI_GET_GLOBAL_STRING(_KeyKey);
     result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
     result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
     result->Set(_OldRevKey, V8RevisionId(isolate, actualRevision));
@@ -1397,12 +1397,12 @@ static void RemoveVocbaseCol (bool useCollection,
   if (argLength > 1) {
     if (args[1]->IsObject()) {
       v8::Handle<v8::Object> optionsObject = args[1].As<v8::Object>();
-      TRI_GET_GLOBAL_STR(OverwriteKey);
+      TRI_GET_GLOBAL_STRING(OverwriteKey);
       if (optionsObject->Has(OverwriteKey)) {
         options.overwrite = TRI_ObjectToBoolean(optionsObject->Get(OverwriteKey));
         policy = ExtractUpdatePolicy(options.overwrite);
       }
-      TRI_GET_GLOBAL_STR(WaitForSyncKey);
+      TRI_GET_GLOBAL_STRING(WaitForSyncKey);
       if (optionsObject->Has(WaitForSyncKey)) {
         options.waitForSync = TRI_ObjectToBoolean(optionsObject->Get(WaitForSyncKey));
       }
@@ -2096,19 +2096,19 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
         v8::Handle<v8::Object> po = par->ToObject();
 
         // extract doCompact flag
-        TRI_GET_GLOBAL_STR(DoCompactKey);
+        TRI_GET_GLOBAL_STRING(DoCompactKey);
         if (po->Has(DoCompactKey)) {
           info._doCompact = TRI_ObjectToBoolean(po->Get(DoCompactKey));
         }
 
         // extract sync flag
-        TRI_GET_GLOBAL_STR(WaitForSyncKey);
+        TRI_GET_GLOBAL_STRING(WaitForSyncKey);
         if (po->Has(WaitForSyncKey)) {
           info._waitForSync = TRI_ObjectToBoolean(po->Get(WaitForSyncKey));
         }
 
         // extract the journal size
-        TRI_GET_GLOBAL_STR(JournalSizeKey);
+        TRI_GET_GLOBAL_STRING(JournalSizeKey);
         if (po->Has(JournalSizeKey)) {
           info._maximalSize = (TRI_voc_size_t) TRI_ObjectToUInt64(po->Get(JournalSizeKey), false);
 
@@ -2120,7 +2120,7 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
           }
         }
 
-        TRI_GET_GLOBAL_STR(IsVolatileKey);
+        TRI_GET_GLOBAL_STRING(IsVolatileKey);
         if (po->Has(IsVolatileKey)) {
           if (TRI_ObjectToBoolean(po->Get(IsVolatileKey)) != info._isVolatile) {
             if (info._keyOptions != nullptr) {
@@ -2152,11 +2152,11 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
     // return the current parameter set
     v8::Handle<v8::Object> result = v8::Object::New(isolate);
 
-    TRI_GET_GLOBAL_STR(DoCompactKey);
-    TRI_GET_GLOBAL_STR(IsSystemKey);
-    TRI_GET_GLOBAL_STR(IsVolatileKey);
-    TRI_GET_GLOBAL_STR(JournalSizeKey);
-    TRI_GET_GLOBAL_STR(WaitForSyncKey);
+    TRI_GET_GLOBAL_STRING(DoCompactKey);
+    TRI_GET_GLOBAL_STRING(IsSystemKey);
+    TRI_GET_GLOBAL_STRING(IsVolatileKey);
+    TRI_GET_GLOBAL_STRING(JournalSizeKey);
+    TRI_GET_GLOBAL_STRING(WaitForSyncKey);
     result->Set(DoCompactKey, info._doCompact ? v8::True(isolate) : v8::False(isolate));
     result->Set(IsSystemKey, info._isSystem ? v8::True(isolate) : v8::False(isolate));
     result->Set(IsVolatileKey, info._isVolatile ? v8::True(isolate) : v8::False(isolate));
@@ -2167,13 +2167,13 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
     v8::Handle<v8::Array> shardKeys = v8::Array::New(isolate);
     vector<string> const sks = (*c).shardKeys();
     for (size_t i = 0; i < sks.size(); ++i) {
-      shardKeys->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL_STD_STRING(sks[i]));
+      shardKeys->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_STD_STRING(sks[i]));
     }
     result->Set(TRI_V8_SYMBOL("shardKeys"), shardKeys);
     result->Set(TRI_V8_SYMBOL("numberOfShards"), v8::Number::New(isolate, (*c).numberOfShards()));
 
     if (info._keyOptions != nullptr) {
-      TRI_GET_GLOBAL_STR(KeyOptionsKey);
+      TRI_GET_GLOBAL_STRING(KeyOptionsKey);
       result->Set(KeyOptionsKey, TRI_ObjectJson(isolate, info._keyOptions)->ToObject());
       TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, info._keyOptions);
     }
@@ -2207,19 +2207,19 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
       TRI_UNLOCK_JOURNAL_ENTRIES_DOC_COLLECTION(document);
 
       // extract doCompact flag
-      TRI_GET_GLOBAL_STR(DoCompactKey);
+      TRI_GET_GLOBAL_STRING(DoCompactKey);
       if (po->Has(DoCompactKey)) {
         doCompact = TRI_ObjectToBoolean(po->Get(DoCompactKey));
       }
 
       // extract sync flag
-      TRI_GET_GLOBAL_STR(WaitForSyncKey);
+      TRI_GET_GLOBAL_STRING(WaitForSyncKey);
       if (po->Has(WaitForSyncKey)) {
         waitForSync = TRI_ObjectToBoolean(po->Get(WaitForSyncKey));
       }
 
       // extract the journal size
-      TRI_GET_GLOBAL_STR(JournalSizeKey);
+      TRI_GET_GLOBAL_STRING(JournalSizeKey);
       if (po->Has(JournalSizeKey)) {
         maximalSize = (TRI_voc_size_t) TRI_ObjectToUInt64(po->Get(JournalSizeKey), false);
 
@@ -2229,7 +2229,7 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
         }
       }
 
-      TRI_GET_GLOBAL_STR(IsVolatileKey);
+      TRI_GET_GLOBAL_STRING(IsVolatileKey);
       if (po->Has(IsVolatileKey)) {
         if (TRI_ObjectToBoolean(po->Get(IsVolatileKey)) != base->_info._isVolatile) {
           ReleaseCollection(collection);
@@ -2291,10 +2291,10 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
   // return the current parameter set
   v8::Handle<v8::Object> result = v8::Object::New(isolate);
 
-  TRI_GET_GLOBAL_STR(DoCompactKey);
-  TRI_GET_GLOBAL_STR(IsSystemKey);
-  TRI_GET_GLOBAL_STR(IsVolatileKey);
-  TRI_GET_GLOBAL_STR(JournalSizeKey);
+  TRI_GET_GLOBAL_STRING(DoCompactKey);
+  TRI_GET_GLOBAL_STRING(IsSystemKey);
+  TRI_GET_GLOBAL_STRING(IsVolatileKey);
+  TRI_GET_GLOBAL_STRING(JournalSizeKey);
   result->Set(DoCompactKey, base->_info._doCompact ? v8::True(isolate) : v8::False(isolate));
   result->Set(IsSystemKey, base->_info._isSystem ? v8::True(isolate) : v8::False(isolate));
   result->Set(IsVolatileKey, base->_info._isVolatile ? v8::True(isolate) : v8::False(isolate));
@@ -2302,7 +2302,7 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
 
   TRI_json_t* keyOptions = document->_keyGenerator->toJson(TRI_UNKNOWN_MEM_ZONE);
 
-  TRI_GET_GLOBAL_STR(KeyOptionsKey);
+  TRI_GET_GLOBAL_STRING(KeyOptionsKey);
   if (keyOptions != nullptr) {
     result->Set(KeyOptionsKey, TRI_ObjectJson(isolate, keyOptions)->ToObject());
 
@@ -2311,7 +2311,7 @@ static void JS_PropertiesVocbaseCol (const v8::FunctionCallbackInfo<v8::Value>& 
   else {
     result->Set(KeyOptionsKey, v8::Array::New(isolate));
   }
-  TRI_GET_GLOBAL_STR(WaitForSyncKey);
+  TRI_GET_GLOBAL_STRING(WaitForSyncKey);
   result->Set(WaitForSyncKey, base->_info._waitForSync ? v8::True(isolate) : v8::False(isolate));
 
   ReleaseCollection(collection);
@@ -2801,11 +2801,11 @@ static void InsertVocbaseColCoordinator (TRI_vocbase_col_t* collection,
   if (argLength > 1 && args[1]->IsObject()) {
     TRI_GET_GLOBALS();
     v8::Handle<v8::Object> optionsObject = args[1].As<v8::Object>();
-    TRI_GET_GLOBAL_STR(WaitForSyncKey);
+    TRI_GET_GLOBAL_STRING(WaitForSyncKey);
     if (optionsObject->Has(WaitForSyncKey)) {
       options.waitForSync = TRI_ObjectToBoolean(optionsObject->Get(WaitForSyncKey));
     }
-    TRI_GET_GLOBAL_STR(SilentKey);
+    TRI_GET_GLOBAL_STRING(SilentKey);
     if (optionsObject->Has(SilentKey)) {
       options.silent = TRI_ObjectToBoolean(optionsObject->Get(SilentKey));
     }
@@ -2884,7 +2884,7 @@ static string GetId (const v8::FunctionCallbackInfo<v8::Value>& args, int which)
 
   if ((args.Length() >= which)) { //// todo && ! args[which].IsArray()) {
     TRI_GET_GLOBALS();
-    TRI_GET_GLOBAL_STR(_IdKey);
+    TRI_GET_GLOBAL_STRING(_IdKey);
 
     v8::Local<v8::Object> obj = args[which]->ToObject();
 
@@ -2961,11 +2961,11 @@ static void InsertEdgeCol (TRI_vocbase_col_t* col,
 
   if (argLength > 3 && args[3]->IsObject()) {
     v8::Handle<v8::Object> optionsObject = args[3].As<v8::Object>();
-    TRI_GET_GLOBAL_STR(WaitForSyncKey);
+    TRI_GET_GLOBAL_STRING(WaitForSyncKey);
     if (optionsObject->Has(WaitForSyncKey)) {
       options.waitForSync = TRI_ObjectToBoolean(optionsObject->Get(WaitForSyncKey));
     }
-    TRI_GET_GLOBAL_STR(SilentKey);
+    TRI_GET_GLOBAL_STRING(SilentKey);
     if (optionsObject->Has(SilentKey)) {
       options.silent = TRI_ObjectToBoolean(optionsObject->Get(SilentKey));
     }
@@ -3046,9 +3046,9 @@ static void InsertEdgeCol (TRI_vocbase_col_t* col,
     char const* docKey = TRI_EXTRACT_MARKER_KEY(&mptr);  // PROTECTED by trx here
 
     v8::Handle<v8::Object> result = v8::Object::New(isolate);
-    TRI_GET_GLOBAL_STR(_IdKey);
-    TRI_GET_GLOBAL_STR(_RevKey);
-    TRI_GET_GLOBAL_STR(_KeyKey);
+    TRI_GET_GLOBAL_STRING(_IdKey);
+    TRI_GET_GLOBAL_STRING(_RevKey);
+    TRI_GET_GLOBAL_STRING(_KeyKey);
     result->Set(_IdKey, V8DocumentId(isolate, trx.resolver()->getCollectionName(col->_cid), docKey));
     result->Set(_RevKey, V8RevisionId(isolate, mptr._rid));
     result->Set(_KeyKey, TRI_V8_STRING(docKey));
@@ -3093,11 +3093,11 @@ static void InsertEdgeColCoordinator (TRI_vocbase_col_t* collection,
   if (argLength > 3 && args[3]->IsObject()) {
     TRI_GET_GLOBALS();
     v8::Handle<v8::Object> optionsObject = args[3].As<v8::Object>();
-    TRI_GET_GLOBAL_STR(WaitForSyncKey);
+    TRI_GET_GLOBAL_STRING(WaitForSyncKey);
     if (optionsObject->Has(WaitForSyncKey)) {
       options.waitForSync = TRI_ObjectToBoolean(optionsObject->Get(WaitForSyncKey));
     }
-    TRI_GET_GLOBAL_STR(SilentKey);
+    TRI_GET_GLOBAL_STRING(SilentKey);
     if (optionsObject->Has(SilentKey)) {
       options.silent = TRI_ObjectToBoolean(optionsObject->Get(SilentKey));
     }
@@ -3549,7 +3549,7 @@ static void JS_ChangeOperationModeVocbase (const v8::FunctionCallbackInfo<v8::Va
   else if (_currentRequest->IsObject()) {
     v8::Handle<v8::Object> obj = v8::Handle<v8::Object>::Cast(_currentRequest);
 
-    TRI_GET_GLOBAL_STR(PortTypeKey);
+    TRI_GET_GLOBAL_STRING(PortTypeKey);
     if (obj->Has(PortTypeKey)) {
       string const portType = TRI_ObjectToString(obj->Get(PortTypeKey));
       if (portType == "unix") {

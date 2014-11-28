@@ -61,12 +61,12 @@ static void JS_StateLoggerReplication (const v8::FunctionCallbackInfo<v8::Value>
   state->Set(TRI_V8_SYMBOL("running"),     v8::True(isolate));
   state->Set(TRI_V8_SYMBOL("lastLogTick"), V8TickId(isolate, s.lastTick));
   state->Set(TRI_V8_SYMBOL("totalEvents"), v8::Number::New(isolate, (double) s.numEvents));
-  state->Set(TRI_V8_SYMBOL("time"),        TRI_V8_SYMBOL_STD_STRING(s.timeString));
+  state->Set(TRI_V8_SYMBOL("time"),        TRI_V8_STD_STRING(s.timeString));
   result->Set(TRI_V8_SYMBOL("state"),      state);
 
   v8::Handle<v8::Object> server = v8::Object::New(isolate);
   server->Set(TRI_V8_SYMBOL("version"),  TRI_V8_SYMBOL(TRI_VERSION));
-  server->Set(TRI_V8_SYMBOL("serverId"), TRI_V8_SYMBOL_STD_STRING(StringUtils::itoa(TRI_GetIdServer()))); /// TODO
+  server->Set(TRI_V8_SYMBOL("serverId"), TRI_V8_STD_STRING(StringUtils::itoa(TRI_GetIdServer()))); /// TODO
   result->Set(TRI_V8_SYMBOL("server"), server);
   
   v8::Handle<v8::Object> clients = v8::Object::New(isolate);
@@ -249,8 +249,8 @@ static void JS_SynchroniseReplication (const v8::FunctionCallbackInfo<v8::Value>
       const string cidString = StringUtils::itoa((*it).first);
 
       v8::Handle<v8::Object> ci = v8::Object::New(isolate);
-      ci->Set(TRI_V8_SYMBOL("id"),   TRI_V8_SYMBOL_STD_STRING(cidString));
-      ci->Set(TRI_V8_SYMBOL("name"), TRI_V8_SYMBOL_STD_STRING((*it).second));
+      ci->Set(TRI_V8_SYMBOL("id"),   TRI_V8_STD_STRING(cidString));
+      ci->Set(TRI_V8_SYMBOL("name"), TRI_V8_STD_STRING((*it).second));
 
       collections->Set(v8::Number::New(isolate, j++), ci);
     }
@@ -276,7 +276,7 @@ static void JS_ServerIdReplication (const v8::FunctionCallbackInfo<v8::Value>& a
   v8::HandleScope scope(isolate);
 
   const string serverId = StringUtils::itoa(TRI_GetIdServer());
-  TRI_V8_RETURN_STDSTR(serverId);
+  TRI_V8_RETURN_STD_STRING(serverId);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

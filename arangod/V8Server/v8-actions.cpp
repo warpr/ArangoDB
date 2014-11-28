@@ -289,7 +289,7 @@ static void AddCookie (v8::Isolate* isolate,
   bool secure = false;
   bool httpOnly = false;
 
-  TRI_GET_GLOBAL_STR(NameKey);
+  TRI_GET_GLOBAL_STRING(NameKey);
   if (data->Has(NameKey)) {
     v8::Handle<v8::Value> v = data->Get(NameKey);
     name = TRI_ObjectToString(v);
@@ -298,7 +298,7 @@ static void AddCookie (v8::Isolate* isolate,
     // something is wrong here
     return;
   }
-  TRI_GET_GLOBAL_STR(ValueKey);
+  TRI_GET_GLOBAL_STRING(ValueKey);
   if (data->Has(ValueKey)) {
     v8::Handle<v8::Value> v = data->Get(ValueKey);
     value = TRI_ObjectToString(v);
@@ -307,27 +307,27 @@ static void AddCookie (v8::Isolate* isolate,
     // something is wrong here
     return;
   }
-  TRI_GET_GLOBAL_STR(LifeTimeKey);
+  TRI_GET_GLOBAL_STRING(LifeTimeKey);
   if (data->Has(LifeTimeKey)) {
     v8::Handle<v8::Value> v = data->Get(LifeTimeKey);
     lifeTimeSeconds = (int) TRI_ObjectToInt64(v);
   }
-  TRI_GET_GLOBAL_STR(PathKey);
+  TRI_GET_GLOBAL_STRING(PathKey);
   if (data->Has(PathKey) && ! data->Get(PathKey)->IsUndefined()) {
     v8::Handle<v8::Value> v = data->Get(PathKey);
     path = TRI_ObjectToString(v);
   }
-  TRI_GET_GLOBAL_STR(DomainKey);
+  TRI_GET_GLOBAL_STRING(DomainKey);
   if (data->Has(DomainKey) && ! data->Get(DomainKey)->IsUndefined()) {
     v8::Handle<v8::Value> v = data->Get(DomainKey);
     domain = TRI_ObjectToString(v);
   }
-  TRI_GET_GLOBAL_STR(SecureKey);
+  TRI_GET_GLOBAL_STRING(SecureKey);
   if (data->Has(SecureKey)) {
     v8::Handle<v8::Value> v = data->Get(SecureKey);
     secure = TRI_ObjectToBoolean(v);
   }
-  TRI_GET_GLOBAL_STR(HttpOnlyKey);
+  TRI_GET_GLOBAL_STRING(HttpOnlyKey);
   if (data->Has(HttpOnlyKey)) {
     v8::Handle<v8::Value> v = data->Get(HttpOnlyKey);
     httpOnly = TRI_ObjectToBoolean(v);
@@ -380,57 +380,57 @@ static v8::Handle<v8::Object> RequestCppToV8 (v8::Isolate* isolate,
   // create user or null
   string const& user = request->user();
 
-  TRI_GET_GLOBAL_STR(UserKey);
+  TRI_GET_GLOBAL_STRING(UserKey);
   if (user.empty()) {
     req->Set(UserKey, v8::Null(isolate));
   }
   else {
-    req->Set(UserKey, TRI_V8_SYMBOL_STD_STRING(user));
+    req->Set(UserKey, TRI_V8_STD_STRING(user));
   }
 
   // create database attribute
   string const& database = request->databaseName();
   TRI_ASSERT(! database.empty());
 
-  TRI_GET_GLOBAL_STR(DatabaseKey);
-  req->Set(DatabaseKey, TRI_V8_SYMBOL_STD_STRING(database));
+  TRI_GET_GLOBAL_STRING(DatabaseKey);
+  req->Set(DatabaseKey, TRI_V8_STD_STRING(database));
 
   // set the full url
   string const& fullUrl = request->fullUrl();
-  TRI_GET_GLOBAL_STR(UrlKey);
-  req->Set(UrlKey, TRI_V8_SYMBOL_STD_STRING(fullUrl));
+  TRI_GET_GLOBAL_STRING(UrlKey);
+  req->Set(UrlKey, TRI_V8_STD_STRING(fullUrl));
 
   // set the protocol
   string const& protocol = request->protocol();
-  TRI_GET_GLOBAL_STR(ProtocolKey);
-  req->Set(ProtocolKey, TRI_V8_SYMBOL_STD_STRING(protocol));
+  TRI_GET_GLOBAL_STRING(ProtocolKey);
+  req->Set(ProtocolKey, TRI_V8_STD_STRING(protocol));
 
   // set the connection info
   const ConnectionInfo& info = request->connectionInfo();
 
   v8::Handle<v8::Object> serverArray = v8::Object::New(isolate);
-  TRI_GET_GLOBAL_STR(AddressKey);
-  serverArray->Set(AddressKey, TRI_V8_SYMBOL_STD_STRING(info.serverAddress));
-  TRI_GET_GLOBAL_STR(PortKey);
+  TRI_GET_GLOBAL_STRING(AddressKey);
+  serverArray->Set(AddressKey, TRI_V8_STD_STRING(info.serverAddress));
+  TRI_GET_GLOBAL_STRING(PortKey);
   serverArray->Set(PortKey, v8::Number::New(isolate, info.serverPort));
-  TRI_GET_GLOBAL_STR(ServerKey);
+  TRI_GET_GLOBAL_STRING(ServerKey);
   req->Set(ServerKey, serverArray);
   
-  TRI_GET_GLOBAL_STR(PortTypeKey);
-  req->ForceSet(PortTypeKey, TRI_V8_SYMBOL_STD_STRING(info.portType()), static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontEnum));
+  TRI_GET_GLOBAL_STRING(PortTypeKey);
+  req->ForceSet(PortTypeKey, TRI_V8_STD_STRING(info.portType()), static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontEnum));
 
   v8::Handle<v8::Object> clientArray = v8::Object::New(isolate);
-  clientArray->Set(AddressKey, TRI_V8_SYMBOL_STD_STRING(info.clientAddress));
+  clientArray->Set(AddressKey, TRI_V8_STD_STRING(info.clientAddress));
   clientArray->Set(PortKey, v8::Number::New(isolate, info.clientPort));
-  TRI_GET_GLOBAL_STR(ClientKey);
+  TRI_GET_GLOBAL_STRING(ClientKey);
   req->Set(ClientKey, clientArray);
 
   req->Set(TRI_V8_SYMBOL("internals"), v8::External::New(isolate, request));
 
   // copy prefix
   string path = request->prefix();
-  TRI_GET_GLOBAL_STR(PrefixKey);
-  req->Set(PrefixKey, TRI_V8_SYMBOL_STD_STRING(path));
+  TRI_GET_GLOBAL_STRING(PrefixKey);
+  req->Set(PrefixKey, TRI_V8_STD_STRING(path));
 
   // copy header fields
   v8::Handle<v8::Object> headerFields = v8::Object::New(isolate);
@@ -439,58 +439,58 @@ static v8::Handle<v8::Object> RequestCppToV8 (v8::Isolate* isolate,
   map<string, string>::const_iterator iter = headers.begin();
 
   for (; iter != headers.end(); ++iter) {
-    headerFields->Set(TRI_V8_SYMBOL_STD_STRING(iter->first),
-                      TRI_V8_SYMBOL_STD_STRING(iter->second));
+    headerFields->Set(TRI_V8_STD_STRING(iter->first),
+                      TRI_V8_STD_STRING(iter->second));
   }
 
-  TRI_GET_GLOBAL_STR(HeadersKey);
+  TRI_GET_GLOBAL_STRING(HeadersKey);
   req->Set(HeadersKey, headerFields);
-  TRI_GET_GLOBAL_STR(RequestTypeKey);
-  TRI_GET_GLOBAL_STR(RequestBodyKey);
+  TRI_GET_GLOBAL_STRING(RequestTypeKey);
+  TRI_GET_GLOBAL_STRING(RequestBodyKey);
 
   // copy request type
   switch (request->requestType()) {
   case HttpRequest::HTTP_REQUEST_POST: {
-      TRI_GET_GLOBAL_STR(PostConstant);
+      TRI_GET_GLOBAL_STRING(PostConstant);
       req->Set(RequestTypeKey, PostConstant);
-      req->Set(RequestBodyKey, TRI_V8_SYMBOL_PAIR(request->body(),
+      req->Set(RequestBodyKey, TRI_V8_PAIR_STRING(request->body(),
                                                   (int) request->bodySize()));
       break;
   }
 
   case HttpRequest::HTTP_REQUEST_PUT: {
-      TRI_GET_GLOBAL_STR(PutConstant);
+      TRI_GET_GLOBAL_STRING(PutConstant);
       req->Set(RequestTypeKey, PutConstant);
-      req->Set(RequestBodyKey, TRI_V8_SYMBOL_PAIR(request->body(),
+      req->Set(RequestBodyKey, TRI_V8_PAIR_STRING(request->body(),
                                                   (int) request->bodySize()));
       break;
   }
 
   case HttpRequest::HTTP_REQUEST_PATCH: {
-      TRI_GET_GLOBAL_STR(PatchConstant);
+      TRI_GET_GLOBAL_STRING(PatchConstant);
       req->Set(RequestTypeKey, PatchConstant);
-      req->Set(RequestBodyKey, TRI_V8_SYMBOL_PAIR(request->body(),
+      req->Set(RequestBodyKey, TRI_V8_PAIR_STRING(request->body(),
                                                   (int) request->bodySize()));
       break;
   }
   case HttpRequest::HTTP_REQUEST_OPTIONS: {
-      TRI_GET_GLOBAL_STR(OptionsConstant);
+      TRI_GET_GLOBAL_STRING(OptionsConstant);
       req->Set(RequestTypeKey, OptionsConstant);
       break;
   }
   case HttpRequest::HTTP_REQUEST_DELETE: {
-      TRI_GET_GLOBAL_STR(DeleteConstant);
+      TRI_GET_GLOBAL_STRING(DeleteConstant);
       req->Set(RequestTypeKey, DeleteConstant);
       break;
   }
   case HttpRequest::HTTP_REQUEST_HEAD: {
-      TRI_GET_GLOBAL_STR(HeadConstant);
+      TRI_GET_GLOBAL_STRING(HeadConstant);
       req->Set(RequestTypeKey, HeadConstant);
       break;
   }
   case HttpRequest::HTTP_REQUEST_GET: {
     default:
-      TRI_GET_GLOBAL_STR(GetConstant);
+      TRI_GET_GLOBAL_STRING(GetConstant);
       req->Set(RequestTypeKey, GetConstant);
       break;
   }
@@ -505,7 +505,7 @@ static v8::Handle<v8::Object> RequestCppToV8 (v8::Isolate* isolate,
     string const& k = i->first;
     string const& v = i->second;
 
-    valuesObject->Set(TRI_V8_SYMBOL_STD_STRING(k), TRI_V8_SYMBOL_STD_STRING(v));
+    valuesObject->Set(TRI_V8_STD_STRING(k), TRI_V8_STD_STRING(v));
   }
 
   // copy request array parameter (a[]=1&a[]=2&...)
@@ -522,10 +522,10 @@ static v8::Handle<v8::Object> RequestCppToV8 (v8::Isolate* isolate,
       list->Set(v8::Number::New(isolate, (uint32_t) i), TRI_V8_SYMBOL(v->at(i)));
     }
 
-    valuesObject->Set(TRI_V8_SYMBOL_STD_STRING(k), list);
+    valuesObject->Set(TRI_V8_STD_STRING(k), list);
   }
 
-  TRI_GET_GLOBAL_STR(ParametersKey);
+  TRI_GET_GLOBAL_STRING(ParametersKey);
   req->Set(ParametersKey, valuesObject);
 
   // copy cookies
@@ -535,16 +535,16 @@ static v8::Handle<v8::Object> RequestCppToV8 (v8::Isolate* isolate,
   iter = cookies.begin();
 
   for (; iter != cookies.end(); ++iter) {
-    cookiesObject->Set(TRI_V8_SYMBOL_STD_STRING(iter->first),
-                       TRI_V8_SYMBOL_STD_STRING(iter->second));
+    cookiesObject->Set(TRI_V8_STD_STRING(iter->first),
+                       TRI_V8_STD_STRING(iter->second));
   }
 
-  TRI_GET_GLOBAL_STR(CookiesKey);
+  TRI_GET_GLOBAL_STRING(CookiesKey);
   req->Set(CookiesKey, cookiesObject);
 
   // determine API compatibility version
   int32_t compatibility = request->compatibility();
-  TRI_GET_GLOBAL_STR(CompatibilityKey);
+  TRI_GET_GLOBAL_STRING(CompatibilityKey);
   req->Set(CompatibilityKey, v8::Integer::New(isolate, compatibility));
 
   return req;
@@ -560,7 +560,7 @@ static HttpResponse* ResponseV8ToCpp (v8::Isolate* isolate,
                                       uint32_t compatibility) {
   HttpResponse::HttpResponseCode code = HttpResponse::OK;
 
-  TRI_GET_GLOBAL_STR(ResponseCodeKey);
+  TRI_GET_GLOBAL_STRING(ResponseCodeKey);
   if (res->Has(ResponseCodeKey)) {
     // Windows has issues with converting from a double to an enumeration type
     code = (HttpResponse::HttpResponseCode)
@@ -569,7 +569,7 @@ static HttpResponse* ResponseV8ToCpp (v8::Isolate* isolate,
 
   HttpResponse* response = new HttpResponse(code, compatibility);
 
-  TRI_GET_GLOBAL_STR(ContentTypeKey);
+  TRI_GET_GLOBAL_STRING(ContentTypeKey);
   if (res->Has(ContentTypeKey)) {
     response->setContentType(TRI_ObjectToString(res->Get(ContentTypeKey)));
   }
@@ -578,21 +578,21 @@ static HttpResponse* ResponseV8ToCpp (v8::Isolate* isolate,
   // body
   // .........................................................................
 
-  TRI_GET_GLOBAL_STR(BodyKey);
-  TRI_GET_GLOBAL_STR(BodyFromFileKey);
-  TRI_GET_GLOBAL_STR(HeadersKey);
-  TRI_GET_GLOBAL_STR(CookiesKey);
+  TRI_GET_GLOBAL_STRING(BodyKey);
+  TRI_GET_GLOBAL_STRING(BodyFromFileKey);
+  TRI_GET_GLOBAL_STRING(HeadersKey);
+  TRI_GET_GLOBAL_STRING(CookiesKey);
   if (res->Has(BodyKey)) {
     // check if we should apply result transformations
     // transformations turn the result from one type into another
     // a Javascript action can request transformations by
     // putting a list of transformations into the res.transformations
     // array, e.g. res.transformations = [ "base64encode" ]
-    TRI_GET_GLOBAL_STR(TransformationsKey);
+    TRI_GET_GLOBAL_STRING(TransformationsKey);
     v8::Handle<v8::Value> val = res->Get(TransformationsKey);
 
     if (val->IsArray()) {
-      TRI_GET_GLOBAL_STR(BodyKey);
+      TRI_GET_GLOBAL_STRING(BodyKey);
       string out(TRI_ObjectToString(res->Get(BodyKey)));
       v8::Handle<v8::Array> transformations = val.As<v8::Array>();
 
@@ -619,9 +619,9 @@ static HttpResponse* ResponseV8ToCpp (v8::Isolate* isolate,
       response->body().appendText(out);
     }
     else {
-      TRI_GET_GLOBAL_STR(BodyKey);
+      TRI_GET_GLOBAL_STRING(BodyKey);
       v8::Handle<v8::Value> b = res->Get(BodyKey);
-      if (V8Buffer::hasInstance(b)) {
+      if (V8Buffer::hasInstance(isolate, b)) {
         // body is a Buffer
         auto obj = b.As<v8::Object>();
         response->body().appendText(V8Buffer::data(obj), V8Buffer::length(obj));
@@ -729,18 +729,18 @@ static TRI_action_result_t ExecuteActionVocbase (TRI_vocbase_t* vocbase,
   char const* sep = "";
 
   for (size_t s = action->_urlParts;  s < suffix.size();  ++s) {
-    suffixArray->Set(v8::Number::New(isolate, index++), TRI_V8_SYMBOL_STD_STRING(suffix[s]));
+    suffixArray->Set(v8::Number::New(isolate, index++), TRI_V8_STD_STRING(suffix[s]));
 
     path += sep + suffix[s];
     sep = "/";
   }
 
-  TRI_GET_GLOBAL_STR(SuffixKey);
+  TRI_GET_GLOBAL_STRING(SuffixKey);
   req->Set(SuffixKey, suffixArray);
 
   // copy full path
-  TRI_GET_GLOBAL_STR(PathKey);
-  req->Set(PathKey, TRI_V8_SYMBOL_STD_STRING(path));
+  TRI_GET_GLOBAL_STRING(PathKey);
+  req->Set(PathKey, TRI_V8_STD_STRING(path));
 
   // create the response object
   v8::Handle<v8::Object> res = v8::Object::New(isolate);
@@ -769,7 +769,7 @@ static TRI_action_result_t ExecuteActionVocbase (TRI_vocbase_t* vocbase,
 
       if (isSleepAndRequeue) {
         result.requeue = true;
-        TRI_GET_GLOBAL_STR(SleepKey);
+        TRI_GET_GLOBAL_STRING(SleepKey);
         result.sleep = TRI_ObjectToDouble(exception->ToObject()->Get(SleepKey));
       }
       else {
@@ -1079,7 +1079,7 @@ static void JS_RequestParts (const v8::FunctionCallbackInfo<v8::Value>& args) {
             --q; 
           }
 
-          headersObject->Set(TRI_V8_SYMBOL_PAIR(ptr, (int) (p - ptr)), TRI_V8_SYMBOL_PAIR(colon, (int) (eol - colon)));
+          headersObject->Set(TRI_V8_PAIR_STRING(ptr, (int) (p - ptr)), TRI_V8_PAIR_STRING(colon, (int) (eol - colon)));
 
           ptr = eol;
           if (*ptr == '\r') {
@@ -1281,16 +1281,16 @@ static void JS_ClusterTest (const v8::FunctionCallbackInfo<v8::Value>& args) {
         details->Set(TRI_V8_SYMBOL("code"),
                      v8::Number::New(isolate, res->result->getHttpReturnCode()));
         details->Set(TRI_V8_SYMBOL("message"),
-                  TRI_V8_SYMBOL_STD_STRING(res->result->getHttpReturnMessage()));
+                  TRI_V8_STD_STRING(res->result->getHttpReturnMessage()));
         details->Set(TRI_V8_SYMBOL("body"),
-                TRI_V8_SYMBOL_STD_STRING(res->result->getBody()));
-        TRI_GET_GLOBAL_STR(ErrorMessageKey);
+                TRI_V8_STD_STRING(res->result->getBody()));
+        TRI_GET_GLOBAL_STRING(ErrorMessageKey);
         r->Set(TRI_V8_SYMBOL("details"), details);
         r->Set(ErrorMessageKey,
                TRI_V8_SYMBOL("got bad HTTP response"));
       }
       else {
-        TRI_GET_GLOBAL_STR(ErrorMessageKey);
+        TRI_GET_GLOBAL_STRING(ErrorMessageKey);
         r->Set(ErrorMessageKey,
                TRI_V8_SYMBOL("got no HTTP response, DBserver seems gone"));
       }
@@ -1308,15 +1308,15 @@ static void JS_ClusterTest (const v8::FunctionCallbackInfo<v8::Value>& args) {
       map<string,string> headers = res->answer->headers();
       map<string,string>::iterator i;
       for (i = headers.begin(); i != headers.end(); ++i) {
-        h->Set(TRI_V8_SYMBOL_STD_STRING(i->first),
-               TRI_V8_SYMBOL_STD_STRING(i->second));
+        h->Set(TRI_V8_STD_STRING(i->first),
+               TRI_V8_STD_STRING(i->second));
       }
       r->Set(TRI_V8_SYMBOL("headers"), h);
 
       // The body:
       if (0 != res->answer->body()) {
         r->Set(TRI_V8_SYMBOL("body"),
-               TRI_V8_SYMBOL_PAIR(res->answer->body(),
+               TRI_V8_PAIR_STRING(res->answer->body(),
                                   (int) res->answer->bodySize()));
       }
       LOG_DEBUG("JS_ClusterTest: success");
@@ -1356,13 +1356,13 @@ static void JS_ClusterTest (const v8::FunctionCallbackInfo<v8::Value>& args) {
       map<string,string> headers = res->result->getHeaderFields();
       map<string,string>::iterator i;
       for (i = headers.begin(); i != headers.end(); ++i) {
-        h->Set(TRI_V8_SYMBOL_STD_STRING(i->first), TRI_V8_SYMBOL_STD_STRING(i->second));
+        h->Set(TRI_V8_STD_STRING(i->first), TRI_V8_STD_STRING(i->second));
       }
       r->Set(TRI_V8_SYMBOL("headers"), h);
 
       // The body:
       StringBuffer& theBody = res->result->getBody();
-      r->Set(TRI_V8_SYMBOL("body"), TRI_V8_SYMBOL_STD_STRING(theBody));
+      r->Set(TRI_V8_SYMBOL("body"), TRI_V8_STD_STRING(theBody));
       LOG_DEBUG("JS_ClusterTest: success");
 
     }

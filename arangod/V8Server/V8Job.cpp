@@ -124,7 +124,7 @@ Job::status_t V8Job::work () {
     v8::Local<v8::Function> ctor = v8::Local<v8::Function>::Cast(current->Get(TRI_V8_SYMBOL("Function")));
 
     // Invoke Function constructor to create function with the given body and no arguments
-    v8::Handle<v8::Value> args[2] = { TRI_V8_SYMBOL("params"), TRI_V8_SYMBOL_STD_STRING(_command) };
+    v8::Handle<v8::Value> args[2] = { TRI_V8_SYMBOL("params"), TRI_V8_STD_STRING(_command) };
     v8::Local<v8::Object> function = ctor->NewInstance(2, args);
 
     v8::Handle<v8::Function> action = v8::Local<v8::Function>::Cast(function);

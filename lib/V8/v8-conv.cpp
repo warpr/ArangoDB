@@ -993,7 +993,7 @@ static v8::Handle<v8::Value> JsonShapeDataShortString (v8::Isolate* isolate,
   l = * (TRI_shape_length_short_string_t const*) data;
   data += sizeof(TRI_shape_length_short_string_t);
 
-  return TRI_V8_SYMBOL_PAIR(data, l - 1);
+  return TRI_V8_PAIR_STRING(data, l - 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1010,7 +1010,7 @@ static v8::Handle<v8::Value> JsonShapeDataLongString (v8::Isolate* isolate,
   l = * (TRI_shape_length_long_string_t const*) data;
   data += sizeof(TRI_shape_length_long_string_t);
 
-  return TRI_V8_SYMBOL_PAIR(data, l - 1);
+  return TRI_V8_PAIR_STRING(data, l - 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1472,7 +1472,7 @@ static inline v8::Handle<v8::Value> ObjectJsonNumber (v8::Isolate* isolate, TRI_
 ////////////////////////////////////////////////////////////////////////////////
 
 static inline v8::Handle<v8::Value> ObjectJsonString (v8::Isolate* isolate, TRI_json_t const* json) {
-  return TRI_V8_SYMBOL_PAIR(json->_value._string.data, json->_value._string.length - 1);
+  return TRI_V8_PAIR_STRING(json->_value._string.data, json->_value._string.length - 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1492,7 +1492,7 @@ static v8::Handle<v8::Value> ObjectJsonArray (v8::Isolate* isolate, TRI_json_t c
     }
 
     TRI_json_t const* j = static_cast<TRI_json_t const*>(TRI_AtVector(&json->_value._objects, i + 1));
-    object->Set(TRI_V8_SYMBOL_PAIR(key->_value._string.data, key->_value._string.length - 1), TRI_ObjectJson(isolate, j));
+    object->Set(TRI_V8_PAIR_STRING(key->_value._string.data, key->_value._string.length - 1), TRI_ObjectJson(isolate, j));
   }
 
   return object;

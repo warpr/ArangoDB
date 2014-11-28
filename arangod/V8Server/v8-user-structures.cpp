@@ -1770,7 +1770,7 @@ static void JS_KeyType (const v8::FunctionCallbackInfo<v8::Value>& args) {
     result = hash->keyType(key);
   }
 
-  TRI_V8_RETURN_STR(result);
+  TRI_V8_RETURN_STRING(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

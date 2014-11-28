@@ -84,19 +84,19 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesJs (v8::Isolate* isolate
   size_t keyLength = strlen(docKey);
   buffer[len] = '/';
   memcpy(buffer + len + 1, docKey, keyLength);
-  TRI_GET_GLOBAL_STR(_IdKey);
-  result->ForceSet(_IdKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+  TRI_GET_GLOBAL_STRING(_IdKey);
+  result->ForceSet(_IdKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
 
   // _key
-  TRI_GET_GLOBAL_STR(_KeyKey);
-  result->ForceSet(_KeyKey, TRI_V8_SYMBOL_PAIR(buffer + len + 1, (int) keyLength));
+  TRI_GET_GLOBAL_STRING(_KeyKey);
+  result->ForceSet(_KeyKey, TRI_V8_PAIR_STRING(buffer + len + 1, (int) keyLength));
 
   // _rev
   TRI_voc_rid_t rid = TRI_EXTRACT_MARKER_RID(marker);
   TRI_ASSERT(rid > 0);
   len = TRI_StringUInt64InPlace((uint64_t) rid, (char*) &buffer);
-  TRI_GET_GLOBAL_STR(_RevKey);
-  result->ForceSet(_RevKey, TRI_V8_SYMBOL_PAIR((char const*) buffer, (int) len));
+  TRI_GET_GLOBAL_STRING(_RevKey);
+  result->ForceSet(_RevKey, TRI_V8_PAIR_STRING((char const*) buffer, (int) len));
 
   TRI_df_marker_type_t type = marker->_type;
   char const* base = reinterpret_cast<char const*>(marker);
@@ -109,8 +109,8 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesJs (v8::Isolate* isolate
     keyLength = strlen(base + m->_offsetFromKey);
     buffer[len] = '/';
     memcpy(buffer + len + 1, base + m->_offsetFromKey, keyLength);
-    TRI_GET_GLOBAL_STR(_FromKey);
-    result->ForceSet(_FromKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+    TRI_GET_GLOBAL_STRING(_FromKey);
+    result->ForceSet(_FromKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
 
     // _to
     if (m->_fromCid != m->_toCid) {
@@ -120,8 +120,8 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesJs (v8::Isolate* isolate
     keyLength = strlen(base + m->_offsetToKey);
     buffer[len] = '/';
     memcpy(buffer + len + 1, base + m->_offsetToKey, keyLength);
-    TRI_GET_GLOBAL_STR(_ToKey);
-    result->ForceSet(_ToKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+    TRI_GET_GLOBAL_STRING(_ToKey);
+    result->ForceSet(_ToKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
   }
   else if (type == TRI_WAL_MARKER_EDGE) {
     triagens::wal::edge_marker_t const* m = reinterpret_cast<triagens::wal::edge_marker_t const*>(marker);
@@ -131,8 +131,8 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesJs (v8::Isolate* isolate
     keyLength = strlen(base + m->_offsetFromKey);
     buffer[len] = '/';
     memcpy(buffer + len + 1, base + m->_offsetFromKey, keyLength);
-    TRI_GET_GLOBAL_STR(_FromKey);
-    result->ForceSet(_FromKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+    TRI_GET_GLOBAL_STRING(_FromKey);
+    result->ForceSet(_FromKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
 
     // _to
     if (m->_fromCid != m->_toCid) {
@@ -142,8 +142,8 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesJs (v8::Isolate* isolate
     keyLength = strlen(base + m->_offsetToKey);
     buffer[len] = '/';
     memcpy(buffer + len + 1, base + m->_offsetToKey, keyLength);
-    TRI_GET_GLOBAL_STR(_ToKey);
-    result->ForceSet(_ToKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+    TRI_GET_GLOBAL_STRING(_ToKey);
+    result->ForceSet(_ToKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
   }
 
   return scope.Escape<v8::Object>(result);
@@ -174,8 +174,8 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesShaped (v8::Isolate* iso
   size_t keyLength = strlen(docKey);
   buffer[len] = '/';
   memcpy(buffer + len + 1, docKey, keyLength);
-  TRI_GET_GLOBAL_STR(_IdKey);
-  result->ForceSet(_IdKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+  TRI_GET_GLOBAL_STRING(_IdKey);
+  result->ForceSet(_IdKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
 
   TRI_df_marker_type_t type = marker->_type;
   char const* base = reinterpret_cast<char const*>(marker);
@@ -188,8 +188,8 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesShaped (v8::Isolate* iso
     keyLength = strlen(base + m->_offsetFromKey);
     buffer[len] = '/';
     memcpy(buffer + len + 1, base + m->_offsetFromKey, keyLength);
-    TRI_GET_GLOBAL_STR(_FromKey);
-    result->ForceSet(_FromKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+    TRI_GET_GLOBAL_STRING(_FromKey);
+    result->ForceSet(_FromKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
 
     // _to
     if (m->_fromCid != m->_toCid) {
@@ -199,8 +199,8 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesShaped (v8::Isolate* iso
     keyLength = strlen(base + m->_offsetToKey);
     buffer[len] = '/';
     memcpy(buffer + len + 1, base + m->_offsetToKey, keyLength);
-    TRI_GET_GLOBAL_STR(_ToKey);
-    result->ForceSet(_ToKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+    TRI_GET_GLOBAL_STRING(_ToKey);
+    result->ForceSet(_ToKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
   }
   else if (type == TRI_WAL_MARKER_EDGE) {
     triagens::wal::edge_marker_t const* m = reinterpret_cast<triagens::wal::edge_marker_t const*>(marker);
@@ -210,8 +210,8 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesShaped (v8::Isolate* iso
     keyLength = strlen(base + m->_offsetFromKey);
     buffer[len] = '/';
     memcpy(buffer + len + 1, base + m->_offsetFromKey, keyLength);
-    TRI_GET_GLOBAL_STR(_FromKey);
-    result->ForceSet(_FromKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+    TRI_GET_GLOBAL_STRING(_FromKey);
+    result->ForceSet(_FromKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
 
     // _to
     if (m->_fromCid != m->_toCid) {
@@ -221,8 +221,8 @@ static v8::Handle<v8::Object> SetBasicDocumentAttributesShaped (v8::Isolate* iso
     keyLength = strlen(base + m->_offsetToKey);
     buffer[len] = '/';
     memcpy(buffer + len + 1, base + m->_offsetToKey, keyLength);
-    TRI_GET_GLOBAL_STR(_ToKey);
-    result->ForceSet(_ToKey, TRI_V8_SYMBOL_PAIR(buffer, (int) (len + keyLength + 1)));
+    TRI_GET_GLOBAL_STRING(_ToKey);
+    result->ForceSet(_ToKey, TRI_V8_PAIR_STRING(buffer, (int) (len + keyLength + 1)));
   }
   return scope.Escape<v8::Object>(result);
 }
@@ -400,16 +400,16 @@ static void KeysOfShapedJson (const v8::PropertyCallbackInfo<v8::Array>& args) {
   uint32_t count = 0;
   
   TRI_GET_GLOBALS();
-  TRI_GET_GLOBAL_STR(_IdKey);
-  TRI_GET_GLOBAL_STR(_RevKey);
-  TRI_GET_GLOBAL_STR(_KeyKey);
+  TRI_GET_GLOBAL_STRING(_IdKey);
+  TRI_GET_GLOBAL_STRING(_RevKey);
+  TRI_GET_GLOBAL_STRING(_KeyKey);
   result->Set(count++, _IdKey);
   result->Set(count++, _RevKey);
   result->Set(count++, _KeyKey);
   
   if (isEdge) {
-    TRI_GET_GLOBAL_STR(_FromKey);
-    TRI_GET_GLOBAL_STR(_ToKey);
+    TRI_GET_GLOBAL_STRING(_FromKey);
+    TRI_GET_GLOBAL_STRING(_ToKey);
     result->Set(count++, _FromKey);
     result->Set(count++, _ToKey);
   }
@@ -458,15 +458,15 @@ static void CopyAttributes (v8::Isolate* isolate,
   TRI_ASSERT(docKey != nullptr);
   size_t keyLength = strlen(docKey);// TODO: avoid strlen
   memcpy(buffer, docKey, keyLength);
-  TRI_GET_GLOBAL_STR(_KeyKey);
-  self->ForceSet(_KeyKey, TRI_V8_SYMBOL_PAIR(buffer, (int) keyLength));
+  TRI_GET_GLOBAL_STRING(_KeyKey);
+  self->ForceSet(_KeyKey, TRI_V8_PAIR_STRING(buffer, (int) keyLength));
 
    // _rev  
   TRI_voc_rid_t rid = TRI_EXTRACT_MARKER_RID(static_cast<TRI_df_marker_t const*>(marker));
   TRI_ASSERT(rid > 0);
-  TRI_GET_GLOBAL_STR(_RevKey);
+  TRI_GET_GLOBAL_STRING(_RevKey);
   size_t len = TRI_StringUInt64InPlace((uint64_t) rid, (char*) &buffer);
-  self->ForceSet(_RevKey, TRI_V8_SYMBOL_PAIR((char const*) buffer, (int) len));
+  self->ForceSet(_RevKey, TRI_V8_PAIR_STRING((char const*) buffer, (int) len));
 
   // finally insert the dynamic attributes from the shaped json
   TRI_array_shape_t const* s;
@@ -550,13 +550,13 @@ static void MapGetNamedShapedJson (v8::Local<v8::String> name,
       TRI_ASSERT(docKey != nullptr);
       size_t keyLength = strlen(docKey);
       memcpy(buffer, docKey, keyLength);
-      TRI_V8_RETURN_PAIR(buffer, (int) keyLength);
+      TRI_V8_RETURN_PAIR_STRING(buffer, (int) keyLength);
     }
     else if (key == TRI_VOC_ATTRIBUTE_REV) {
       TRI_voc_rid_t rid = TRI_EXTRACT_MARKER_RID(static_cast<TRI_df_marker_t const*>(marker));
       TRI_ASSERT(rid > 0);
       size_t len = TRI_StringUInt64InPlace((uint64_t) rid, (char*) &buffer);
-      TRI_V8_RETURN_PAIR((char const*) buffer, (int) len);
+      TRI_V8_RETURN_PAIR_STRING((char const*) buffer, (int) len);
     }
 
     if (key == TRI_VOC_ATTRIBUTE_ID || 
@@ -766,7 +766,7 @@ static void MapGetIndexedShapedJson (uint32_t idx,
   char buffer[11];
   size_t len = TRI_StringUInt32InPlace(idx, (char*) &buffer);
 
-  v8::Local<v8::String> strVal = TRI_V8_SYMBOL_PAIR((char*) &buffer, (int) len);
+  v8::Local<v8::String> strVal = TRI_V8_PAIR_STRING((char*) &buffer, (int) len);
 
   MapGetNamedShapedJson(strVal, args);
 }
@@ -784,7 +784,7 @@ static void MapSetIndexedShapedJson (uint32_t idx,
   char buffer[11];
   size_t len = TRI_StringUInt32InPlace(idx, (char*) &buffer);
 
-  v8::Local<v8::String> strVal = TRI_V8_SYMBOL_PAIR((char*) &buffer, (int) len);
+  v8::Local<v8::String> strVal = TRI_V8_PAIR_STRING((char*) &buffer, (int) len);
 
   MapSetNamedShapedJson(strVal, value, args);
 }
@@ -801,7 +801,7 @@ static void MapDeleteIndexedShapedJson (uint32_t idx,
   char buffer[11];
   size_t len = TRI_StringUInt32InPlace(idx, (char*) &buffer);
 
-  v8::Local<v8::String> strVal = TRI_V8_SYMBOL_PAIR((char*) &buffer, (int) len);
+  v8::Local<v8::String> strVal = TRI_V8_PAIR_STRING((char*) &buffer, (int) len);
 
   MapDeleteNamedShapedJson(strVal, args);
 }

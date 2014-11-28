@@ -54,12 +54,43 @@ static const uint32_t V8DataSlot = 0;
 // -----------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief shortcut for creating a v8 symbol for the specified string
+/// @brief shortcut for fetching the isolate from the thread context
 ////////////////////////////////////////////////////////////////////////////////
+
 #define ISOLATE v8::Isolate* isolate = v8::Isolate::GetCurrent()
 
+////////////////////////////////////////////////////////////////////////////////
+/// @brief shortcut for creating a v8 symbol for the specified string
+///   implicites isolate available.
+/// @param name local string constant to source
+////////////////////////////////////////////////////////////////////////////////
+
 #define TRI_V8_SYMBOL(name)                                             \
-  v8::String::NewFromUtf8(isolate, name, v8::String::kNormalString, (int) strlen(name))
+  v8::String::NewFromUtf8(isolate, name, v8::String::kNormalString, (int) sizeof(name) - 1)
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief shortcut for creating a v8 string for the specified string
+///  Implicit argument: isolate (is assumed to be defined)
+/// @param name local char* to use
+///  should be avoided if possible due to performance reasons!
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_STRING(name)                     \
+  v8::String::NewFromUtf8(isolate, name, v8::String::kNormalString, (int)strlen(name))
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief shortcut for creating a v8 symbol for the specified string
+///   implicites isolate available.
+/// @param name local std::string to use
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_STD_STRING(name)                                  \
+  v8::String::NewFromUtf8(isolate, name.c_str(), v8::String::kNormalString, (int) name.length())
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief shortcut for creating a v8 symbol for the specified string
+///   implicites isolate available.
+////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_SYMBOL_UTF16(name, length)                                      \
   v8::String::NewFromTwoByte(isolate, name, v8::String::kNormalString, length)
@@ -67,45 +98,11 @@ static const uint32_t V8DataSlot = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief shortcut for creating a v8 symbol for the specified string of known length
+///   implicites isolate available.
 ////////////////////////////////////////////////////////////////////////////////
-#define TRI_V8_SYMBOL_PAIR(name, length)                                \
+
+#define TRI_V8_PAIR_STRING(name, length)                                \
   v8::String::NewFromUtf8(isolate, name, v8::String::kNormalString, (int) length)
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief shortcut for creating a v8 symbol for the specified string
-////////////////////////////////////////////////////////////////////////////////
-
-#define TRI_V8_SYMBOL_STD_STRING(name)                                  \
-  v8::String::NewFromUtf8(isolate, name.c_str(), v8::String::kNormalString, (int) name.length())
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief shortcut for creating a v8 symbol for the specified string
-////////////////////////////////////////////////////////////////////////////////
-
-inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Value>& args,
-                                          std::string const& value) {
-  return v8::String::NewFromUtf8(args.GetIsolate(),
-                                 value.c_str(),
-                                 v8::String::kNormalString,
-                                 (int) value.size());
-    }
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief shortcut for creating a v8 string for the specified string
-///  Implicit argument: isolate (is assumed to be defined)
-////////////////////////////////////////////////////////////////////////////////
-
-#define TRI_V8_STRING(name)                     \
-  v8::String::NewFromUtf8(isolate, name)
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief shortcut for current v8 globals
-////////////////////////////////////////////////////////////////////////////////
-
-#define TRI_V8_CURRENT_GLOBALS                                          \
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();                     \
-  TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(isolate->GetData(V8DataSlot)); \
-  while (0)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief shortcut for current v8 globals and scope
@@ -248,6 +245,125 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
     TRI_V8_EXCEPTION(TRI_ERROR_NOT_IMPLEMENTED);                       \
   }
 
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief Return undefined (default..)
+///   implicitely requires 'args and 'isolate' to be available
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_RETURN_UNDEFINED()                                      \
+  args.GetReturnValue().Set(v8::Undefined(isolate));                   \
+  return;
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief Return 'true'
+///   implicitely requires 'args and 'isolate' to be available
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_RETURN_TRUE()                            \
+  args.GetReturnValue().Set(v8::True(isolate));         \
+  return;
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief Return 'false'
+///   implicitely requires 'args and 'isolate' to be available
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_RETURN_FALSE()                           \
+  args.GetReturnValue().Set(v8::False(isolate));        \
+  return;
+  
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return 'null'
+///   implicitely requires 'args and 'isolate' to be available
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_RETURN_NULL()                            \
+  args.GetReturnValue().Set(v8::Null(isolate));         \
+  return;
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return any sort of V8-value
+///   implicitely requires 'args and 'isolate' to be available
+/// @param WHAT the name of the v8::Value/v8::Number/...
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_RETURN(WHAT)               \
+  args.GetReturnValue().Set(WHAT);        \
+  return;
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return a char*
+///   implicitely requires 'args and 'isolate' to be available
+/// @param WHAT the name of the char* variable
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_RETURN_STRING(WHAT)                                      \
+  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT));    \
+  return;
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return a std::string
+///   implicitely requires 'args and 'isolate' to be available
+/// @param WHAT the name of the std::string variable
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_RETURN_STD_STRING(WHAT)                                  \
+  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT.c_str(), v8::String::kNormalString, (int) WHAT.length())); \
+  return;
+  
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return a string which you know the length of
+///   implicitely requires 'args and 'isolate' to be available
+/// @param WHAT the name of the char* variable
+/// @param WHATLEn the name of the int variable containing the length of WHAT
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_RETURN_PAIR_STRING(WHAT, WHATLEN)                        \
+  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT, v8::String::kNormalString, (int) WHATLEN)); \
+  return;
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief abort a function, marking it 'canceled' in the global.
+///   implicitely requires 'args and 'isolate' to be available
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_V8_CANCEL_FUNCTION()                           \
+  TRI_GET_GLOBALS();                                       \
+  v8g->_canceled = true;                                   \
+  args.GetReturnValue().Set(v8::Undefined(isolate));       \
+  return
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief retrieve the instance of the TRI_v8_global of the current thread
+///   implicitely creates a variable 'v8g' with a pointer to it.
+///   implicitely requires 'isolate' to be available
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_GET_GLOBALS()                                               \
+        TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(isolate->GetData(V8DataSlot))
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief fetch a string-member from the globel into the local scope of the function
+///     will give you a variable of the same name.
+///     implicitely requires 'v8g' and 'isolate' to be there.
+/// @param WHICH the member string name to get as local variable
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_GET_GLOBAL_STRING(WHICH)                            \
+  auto WHICH = v8::Local<v8::String>::New(isolate, v8g->WHICH);
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief fetch a member from the globel into the local scope of the function
+///     will give you a variable of the same name.
+///     implicitely requires 'v8g' and 'isolate' to be there.
+/// @param WHICH the member name to get as local variable
+/// @param TYPE  the type of the member to instanciate
+////////////////////////////////////////////////////////////////////////////////
+
+#define TRI_GET_GLOBAL(WHICH, TYPE)                             \
+  auto WHICH = v8::Local<TYPE>::New(isolate, v8g->WHICH);
+
 // -----------------------------------------------------------------------------
 // --SECTION--                                                      public types
 // -----------------------------------------------------------------------------
@@ -256,59 +372,6 @@ inline v8::Local<v8::String> TRI_v8String(const v8::FunctionCallbackInfo<v8::Val
 /// @brief globals stored in the isolate
 ////////////////////////////////////////////////////////////////////////////////
 
-
-#define TRI_V8_RETURN_UNDEFINED()                                      \
-  args.GetReturnValue().Set(v8::Undefined(isolate));                   \
-  return;
-
-#define TRI_V8_RETURN_TRUE()                            \
-  args.GetReturnValue().Set(v8::True(isolate));         \
-  return;
-
-#define TRI_V8_RETURN_FALSE()                           \
-  args.GetReturnValue().Set(v8::False(isolate));        \
-  return;
-  
-#define TRI_V8_RETURN_NULL()                            \
-  args.GetReturnValue().Set(v8::Null(isolate));         \
-  return;
-
-#define TRI_V8_RETURN(WHAT)               \
-  args.GetReturnValue().Set(WHAT);        \
-  return;
-
-#define TRI_V8_RETURN_STR(WHAT)                                         \
-  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT));    \
-  return;
-
-#define TRI_V8_RETURN_STDSTR(WHAT)                                      \
-  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT.c_str(), v8::String::kNormalString, (int) WHAT.length())); \
-  return;
-  
-#define TRI_V8_RETURN_PAIR(WHAT, WHATLEN)                                       \
-  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT, v8::String::kNormalString, (int) WHATLEN)); \
-  return;
-
-#define TRI_V8_CANCEL_FUNCTION_ISOLATE()                   \
-  TRI_GET_GLOBALS();                                       \
-  v8g->_canceled = true;                                   \
-  scope.Escape<v8::Value>(v8::Undefined(isolate));
-
-#define TRI_V8_CANCEL_FUNCTION()                           \
-  TRI_GET_GLOBALS();                                       \
-  v8g->_canceled = true;                                   \
-  args.GetReturnValue().Set(v8::Undefined(isolate));       \
-  return
-
-#define TRI_GET_GLOBALS()                                               \
-        TRI_v8_global_t* v8g = static_cast<TRI_v8_global_t*>(isolate->GetData(V8DataSlot))
-
-#define TRI_GET_GLOBAL(WHICH, TYPE)                                          \
-  auto WHICH = v8::Local<TYPE>::New(isolate, v8g->WHICH);
-
-#define TRI_GET_GLOBAL_STR(WHICH)                               \
-  auto WHICH = v8::Local<v8::String>::New(isolate, v8g->WHICH);
-  
 typedef struct TRI_v8_global_s {
 
 ////////////////////////////////////////////////////////////////////////////////

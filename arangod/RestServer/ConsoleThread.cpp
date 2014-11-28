@@ -139,7 +139,7 @@ void ConsoleThread::inner () {
 
   TRI_ExecuteJavaScriptString(isolate,
                               localContext,
-                              TRI_V8_SYMBOL_STD_STRING(pretty),
+                              TRI_V8_STD_STRING(pretty),
                               TRI_V8_SYMBOL("(internal)"),
                               false);
 
