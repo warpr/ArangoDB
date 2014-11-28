@@ -1083,7 +1083,7 @@ static v8::Handle<v8::Value> JsonShapeDataArray (v8::Isolate* isolate,
 
     const TRI_shape_size_t offset = *offsetsF;
     v8::Handle<v8::Value> element = JsonShapeData(isolate, shaper, subshape, data + offset, offsetsF[1] - offset);
-    array->Set(TRI_V8_SYMBOL(name), element);
+    array->Set(TRI_V8_STRING(name), element);
   }
 
   offsetsV = (TRI_shape_size_t const*) data;
@@ -1115,7 +1115,7 @@ static v8::Handle<v8::Value> JsonShapeDataArray (v8::Isolate* isolate,
 
     const TRI_shape_size_t offset = *offsetsV;
     v8::Handle<v8::Value> element = JsonShapeData(isolate, shaper, subshape, data + offset, offsetsV[1] - offset);
-    array->Set(TRI_V8_SYMBOL(name), element);
+    array->Set(TRI_V8_STRING(name), element);
   }
 
   return array;
@@ -1191,7 +1191,7 @@ static v8::Handle<v8::Value> JsonShapeDataArray (v8::Isolate* isolate,
 
     const TRI_shape_size_t offset = *offsetsF;
     v8::Handle<v8::Value> element = JsonShapeData(isolate, shaper, subshape, data + offset, offsetsF[1] - offset);
-    array->Set(TRI_V8_SYMBOL(name), element);
+    array->Set(TRI_V8_STRING(name), element);
   }
 
   offsetsV = (TRI_shape_size_t const*) data;
@@ -1223,7 +1223,7 @@ static v8::Handle<v8::Value> JsonShapeDataArray (v8::Isolate* isolate,
 
     const TRI_shape_size_t offset = *offsetsV;
     v8::Handle<v8::Value> element = JsonShapeData(isolate, shaper, subshape, data + offset, offsetsV[1] - offset);
-    array->Set(TRI_V8_SYMBOL(name), element);
+    array->Set(TRI_V8_STRING(name), element);
   }
 
   return array;

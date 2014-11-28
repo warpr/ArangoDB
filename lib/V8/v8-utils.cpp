@@ -398,7 +398,6 @@ static void JS_Base64Encode (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 static void JS_Parse (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
-  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
   if (args.Length() < 1) {
@@ -419,6 +418,7 @@ static void JS_Parse (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_TYPE_ERROR("<script> must be a string");
   }
 
+  v8::TryCatch tryCatch;
   v8::Handle<v8::Script> script = v8::Script::Compile(source->ToString(), filename->ToString());
 
   // compilation failed, we have caught an exception
@@ -821,7 +821,6 @@ static void JS_Download (const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 static void JS_Execute (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
-  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
   // extract arguments
@@ -876,6 +875,7 @@ static void JS_Execute (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Handle<v8::Value> result;
 
   {
+    v8::TryCatch tryCatch;
 
     script = v8::Script::Compile(source->ToString(), filename->ToString());
 
@@ -3784,7 +3784,6 @@ v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Isolate* isolate,
                                                    v8::Handle<v8::String> const source,
                                                    v8::Handle<v8::String> const name,
                                                    bool printResult) {
-  v8::TryCatch tryCatch;
   v8::EscapableHandleScope scope(isolate);
 
   v8::Handle<v8::Value> result;
@@ -3804,6 +3803,7 @@ v8::Handle<v8::Value> TRI_ExecuteJavaScriptString (v8::Isolate* isolate,
   else {
     // if all went well and the result wasn't undefined then print the returned value
     if (printResult && ! result->IsUndefined()) {
+      v8::TryCatch tryCatch;
 
       v8::Handle<v8::String> printFuncName = TRI_V8_SYMBOL("print");
       v8::Handle<v8::Function> print = v8::Handle<v8::Function>::Cast(context->Global()->Get(printFuncName));

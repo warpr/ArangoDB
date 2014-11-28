@@ -66,7 +66,7 @@ static const uint32_t V8DataSlot = 0;
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_SYMBOL(name)                                             \
-  v8::String::NewFromUtf8(isolate, name, v8::String::kNormalString, (int) sizeof(name) - 1)
+  v8::String::NewFromUtf8(isolate, name, v8::String::kNormalString, (int) strlen(name))
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief shortcut for creating a v8 string for the specified string
@@ -152,7 +152,7 @@ static const uint32_t V8DataSlot = 0;
                           TRI_ERROR_BAD_PARAMETER,                      \
                           msg.c_str());                                 \
   }                                                                     \
-  while (0)
+  while (0); return
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -209,7 +209,7 @@ static const uint32_t V8DataSlot = 0;
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_ERROR(message)                                           \
-  isolate->ThrowException(v8::Exception::Error(TRI_V8_SYMBOL(message))); \
+  isolate->ThrowException(v8::Exception::Error(TRI_V8_STRING(message))); \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -217,7 +217,7 @@ static const uint32_t V8DataSlot = 0;
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_RANGE_ERROR(message)                                     \
-  isolate->ThrowException(v8::Exception::RangeError(TRI_V8_SYMBOL(message))); \
+  isolate->ThrowException(v8::Exception::RangeError(TRI_V8_STRING(message))); \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -225,7 +225,7 @@ static const uint32_t V8DataSlot = 0;
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_SYNTAX_ERROR(message)                                    \
-  isolate->ThrowException(v8::Exception::SyntaxError(TRI_V8_SYMBOL(message))); \
+  isolate->ThrowException(v8::Exception::SyntaxError(TRI_V8_STRING(message))); \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -233,7 +233,7 @@ static const uint32_t V8DataSlot = 0;
 ////////////////////////////////////////////////////////////////////////////////
 
 #define TRI_V8_TYPE_ERROR(message)                                      \
-  isolate->ThrowException(v8::Exception::TypeError(TRI_V8_SYMBOL(message))); \
+  isolate->ThrowException(v8::Exception::TypeError(TRI_V8_STRING(message))); \
   return
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1026,19 +1026,19 @@ TRI_v8_global_t* TRI_GetV8Globals(v8::Isolate*);
 template <typename TARGET>
 void TRI_V8_AddProtoMethod (v8::Isolate* isolate,
                             TARGET tpl,
-                            char const* name,
+                            v8::Handle<v8::String> name,
                             v8::FunctionCallback callback,
                             bool isHidden = false) {
     // hidden method
   if (isHidden) {
-    tpl->PrototypeTemplate()->Set(TRI_V8_SYMBOL(name),
+    tpl->PrototypeTemplate()->Set(name,
                                   v8::FunctionTemplate::New(isolate, callback),
                                   v8::DontEnum);
   }
 
   // normal method
   else {
-    tpl->PrototypeTemplate()->Set(TRI_V8_SYMBOL(name),
+    tpl->PrototypeTemplate()->Set(name,
                                   v8::FunctionTemplate::New(isolate, callback));
     }
 }
@@ -1050,18 +1050,18 @@ void TRI_V8_AddProtoMethod (v8::Isolate* isolate,
 template <typename TARGET>
 inline void TRI_V8_AddMethod (v8::Isolate* isolate,
                               TARGET tpl,
-                              char const* name,
+                              v8::Handle<v8::String> name,
                               v8::Handle<v8::FunctionTemplate> callback,
                               bool isHidden = false) {
   // hidden method
   if (isHidden) {
-    tpl->ForceSet(TRI_V8_SYMBOL(name),
+    tpl->ForceSet(name,
                   callback->GetFunction(),
                   v8::DontEnum);
   }
   // normal method
   else {
-    tpl->Set(TRI_V8_SYMBOL(name),
+    tpl->Set(name,
              callback->GetFunction());
   }
 }
@@ -1069,17 +1069,17 @@ inline void TRI_V8_AddMethod (v8::Isolate* isolate,
 template <typename TARGET>
 inline void TRI_V8_AddMethod (v8::Isolate* isolate,
                               TARGET tpl,
-                              char const* name,
+                              v8::Handle<v8::String> name,
                               v8::FunctionCallback callback,
                               bool isHidden = false) {
   // hidden method
   if (isHidden) {
-    tpl->Set(TRI_V8_SYMBOL(name),
+    tpl->Set(name,
              v8::FunctionTemplate::New(isolate, callback)->GetFunction());
   }
   // normal method
   else {
-    tpl->Set(TRI_V8_SYMBOL(name),
+    tpl->Set(name,
              v8::FunctionTemplate::New(isolate, callback)->GetFunction());
   }
 }
@@ -1087,7 +1087,7 @@ inline void TRI_V8_AddMethod (v8::Isolate* isolate,
 template <>
 inline void TRI_V8_AddMethod (v8::Isolate* isolate,
                               v8::Handle<v8::FunctionTemplate> tpl,
-                              const char* const name,
+                              v8::Handle<v8::String> name,
                               v8::FunctionCallback callback,
                               bool isHidden) {
   TRI_V8_AddMethod(isolate, tpl->GetFunction(), name, callback, isHidden);

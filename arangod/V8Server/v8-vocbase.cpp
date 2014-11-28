@@ -143,7 +143,6 @@ static v8::Handle<v8::Object> WrapClass (v8::Isolate *isolate,
 
 static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
-  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
   if (args.Length() != 1 || ! args[0]->IsObject()) {
@@ -315,42 +314,44 @@ static void JS_Transaction (const v8::FunctionCallbackInfo<v8::Value>& args) {
     TRI_V8_EXCEPTION_PARAMETER(actionError);
   }
 
-  // start actual transaction
-  ExplicitTransaction trx(vocbase,
-                          readCollections,
-                          writeCollections,
-                          lockTimeout,
-                          waitForSync,
-                          embed);
+  {
+    v8::TryCatch tryCatch;
+    // start actual transaction
+    ExplicitTransaction trx(vocbase,
+                            readCollections,
+                            writeCollections,
+                            lockTimeout,
+                            waitForSync,
+                            embed);
 
-  int res = trx.begin();
+    int res = trx.begin();
 
-  if (res != TRI_ERROR_NO_ERROR) {
-    TRI_V8_EXCEPTION(res);
-  }
-
-  v8::Handle<v8::Value> arguments = params;
-  v8::Handle<v8::Value> result = action->Call(current, 1, &arguments);
-
-  if (tryCatch.HasCaught()) {
-    trx.abort();
-
-    if (tryCatch.CanContinue()) {
-      TRI_V8_LOG_THROW_EXCEPTION(tryCatch);
+    if (res != TRI_ERROR_NO_ERROR) {
+      TRI_V8_EXCEPTION(res);
     }
-    else {
-      v8g->_canceled = true;
-      TRI_V8_RETURN(result);
+
+    v8::Handle<v8::Value> arguments = params;
+    v8::Handle<v8::Value> result = action->Call(current, 1, &arguments);
+
+    if (tryCatch.HasCaught()) {
+      trx.abort();
+
+      if (tryCatch.CanContinue()) {
+        TRI_V8_LOG_THROW_EXCEPTION(tryCatch);
+      }
+      else {
+        v8g->_canceled = true;
+        TRI_V8_RETURN(result);
+      }
     }
+    res = trx.commit();
+
+    if (res != TRI_ERROR_NO_ERROR) {
+      TRI_V8_EXCEPTION(res);
+    }
+
+    TRI_V8_RETURN(result);
   }
-
-  res = trx.commit();
-
-  if (res != TRI_ERROR_NO_ERROR) {
-    TRI_V8_EXCEPTION(res);
-  }
-
-  TRI_V8_RETURN(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

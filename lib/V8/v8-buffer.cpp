@@ -1678,38 +1678,38 @@ void TRI_InitV8Buffer (v8::Isolate* isolate, v8::Handle<v8::Context> context) {
   v8g->BufferTempl.Reset(isolate, ft);
 
   // copy free
-  TRI_V8_AddProtoMethod(isolate, ft, "binarySlice", JS_BinarySlice);
-  TRI_V8_AddProtoMethod(isolate, ft, "asciiSlice", JS_AsciiSlice);
-  TRI_V8_AddProtoMethod(isolate, ft, "base64Slice", JS_Base64Slice);
-  TRI_V8_AddProtoMethod(isolate, ft, "ucs2Slice", JS_Ucs2Slice);
-  TRI_V8_AddProtoMethod(isolate, ft, "hexSlice", JS_HexSlice);
-  TRI_V8_AddProtoMethod(isolate, ft, "utf8Slice", JS_Utf8Slice);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("binarySlice"), JS_BinarySlice);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("asciiSlice"), JS_AsciiSlice);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("base64Slice"), JS_Base64Slice);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("ucs2Slice"), JS_Ucs2Slice);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("hexSlice"), JS_HexSlice);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("utf8Slice"), JS_Utf8Slice);
 
-  TRI_V8_AddProtoMethod(isolate, ft, "utf8Write", JS_Utf8Write);
-  TRI_V8_AddProtoMethod(isolate, ft, "asciiWrite", JS_AsciiWrite);
-  TRI_V8_AddProtoMethod(isolate, ft, "binaryWrite", JS_BinaryWrite);
-  TRI_V8_AddProtoMethod(isolate, ft, "base64Write", JS_Base64Write);
-  TRI_V8_AddProtoMethod(isolate, ft, "ucs2Write", JS_Ucs2Write);
-  TRI_V8_AddProtoMethod(isolate, ft, "hexWrite", JS_HexWrite);
-  TRI_V8_AddProtoMethod(isolate, ft, "readFloatLE", JS_ReadFloatLE);
-  TRI_V8_AddProtoMethod(isolate, ft, "readFloatBE", JS_ReadFloatBE);
-  TRI_V8_AddProtoMethod(isolate, ft, "readDoubleLE", JS_ReadDoubleLE);
-  TRI_V8_AddProtoMethod(isolate, ft, "readDoubleBE", JS_ReadDoubleBE);
-  TRI_V8_AddProtoMethod(isolate, ft, "writeFloatLE", JS_WriteFloatLE);
-  TRI_V8_AddProtoMethod(isolate, ft, "writeFloatBE", JS_WriteFloatBE);
-  TRI_V8_AddProtoMethod(isolate, ft, "writeDoubleLE", JS_WriteDoubleLE);
-  TRI_V8_AddProtoMethod(isolate, ft, "writeDoubleBE", JS_WriteDoubleBE);
-  TRI_V8_AddProtoMethod(isolate, ft, "fill", JS_Fill);
-  TRI_V8_AddProtoMethod(isolate, ft, "copy", JS_Copy);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("utf8Write"), JS_Utf8Write);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("asciiWrite"), JS_AsciiWrite);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("binaryWrite"), JS_BinaryWrite);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("base64Write"), JS_Base64Write);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("ucs2Write"), JS_Ucs2Write);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("hexWrite"), JS_HexWrite);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("readFloatLE"), JS_ReadFloatLE);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("readFloatBE"), JS_ReadFloatBE);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("readDoubleLE"), JS_ReadDoubleLE);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("readDoubleBE"), JS_ReadDoubleBE);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("writeFloatLE"), JS_WriteFloatLE);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("writeFloatBE"), JS_WriteFloatBE);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("writeDoubleLE"), JS_WriteDoubleLE);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("writeDoubleBE"), JS_WriteDoubleBE);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("fill"), JS_Fill);
+  TRI_V8_AddProtoMethod(isolate, ft, TRI_V8_SYMBOL("copy"), JS_Copy);
 
-  TRI_V8_AddMethod(isolate, rt, "byteLength", JS_ByteLength);
-  TRI_V8_AddMethod(isolate, rt, "makeFastBuffer", JS_MakeFastBuffer);
+  TRI_V8_AddMethod(isolate, rt, TRI_V8_SYMBOL("byteLength"), JS_ByteLength);
+  TRI_V8_AddMethod(isolate, rt, TRI_V8_SYMBOL("makeFastBuffer"), JS_MakeFastBuffer);
 
   // create the exports
   v8::Handle<v8::Object> exports = v8::Object::New(isolate);
 
-  TRI_V8_AddMethod(isolate, exports, "SlowBuffer", ft);
-  TRI_V8_AddMethod(isolate, exports, "setFastBufferConstructor", JS_SetFastBufferConstructor);
+  TRI_V8_AddMethod(isolate, exports, TRI_V8_SYMBOL("SlowBuffer"), ft);
+  TRI_V8_AddMethod(isolate, exports, TRI_V8_SYMBOL("setFastBufferConstructor"), JS_SetFastBufferConstructor);
   TRI_AddGlobalVariableVocbase(isolate, context, TRI_V8_SYMBOL("EXPORTS_SLOW_BUFFER"), exports);
 
   v8::HeapProfiler* heap_profiler = isolate->GetHeapProfiler();
