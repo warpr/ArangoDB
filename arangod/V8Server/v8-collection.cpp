@@ -188,13 +188,13 @@ static int ExtractDocumentKey (v8::Isolate* isolate,
 /// @brief parse document or document handle from a v8 value (string | object)
 ////////////////////////////////////////////////////////////////////////////////
 
-static void ParseDocumentOrDocumentHandle (TRI_vocbase_t* vocbase,
-                                           CollectionNameResolver const* resolver,
-                                           TRI_vocbase_col_t const*& collection,
-                                           std::unique_ptr<char[]>& key,
-                                           TRI_voc_rid_t& rid,
-                                           v8::Handle<v8::Value> const val,
-                                           const v8::FunctionCallbackInfo<v8::Value>& args) {
+static int ParseDocumentOrDocumentHandle (TRI_vocbase_t* vocbase,
+                                          CollectionNameResolver const* resolver,
+                                          TRI_vocbase_col_t const*& collection,
+                                          std::unique_ptr<char[]>& key,
+                                          TRI_voc_rid_t& rid,
+                                          v8::Handle<v8::Value> const val,
+                                          const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
@@ -206,7 +206,7 @@ static void ParseDocumentOrDocumentHandle (TRI_vocbase_t* vocbase,
 
   // try to extract the collection name, key, and revision from the object passed
   if (! ExtractDocumentHandle(isolate, val, collectionName, key, rid)) {
-    TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD);
+    return TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD;
   }
 
   // we have at least a key, we also might have a collection name
@@ -217,7 +217,7 @@ static void ParseDocumentOrDocumentHandle (TRI_vocbase_t* vocbase,
     // only a document key without collection name was passed
     if (collection == nullptr) {
       // we do not know the collection
-      TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD);
+      return TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD;
     }
     // we use the current collection's name
     collectionName = resolver->getCollectionName(collection->_cid);
@@ -227,7 +227,7 @@ static void ParseDocumentOrDocumentHandle (TRI_vocbase_t* vocbase,
     // check cross-collection requests
     if (collection != nullptr) {
       if (! EqualCollection(resolver, collectionName, collection)) {
-        TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_CROSS_COLLECTION_REQUEST);
+        return TRI_ERROR_ARANGO_CROSS_COLLECTION_REQUEST;
       }
     }
   }
@@ -255,7 +255,7 @@ static void ParseDocumentOrDocumentHandle (TRI_vocbase_t* vocbase,
 
     if (col == nullptr) {
       // collection not found
-      TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_COLLECTION_NOT_FOUND);
+      return TRI_ERROR_ARANGO_COLLECTION_NOT_FOUND;
     }
 
     collection = col;
@@ -263,7 +263,7 @@ static void ParseDocumentOrDocumentHandle (TRI_vocbase_t* vocbase,
 
   TRI_ASSERT(collection != nullptr);
 
-  TRI_V8_RETURN(v8::Handle<v8::Value>());
+  TRI_V8_RETURN(v8::Handle<v8::Value>()) TRI_ERROR_NO_ERROR;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -448,8 +448,7 @@ static void DocumentVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err;
-  ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
+  int err = ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
 
@@ -457,9 +456,8 @@ static void DocumentVocbaseCol (bool useCollection,
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD);
   }
 
-  if (! err.IsEmpty()) {
-    isolate->ThrowException(err);
-    return;
+  if (err != TRI_ERROR_NO_ERROR) {
+    TRI_V8_EXCEPTION(err);
   }
 
   TRI_ASSERT(col != nullptr);
@@ -626,33 +624,18 @@ static void ExistsVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err;
-  ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
+  int err = ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
 
   if (key.get() == nullptr) {
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD);
   }
-
-  if (! err.IsEmpty()) {
-    // check if we got an error object in return
-    if (err->IsObject()) {
-      // yes
-      v8::Handle<v8::Object> e = v8::Handle<v8::Object>::Cast(err);
-
-      // get the error object's error code
-      if (e->Has(TRI_V8_SYMBOL("errorNum"))) {
-        // if error code is "collection not found", we'll return false
-        if ((int) TRI_ObjectToInt64(e->Get(TRI_V8_SYMBOL("errorNum"))) == TRI_ERROR_ARANGO_COLLECTION_NOT_FOUND) {
-          TRI_V8_RETURN_FALSE();
-        }
-      }
+  if (err != TRI_ERROR_NO_ERROR) {
+    if (err == TRI_ERROR_ARANGO_COLLECTION_NOT_FOUND) {
+      TRI_V8_RETURN_FALSE();
     }
-
-    // for any other error that happens, we'll rethrow it
-    isolate->ThrowException(err);
-    return;
+    TRI_V8_EXCEPTION(err);
   }
 
   TRI_ASSERT(col != nullptr);
@@ -866,8 +849,7 @@ void ReplaceVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err;
-  ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
+  int err = ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
 
@@ -875,9 +857,8 @@ void ReplaceVocbaseCol (bool useCollection,
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD);
   }
 
-  if (! err.IsEmpty()) {
-    isolate->ThrowException(err);
-    return;
+  if (err != TRI_ERROR_NO_ERROR) {
+    TRI_V8_EXCEPTION(err);
   }
 
   TRI_ASSERT(col != nullptr);
@@ -1169,8 +1150,7 @@ static void UpdateVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err;
-  ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
+  int err = ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
 
@@ -1178,9 +1158,8 @@ static void UpdateVocbaseCol (bool useCollection,
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD);
   }
 
-  if (! err.IsEmpty()) {
-    isolate->ThrowException(err);
-    return;
+  if (err != TRI_ERROR_NO_ERROR) {
+    TRI_V8_EXCEPTION(err);
   }
 
   TRI_ASSERT(col != nullptr);
@@ -1442,8 +1421,7 @@ static void RemoveVocbaseCol (bool useCollection,
   }
 
   V8ResolverGuard resolver(vocbase);
-  v8::Handle<v8::Value> err;
-  ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
+  int err = ParseDocumentOrDocumentHandle(vocbase, resolver.getResolver(), col, key, rid, args[0], args);
 
   LocalCollectionGuard g(useCollection ? nullptr : const_cast<TRI_vocbase_col_t*>(col));
 
@@ -1451,9 +1429,8 @@ static void RemoveVocbaseCol (bool useCollection,
     TRI_V8_EXCEPTION(TRI_ERROR_ARANGO_DOCUMENT_HANDLE_BAD);
   }
 
-  if (! err.IsEmpty()) {
-    isolate->ThrowException(err);
-    return;
+  if (err != TRI_ERROR_NO_ERROR) {
+    TRI_V8_EXCEPTION(err);
   }
 
   TRI_ASSERT(col != nullptr);
