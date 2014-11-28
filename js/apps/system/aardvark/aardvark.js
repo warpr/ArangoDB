@@ -367,25 +367,24 @@ controller.post("/query/upload/:user", function(req, res) {
 
   queries = req.body();
   userColl = db._users.byExample({"user": user}).toArray()[0];
-  storedQueries = userColl.extra.queries;
-  queriesToSave = [];
+  queriesToSave = userColl.userData.queries || [ ];
 
   underscore.each(queries, function(newq) {
-    var toBeStored = true;
-    underscore.each(storedQueries, function(stored) {
-      if (stored.name === newq.name) {
-        toBeStored = false;
+    var found = false, i;
+    for (i = 0; i < queriesToSave.length; ++i) {
+      if (queriesToSave[i].name === newq.name) {
+        queriesToSave[i] = newq;
+        found = true;
+        break;
       }
-    });
-    if (toBeStored === true) {
+    }
+    if (! found) {
       queriesToSave.push(newq);
     }
   });
 
-  queriesToSave = queriesToSave.concat(storedQueries);
-
   var toUpdate = {
-    extra: {
+    userData: {
       queries: queriesToSave
     }
   }
@@ -407,7 +406,8 @@ controller.get("/query/download/:user", function(req, res) {
 
   res.set("Content-Type", "application/json");
   res.set("Content-Disposition", "attachment; filename=queries.json");
-  res.json(result.extra.queries);
+
+  res.json(result.userData.queries);
 
 }).summary("Download all user queries")
   .notes("This function downloads all user queries from the given user");

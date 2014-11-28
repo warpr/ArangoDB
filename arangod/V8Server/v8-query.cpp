@@ -1589,11 +1589,11 @@ static v8::Handle<v8::Value> ByExampleHashIndexQuery (SingleCollectionReadOnlyTr
   }
 
   // find the matches
-  TRI_index_result_t list = TRI_LookupHashIndex(idx, &searchValue);
+  TRI_vector_pointer_t list = TRI_LookupHashIndex(idx, &searchValue);
   DestroySearchValue(shaper->_memoryZone, searchValue);
 
   // convert result
-  size_t total = list._length;
+  size_t total = TRI_LengthVectorPointer(&list);
   size_t count = 0;
   bool error = false;
 
@@ -1605,7 +1605,7 @@ static v8::Handle<v8::Value> ByExampleHashIndexQuery (SingleCollectionReadOnlyTr
 
     if (s < e) {
       for (size_t i = s;  i < e;  ++i) {
-        v8::Handle<v8::Value> doc = WRAP_SHAPED_JSON(trx, collection->_cid, list._documents[i]->getDataPtr());
+        v8::Handle<v8::Value> doc = WRAP_SHAPED_JSON(trx, collection->_cid, static_cast<TRI_doc_mptr_t*>(TRI_AtVectorPointer(&list, i))->getDataPtr());
 
         if (doc.IsEmpty()) {
           error = true;
@@ -1619,7 +1619,7 @@ static v8::Handle<v8::Value> ByExampleHashIndexQuery (SingleCollectionReadOnlyTr
   }
 
   // free data allocated by hash index result
-  TRI_DestroyIndexResult(&list);
+  TRI_DestroyVectorPointer(&list);
 
   result->Set(v8::String::New("total"), v8::Number::New((double) total));
   result->Set(v8::String::New("count"), v8::Number::New((double) count));
@@ -2110,24 +2110,24 @@ static v8::Handle<v8::Value> FulltextQuery (SingleCollectionReadOnlyTransaction&
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief queries the fulltext index
 /// @startDocuBlock collectionFulltext
-/// `collection.FULLTEXT(index-handle, query)`
+/// `collection.fulltext(attribute, query)`
 ///
-/// The *FULLTEXT* operator performs a fulltext search using the specified
-/// index and the specified *query*.
+/// The *FULLTEXT* operator performs a fulltext search on the specified
+/// *attribute* and the specified *query*.
 ///
-/// *query* must contain a comma-separated list of words to look for.
-/// Each word can optionally be prefixed with one of the following command
-/// literals:
-/// - *prefix*: perform a prefix-search for the word following
-/// - *substring*: perform substring-matching for the word following. This
-///   option is only supported for fulltext indexes that have been created with
-///   the *indexSubstrings* option
-/// - *complete*: only match the complete following word (this is the default)
+/// Details about the fulltext query syntax can be found below.
 ///
 /// @EXAMPLES
 ///
 /// @EXAMPLE_ARANGOSH_OUTPUT{collectionFulltext}
-///   db.emails.FULLTEXT("emails/1632537", "word");
+/// ~ db._drop("emails");
+/// ~ db._create("emails");
+///   db.emails.ensureFulltextIndex("content").id;
+///   db.emails.save({ content: "Hello Alice, how are you doing? Regards, Bob" });
+///   db.emails.save({ content: "Hello Charlie, do Alice and Bob know about it?" });
+///   db.emails.save({ content: "I think they don't know. Regards, Eve" });
+///   db.emails.fulltext("content", "charlie,|eve").toArray();
+/// ~ db._drop("emails");
 /// @END_EXAMPLE_ARANGOSH_OUTPUT
 /// @endDocuBlock
 ////////////////////////////////////////////////////////////////////////////////
@@ -2535,7 +2535,7 @@ void TRI_InitV8Queries (v8::Handle<v8::Context> context) {
   TRI_AddMethodVocbase(rt, "OFFSET", JS_OffsetQuery, true);
 
   TRI_AddMethodVocbase(rt, "OUTEDGES", JS_OutEdgesQuery, true);
-  TRI_AddMethodVocbase(rt, "WITHIN", JS_WithinQuery);
+  TRI_AddMethodVocbase(rt, "WITHIN", JS_WithinQuery, true);
 }
 
 // -----------------------------------------------------------------------------

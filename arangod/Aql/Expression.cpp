@@ -143,11 +143,13 @@ AqlValue Expression::execute (triagens::arango::AqlTransaction* trx,
         return _func->execute(_ast->query(), trx, docColls, argv, startPos, vars, regs);
       }
       catch (triagens::arango::Exception& ex) {
-        ex.addToMessage(" while evaluating expression ");
-        auto json = _node->toJson(TRI_UNKNOWN_MEM_ZONE, false);
-        if (json != nullptr) {
-          ex.addToMessage(triagens::basics::JsonHelper::toString(json));
-          TRI_Free(TRI_UNKNOWN_MEM_ZONE, json);
+        if (_ast->query()->verboseErrors()) {
+          ex.addToMessage(" while evaluating expression ");
+          auto json = _node->toJson(TRI_UNKNOWN_MEM_ZONE, false);
+          if (json != nullptr) {
+            ex.addToMessage(triagens::basics::JsonHelper::toString(json));
+            TRI_Free(TRI_UNKNOWN_MEM_ZONE, json);
+          }
         }
         throw;
       }
@@ -374,18 +376,22 @@ AqlValue Expression::executeSimpleExpression (AstNode const* node,
     AqlValue result = executeSimpleExpression(member, &myCollection, trx, docColls, argv, startPos, vars, regs);
 
     if (result.isList()) {
-      if (index->isNumericValue()) {
-        auto j = result.extractListMember(trx, myCollection, index->getIntValue(), true);
+      TRI_document_collection_t const* myCollection2 = nullptr;
+      AqlValue indexResult = executeSimpleExpression(index, &myCollection2, trx, docColls, argv, startPos, vars, regs);
+
+      if (indexResult.isNumber()) {
+        auto j = result.extractListMember(trx, myCollection, indexResult.toInt64(), true);
+        indexResult.destroy();
         result.destroy();
         return AqlValue(new Json(TRI_UNKNOWN_MEM_ZONE, j.steal()));
       }
-      else if (index->isStringValue()) {
-        char const* p = index->getStringValue();
-        TRI_ASSERT(p != nullptr);
+      else if (indexResult.isString()) {
+        auto&& value = indexResult.toString();
+        indexResult.destroy();
 
         try {
           // stoll() might throw an exception if the string is not a number
-          int64_t position = static_cast<int64_t>(std::stoll(p));
+          int64_t position = static_cast<int64_t>(std::stoll(value.c_str()));
           auto j = result.extractListMember(trx, myCollection, position, true);
           result.destroy();
           return AqlValue(new Json(TRI_UNKNOWN_MEM_ZONE, j.steal()));
@@ -397,17 +403,21 @@ AqlValue Expression::executeSimpleExpression (AstNode const* node,
       // fall-through to returning null
     }
     else if (result.isArray()) {
-      if (index->isNumericValue()) {
-        std::string const indexString = std::to_string(index->getIntValue());
+      TRI_document_collection_t const* myCollection2 = nullptr;
+      AqlValue indexResult = executeSimpleExpression(index, &myCollection2, trx, docColls, argv, startPos, vars, regs);
+
+      if (indexResult.isNumber()) {
+        auto&& indexString = std::to_string(indexResult.toInt64());
         auto j = result.extractArrayMember(trx, myCollection, indexString.c_str());
+        indexResult.destroy();
         result.destroy();
         return AqlValue(new Json(TRI_UNKNOWN_MEM_ZONE, j.steal()));
       }
-      else if (index->isStringValue()) {
-        char const* p = index->getStringValue();
-        TRI_ASSERT(p != nullptr);
+      else if (indexResult.isString()) {
+        auto&& value = indexResult.toString();
+        indexResult.destroy();
 
-        auto j = result.extractArrayMember(trx, myCollection, p);
+        auto j = result.extractArrayMember(trx, myCollection, value.c_str());
         result.destroy();
         return AqlValue(new Json(TRI_UNKNOWN_MEM_ZONE, j.steal()));
       }
@@ -744,7 +754,7 @@ std::pair<std::string, std::string> Expression::getMultipleAttributes() {
 ////////////////////////////////////////////////////////////////////////////////
 
 void Expression::stringify (triagens::basics::StringBuffer* buffer) const {
-  _node->append(buffer, true);
+  _node->stringify(buffer, true);
 }
 
 // -----------------------------------------------------------------------------

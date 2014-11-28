@@ -66,6 +66,12 @@ namespace triagens {
     int moveCalculationsUpRule (Optimizer*, ExecutionPlan*, Optimizer::Rule const*);
 
 ////////////////////////////////////////////////////////////////////////////////
+/// @brief split and-combined filters and break them into smaller parts
+////////////////////////////////////////////////////////////////////////////////
+
+    int splitFiltersRule (Optimizer*, ExecutionPlan*, Optimizer::Rule const*);
+
+////////////////////////////////////////////////////////////////////////////////
 /// @brief move filters up in the plan
 /// this rule modifies the plan in place
 /// filters are moved as far up in the plan as possible to make result sets
@@ -98,6 +104,12 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 
     int useIndexForSort (Optimizer*, ExecutionPlan*, Optimizer::Rule const*);
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief try to remove filters which are covered by indexes
+////////////////////////////////////////////////////////////////////////////////
+
+    int removeFiltersCoveredByIndex (Optimizer*, ExecutionPlan*, Optimizer::Rule const*);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief interchange adjacent EnumerateCollectionNodes in all possible ways
@@ -174,7 +186,9 @@ namespace triagens {
 //  same (single) attribute.
 ////////////////////////////////////////////////////////////////////////////////
 
-    int replaceORwithIN (Optimizer*, ExecutionPlan*, Optimizer::Rule const*);
+    int replaceOrWithIn (Optimizer*, ExecutionPlan*, Optimizer::Rule const*);
+    
+    int removeRedundantOr (Optimizer*, ExecutionPlan*, Optimizer::Rule const*);
     
   }  // namespace aql
 }  // namespace triagens

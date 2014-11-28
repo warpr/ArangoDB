@@ -543,6 +543,7 @@ int createDocumentOnCoordinator (
   shared_ptr<CollectionInfo> collinfo = ci->getCollection(dbname, collname);
 
   if (collinfo->empty()) {
+    TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, json);
     return TRI_ERROR_ARANGO_COLLECTION_NOT_FOUND;
   }
 
@@ -1050,6 +1051,7 @@ int modifyDocumentOnCoordinator (
                  bool waitForSync,
                  bool isPatch,
                  bool keepNull,   // only counts for isPatch == true
+                 bool mergeArrays,   // only counts for isPatch == true
                  TRI_json_t* json,
                  map<string, string> const& headers,
                  triagens::rest::HttpResponse::HttpResponseCode& responseCode,
@@ -1113,6 +1115,12 @@ int modifyDocumentOnCoordinator (
     reqType = triagens::rest::HttpRequest::HTTP_REQUEST_PATCH;
     if (! keepNull) {
       revstr += "&keepNull=false";
+    }
+    if (mergeArrays) {
+      revstr += "&mergeArrays=true";
+    }
+    else {
+      revstr += "&mergeArrays=false";
     }
   }
   else {

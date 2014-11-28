@@ -587,8 +587,6 @@ Json AqlValue::extractArrayMember (triagens::arango::AqlTransaction* trx,
       TRI_ASSERT(document != nullptr);
       TRI_ASSERT(_marker != nullptr);
 
-      auto shaper = document->getShaper();
-
       // look for the attribute name in the shape
       if (*name == '_') {
         if (strcmp(name, TRI_VOC_ATTRIBUTE_KEY) == 0) {
@@ -605,19 +603,25 @@ Json AqlValue::extractArrayMember (triagens::arango::AqlTransaction* trx,
           TRI_voc_rid_t rid = TRI_EXTRACT_MARKER_RID(_marker);
           return Json(TRI_UNKNOWN_MEM_ZONE, JsonHelper::uint64String(TRI_UNKNOWN_MEM_ZONE, rid));
         }
-        else if (strcmp(name, TRI_VOC_ATTRIBUTE_FROM) == 0) {
+        else if (strcmp(name, TRI_VOC_ATTRIBUTE_FROM) == 0 &&
+                 (_marker->_type == TRI_DOC_MARKER_KEY_EDGE ||
+                  _marker->_type == TRI_WAL_MARKER_EDGE)) {
           std::string from(trx->resolver()->getCollectionNameCluster(TRI_EXTRACT_MARKER_FROM_CID(_marker)));
           from.push_back('/');
           from.append(TRI_EXTRACT_MARKER_FROM_KEY(_marker));
           return Json(TRI_UNKNOWN_MEM_ZONE, from);
         }
-        else if (strcmp(name, TRI_VOC_ATTRIBUTE_TO) == 0) {
+        else if (strcmp(name, TRI_VOC_ATTRIBUTE_TO) == 0 &&
+                 (_marker->_type == TRI_DOC_MARKER_KEY_EDGE ||
+                  _marker->_type == TRI_WAL_MARKER_EDGE)) {
           std::string to(trx->resolver()->getCollectionNameCluster(TRI_EXTRACT_MARKER_TO_CID(_marker)));
           to.push_back('/');
           to.append(TRI_EXTRACT_MARKER_TO_KEY(_marker));
           return Json(TRI_UNKNOWN_MEM_ZONE, to);
         }
       }
+
+      auto shaper = document->getShaper();
 
       TRI_shape_pid_t pid = shaper->lookupAttributePathByName(shaper, name);
       if (pid != 0) {
@@ -720,6 +724,7 @@ Json AqlValue::extractListMember (triagens::arango::AqlTransaction* trx,
           auto vecCollection = (*it)->getDocumentCollection(0);
           return (*it)->getValue(p - totalSize, 0).toJson(trx, vecCollection);
         }
+        totalSize += (*it)->size();
       }
       break; // fall-through to returning null
     }
@@ -758,6 +763,8 @@ AqlValue AqlValue::CreateFromBlocks (triagens::arango::AqlTransaction* trx,
       for (RegisterId j = 0; j < n; ++j) {
         if (variableNames[j][0] != '\0') {
           // temporaries don't have a name and won't be included
+          // Variables from depth 0 are excluded, too, unless the
+          // COLLECT statement is on level 0 as well.
           values.set(variableNames[j].c_str(), current->getValue(i, j).toJson(trx, current->getDocumentCollection(j)));
         }
       }

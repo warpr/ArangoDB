@@ -1,4 +1,4 @@
-/*jshint strict: false, unused: false */
+/*jshint strict: false, unused: false, bitwise: false */
 /*global require, exports, COMPARE_STRING, AQL_TO_BOOL, AQL_TO_NUMBER, AQL_TO_STRING, AQL_WARNING */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -263,7 +263,7 @@ function INDEX (collection, indexTypes) {
 
     for (j = 0; j < indexTypes.length; ++j) {
       if (index.type === indexTypes[j]) {
-        return index.id;
+        return index;
       }
     }
   }
@@ -418,6 +418,46 @@ function TYPEWEIGHT (value) {
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief compile a regex from a string pattern
 ////////////////////////////////////////////////////////////////////////////////
+  
+function CREATE_REGEX_PATTERN (chars) {
+  "use strict";
+
+  chars = AQL_TO_STRING(chars);
+  var i, n = chars.length, pattern = '';
+  var specialChar = /^([.*+?\^=!:${}()|\[\]\/\\])$/;
+
+  for (i = 0; i < n; ++i) {
+    var c = chars.charAt(i);
+    if (c.match(specialChar)) {
+      // character with special meaning in a regex
+      pattern += '\\' + c;
+    }
+    else if (c === '\t') {
+      pattern += '\\t';
+    }
+    else if (c === '\r') {
+      pattern += '\\r';
+    }
+    else if (c === '\n') {
+      pattern += '\\n';
+    }
+    else if (c === '\b') {
+      pattern += '\\b';
+    }
+    else if (c === '\f') {
+      pattern += '\\f';
+    }
+    else {
+      pattern += c;
+    }
+  }
+
+  return pattern;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief compile a regex from a string pattern
+////////////////////////////////////////////////////////////////////////////////
 
 function COMPILE_REGEX (regex, modifiers) {
   "use strict";
@@ -504,8 +544,7 @@ function FCALL_USER (name, parameters) {
 
   if (UserFunctions[prefix].hasOwnProperty(name)) {
     try {
-      var result = UserFunctions[prefix][name].func.apply(null, parameters);
-      return FIX_VALUE(result);
+      return FIX_VALUE(UserFunctions[prefix][name].func.apply(null, parameters));
     }
     catch (err) {
       WARN(name, INTERNAL.errors.ERROR_QUERY_FUNCTION_RUNTIME_ERROR, AQL_TO_STRING(err));
@@ -514,6 +553,76 @@ function FCALL_USER (name, parameters) {
   }
 
   THROW(null, INTERNAL.errors.ERROR_QUERY_FUNCTION_NOT_FOUND, NORMALIZE_FNAME(name));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief dynamically call a function
+////////////////////////////////////////////////////////////////////////////////
+
+function FCALL_DYNAMIC (func, applyDirect, values, name, args) {
+  var toCall;
+
+  name = AQL_TO_STRING(name).toUpperCase();
+  if (name.indexOf('::') > 0) {
+    // user-defined function
+    var prefix = DB_PREFIX();
+    if (! UserFunctions.hasOwnProperty(prefix)) {
+      reloadUserFunctions();
+    }
+
+    if (! UserFunctions.hasOwnProperty(prefix) ||
+        ! UserFunctions[prefix].hasOwnProperty(name)) {
+      THROW(func, INTERNAL.errors.ERROR_QUERY_FUNCTION_NOT_FOUND, NORMALIZE_FNAME(name));
+    }
+
+    toCall = UserFunctions[prefix][name].func;
+  }
+  else {
+    // built-in function
+    if (name === "CALL" || name === "APPLY") {
+      THROW(func, INTERNAL.errors.ERROR_QUERY_DISALLOWED_DYNAMIC_CALL, NORMALIZE_FNAME(name));
+    }
+
+    if (! exports.hasOwnProperty("AQL_" + name)) {
+      THROW(func, INTERNAL.errors.ERROR_QUERY_FUNCTION_NOT_FOUND, NORMALIZE_FNAME(name));
+    }
+
+    toCall = exports["AQL_" + name];
+  }
+
+  if (applyDirect) {
+    try {
+      return FIX_VALUE(toCall.apply(null, args));
+    }
+    catch (err) {
+      WARN(name, INTERNAL.errors.ERROR_QUERY_FUNCTION_RUNTIME_ERROR, AQL_TO_STRING(err));
+      return null;
+    }
+  }
+
+  var type = TYPEWEIGHT(values), result, i;
+
+  if (type === TYPEWEIGHT_DOCUMENT) {
+    result = { };
+    for (i in values) {
+      if (values.hasOwnProperty(i)) {
+        args[0] = values[i];
+        result[i] = FIX_VALUE(toCall.apply(null, args));
+      }
+    }
+    return result;
+  }
+  else if (type === TYPEWEIGHT_LIST) {
+    result = [ ];
+    for (i = 0; i < values.length; ++i) {
+      args[0] = values[i];
+      result[i] = FIX_VALUE(toCall.apply(null, args));
+    }
+    return result;
+  }
+    
+  WARN(func, INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+  return null;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -818,6 +927,8 @@ function GET_DOCUMENTS (collection, offset, limit) {
   if (limit === undefined) {
     limit = null;
   }
+      
+  WARN(null, INTERNAL.errors.ERROR_QUERY_COLLECTION_USED_IN_EXPRESSION, AQL_TO_STRING(collection));
 
   if (isCoordinator) {
     return COLLECTION(collection).all().skip(offset).limit(limit).toArray();
@@ -1401,19 +1512,6 @@ function UNARY_MINUS (value) {
 function ARITHMETIC_PLUS (lhs, rhs) {
   "use strict";
 
-  var lWeight = TYPEWEIGHT(lhs);
-  var rWeight = TYPEWEIGHT(rhs);
-
-  if (lWeight === TYPEWEIGHT_STRING || 
-      lWeight === TYPEWEIGHT_LIST || 
-      lWeight === TYPEWEIGHT_DOCUMENT ||
-      rWeight === TYPEWEIGHT_STRING ||
-      rWeight === TYPEWEIGHT_LIST || 
-      rWeight === TYPEWEIGHT_DOCUMENT) {
-    // string concatenation
-    return AQL_TO_STRING(lhs) + AQL_TO_STRING(rhs);
-  }
-  
   lhs = AQL_TO_NUMBER(lhs);
   if (lhs === null) {
     return null;
@@ -1520,14 +1618,24 @@ function ARITHMETIC_MODULUS (lhs, rhs) {
 function AQL_CONCAT () {
   "use strict";
 
-  var result = '', i;
+  var result = '', i, j;
 
   for (i = 0; i < arguments.length; ++i) {
     var element = arguments[i];
-    if (TYPEWEIGHT(element) === TYPEWEIGHT_NULL) {
+    var weight = TYPEWEIGHT(element);
+    if (weight === TYPEWEIGHT_NULL) {
       continue;
     }
-    result += AQL_TO_STRING(element);
+    else if (weight === TYPEWEIGHT_LIST) {
+      for (j = 0; j < element.length; ++j) {
+        if (TYPEWEIGHT(element[j]) !== TYPEWEIGHT_NULL) {
+          result += AQL_TO_STRING(element[j]);
+        }
+      } 
+    }
+    else {
+      result += AQL_TO_STRING(element);
+    }
   }
 
   return result;
@@ -1540,12 +1648,13 @@ function AQL_CONCAT () {
 function AQL_CONCAT_SEPARATOR () {
   "use strict";
 
-  var separator, found = false, result = '', i;
+  var separator, found = false, result = '', i, j;
 
   for (i = 0; i < arguments.length; ++i) {
     var element = arguments[i];
-
-    if (i > 0 && TYPEWEIGHT(element) === TYPEWEIGHT_NULL) {
+    var weight = TYPEWEIGHT(element);
+ 
+    if (i > 0 && weight === TYPEWEIGHT_NULL) {
       continue;
     }
 
@@ -1557,8 +1666,22 @@ function AQL_CONCAT_SEPARATOR () {
       result += separator;
     }
 
-    found = true;
-    result += AQL_TO_STRING(element);
+    if (weight === TYPEWEIGHT_LIST) {
+      found = false;
+      for (j = 0; j < element.length; ++j) {
+        if (TYPEWEIGHT(element[j]) !== TYPEWEIGHT_NULL) {
+          if (found) {
+            result += separator;
+          }
+          result += AQL_TO_STRING(element[j]);
+          found = true;
+        }
+      } 
+    }
+    else {
+      result += AQL_TO_STRING(element);
+      found = true;
+    }
   }
 
   return result;
@@ -1691,30 +1814,181 @@ function AQL_RIGHT (value, length) {
 /// @brief returns a trimmed version of a string
 ////////////////////////////////////////////////////////////////////////////////
 
-function AQL_TRIM (value, type) {
+function AQL_TRIM (value, chars) {
   "use strict";
 
-  type = AQL_TO_NUMBER(type);
-
-  if (type < 0 || type > 2) { 
-    type = 0;
+  if (chars === 1) {
+    return AQL_LTRIM(value);
+  }
+  else if (chars === 2) {
+    return AQL_RTRIM(value);
+  }
+  else if (chars === null || chars === undefined || chars === 0) {
+    return AQL_TO_STRING(value).replace(new RegExp("(^\\s+|\\s+$)", 'g'), '');
   }
 
-  var result;
-  if (type === 1) {
-    // TRIM(, 1)
-    result = AQL_TO_STRING(value).replace(/^\s+/g, '');
-  }
-  else if (type === 2) {
-    // TRIM(, 2)
-    result = AQL_TO_STRING(value).replace(/\s+$/g, '');
+  var pattern = CREATE_REGEX_PATTERN(chars);
+  return AQL_TO_STRING(value).replace(new RegExp("(^[" + pattern + "]+|[" + pattern + "]+$)", 'g'), '');
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief trim a value from the left
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_LTRIM (value, chars) {
+  "use strict";
+
+  if (chars === null || chars === undefined) {
+    chars = "^\\s+";
   }
   else {
-    // TRIM(, 0)
-    result = AQL_TO_STRING(value).replace(/(^\s+)|\s+$/g, '');
+    chars = "^[" + CREATE_REGEX_PATTERN(chars) + "]+";
   }
 
-  return result;
+  return AQL_TO_STRING(value).replace(new RegExp(chars, 'g'), '');
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief trim a value from the right
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_RTRIM (value, chars) {
+  "use strict";
+
+  if (chars === null || chars === undefined) {
+    chars = "\\s+$";
+  }
+  else {
+    chars = "[" + CREATE_REGEX_PATTERN(chars) + "]+$";
+  }
+
+  return AQL_TO_STRING(value).replace(new RegExp(chars, 'g'), '');
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief split a string using a separator
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_SPLIT (value, separator, limit) {
+  "use strict";
+
+  if (separator === null || separator === undefined) {
+    return [ AQL_TO_STRING(value) ];
+  }
+
+  if (limit === null || limit === undefined) {
+    limit = undefined;
+  }
+  else {
+    limit = AQL_TO_NUMBER(limit);
+  }
+
+  if (limit < 0) {
+    WARN("SPLIT", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+
+  if (TYPEWEIGHT(separator) === TYPEWEIGHT_LIST) {
+    var patterns = [];
+    separator.forEach(function(s) {
+      patterns.push(CREATE_REGEX_PATTERN(AQL_TO_STRING(s)));
+    });
+
+    return AQL_TO_STRING(value).split(new RegExp(patterns.join("|"), "g"), limit);
+  }
+
+  return AQL_TO_STRING(value).split(AQL_TO_STRING(separator), limit);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief replace a search value inside a string
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_SUBSTITUTE (value, search, replace, limit) {
+  "use strict";
+
+  var pattern, patterns, replacements = { }, sWeight = TYPEWEIGHT(search);
+  value = AQL_TO_STRING(value);
+
+  if (sWeight === TYPEWEIGHT_DOCUMENT) {
+    patterns = [ ];
+    KEYS(search, false).forEach(function(k) {
+      patterns.push(CREATE_REGEX_PATTERN(k));
+      replacements[k] = AQL_TO_STRING(search[k]);
+    });
+    pattern = patterns.join('|');
+    limit = replace;
+  }
+  else if (sWeight === TYPEWEIGHT_STRING) {
+    pattern = CREATE_REGEX_PATTERN(search);
+    if (TYPEWEIGHT(replace) === TYPEWEIGHT_NULL) {
+      replacements[search] = "";
+    }
+    else {
+      replacements[search] = AQL_TO_STRING(replace);
+    }
+  }
+  else if (sWeight === TYPEWEIGHT_LIST) {
+    if (search.length === 0) {
+      // empty list
+      WARN("SUBSTITUTE", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+      return value;
+    }
+
+    patterns = [ ];
+
+    if (TYPEWEIGHT(replace) === TYPEWEIGHT_LIST) {
+      // replace each occurrence with a member from the second list
+      search.forEach(function(k, i) {
+        k = AQL_TO_STRING(k);
+        patterns.push(CREATE_REGEX_PATTERN(k));
+        if (i < replace.length) {
+          replacements[k] = AQL_TO_STRING(replace[i]);
+        }
+        else {
+          replacements[k] = "";
+        }
+      });
+    }
+    else {
+      // replace all occurrences with a constant string
+      if (TYPEWEIGHT(replace) === TYPEWEIGHT_NULL) {
+        replace = "";
+      }
+      else {
+        replace = AQL_TO_STRING(replace);
+      }
+      search.forEach(function(k, i) {
+        k = AQL_TO_STRING(k);
+        patterns.push(CREATE_REGEX_PATTERN(k));
+        replacements[k] = replace;
+      });
+    }
+    pattern = patterns.join('|');
+  }
+
+  if (limit === null || limit === undefined) {
+    limit = undefined;
+  }
+  else {
+    limit = AQL_TO_NUMBER(limit);
+  }
+
+  if (limit < 0) {
+    WARN("SUBSTITUTE", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+
+  return AQL_TO_STRING(value).replace(new RegExp(pattern, 'g'), function(match) {
+    if (limit === undefined) {
+      return replacements[match];
+    } 
+    if (limit > 0) {
+      --limit;
+      return replacements[match];
+    }
+    return match;
+  });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1758,13 +2032,14 @@ function AQL_FIND_FIRST (value, search, start, end) {
 function AQL_FIND_LAST (value, search, start, end) {
   "use strict";
 
-  if (start !== undefined) {
+  if (start !== undefined && start !== null) {
     start = AQL_TO_NUMBER(start);
   }
   else {
-    start = 0;
+    start = undefined;
   }
-  if (end !== undefined) {
+
+  if (end !== undefined && end !== null) {
     end = AQL_TO_NUMBER(end);
     if (end < start || end < 0) {
       return -1;
@@ -1774,11 +2049,22 @@ function AQL_FIND_LAST (value, search, start, end) {
     end = undefined;
   }
 
-  if (end !== undefined && end < search.length) {
-    return AQL_TO_STRING(value).lastIndexOf(AQL_TO_STRING(search).substr(0, end + 1), start);
+  var result;
+  if (start > 0 || end !== undefined) {
+    if (end === undefined) {
+      result = AQL_TO_STRING(value).substr(start).lastIndexOf(AQL_TO_STRING(search));
+    }
+    else {
+      result = AQL_TO_STRING(value).substr(start, end - start + 1).lastIndexOf(AQL_TO_STRING(search));
+    }
+    if (result !== -1) {
+      result += start;
+    }
   }
-
-  return AQL_TO_STRING(value).lastIndexOf(AQL_TO_STRING(search), start);
+  else {
+    result = AQL_TO_STRING(value).lastIndexOf(AQL_TO_STRING(search));
+  }
+  return result;
 }
 
 // -----------------------------------------------------------------------------
@@ -2308,6 +2594,323 @@ function AQL_UNION_DISTINCT () {
 
   return result;
 }
+/*
+////////////////////////////////////////////////////////////////////////////////
+/// @brief call a function for each element in the input list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_CALL (values, name) {
+  "use strict";
+
+  var args = [ null ], i;
+  for (i = 2; i < arguments.length; ++i) {
+    args.push(arguments[i]);
+  }
+
+  return FCALL_DYNAMIC("CALL", false, values, name, args);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief call a function for each element in the input list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_APPLY (values, name, parameters) {
+  "use strict";
+
+  var args = [ null ], i;
+  if (Array.isArray(parameters)) {
+    args = args.concat(parameters);
+  }
+
+  return FCALL_DYNAMIC("APPLY", false, values, name, args);
+}
+*/
+////////////////////////////////////////////////////////////////////////////////
+/// @brief call a function for each element in the input list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_CALL (name) {
+  "use strict";
+
+  var args = [ ], i;
+  for (i = 1; i < arguments.length; ++i) {
+    args.push(arguments[i]);
+  }
+
+  return FCALL_DYNAMIC("CALL", true, null, name, args);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief call a function for each element in the input list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_APPLY (name, parameters) {
+  "use strict";
+
+  var args = [ ], i;
+  if (Array.isArray(parameters)) {
+    args = args.concat(parameters);
+  }
+
+  return FCALL_DYNAMIC("APPLY", true, null, name, args);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief removes elements from a list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_REMOVE_VALUES (list, values) {
+  "use strict";
+
+  var type = TYPEWEIGHT(values);
+  if (type === TYPEWEIGHT_NULL) {
+    return list;
+  }
+  else if (type !== TYPEWEIGHT_LIST) {
+    WARN("REMOVE_VALUES", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+
+  type = TYPEWEIGHT(list);
+  if (type === TYPEWEIGHT_NULL) {
+    return [ ];
+  }
+  else if (type === TYPEWEIGHT_LIST) {
+    var copy = [ ], i;
+    for (i = 0; i < list.length; ++i) {
+      if (RELATIONAL_IN(list[i], values)) {
+        continue;
+      }
+      copy.push(CLONE(list[i]));
+    }
+    return copy;
+  }
+
+  WARN("REMOVE_VALUES", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+  return null;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief removes an element from a list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_REMOVE_VALUE (list, value, limit) {
+  "use strict";
+
+  var type = TYPEWEIGHT(list);
+  if (type === TYPEWEIGHT_NULL) {
+    return [ ];
+  }
+  else if (type === TYPEWEIGHT_LIST) {
+    if (TYPEWEIGHT(limit) === TYPEWEIGHT_NULL) {
+      limit = -1;
+    }
+
+    var copy = [ ], i;
+    for (i = 0; i < list.length; ++i) {
+      if (limit === -1 && RELATIONAL_CMP(list[i], value) === 0) {
+        continue;
+      }
+      else if (limit > 0 && RELATIONAL_CMP(list[i], value) === 0) {
+        --limit;
+        continue;
+      }
+      copy.push(CLONE(list[i]));
+    }
+    return copy;
+  }
+
+  WARN("REMOVE_VALUE", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+  return null;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief removes an element from a list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_REMOVE_NTH (list, position) {
+  "use strict";
+
+  var type = TYPEWEIGHT(list);
+  if (type === TYPEWEIGHT_NULL) {
+    return [ ];
+  }
+  else if (type === TYPEWEIGHT_LIST) {
+    position = AQL_TO_NUMBER(position);
+    if (position >= list.length || position < - list.length) {
+      return list;
+    }
+    if (position === 0) {
+      return list.slice(1);
+    }
+    else if (position === - list.length) {
+      return list.slice(position + 1);
+    }
+    else if (position === list.length - 1) {
+      return list.slice(0, position);
+    }
+    else if (position < 0) {
+      return list.slice(0, list.length + position).concat(list.slice(list.length + position + 1));
+    }
+
+    return list.slice(0, position).concat(list.slice(position + 1));
+  }
+
+  WARN("REMOVE_NTH", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+  return null;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief adds an element to a list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_PUSH (list, value, unique) {
+  "use strict";
+
+  var type = TYPEWEIGHT(list);
+  if (type === TYPEWEIGHT_NULL) {
+    return [ value ];
+  }
+  else if (type === TYPEWEIGHT_LIST) {
+    if (AQL_TO_BOOL(unique)) {
+      if (RELATIONAL_IN(value, list)) {
+        return list;
+      } 
+    }
+
+    var copy = CLONE(list);
+    copy.push(value);
+    return copy;
+  }
+
+  WARN("PUSH", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+  return null;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief adds elements to a list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_APPEND (list, values, unique) {
+  "use strict";
+
+  var type = TYPEWEIGHT(values);
+  if (type === TYPEWEIGHT_NULL) {
+    return list;
+  }
+  else if (type !== TYPEWEIGHT_LIST) {
+    WARN("APPEND", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+
+  if (values.length === 0) {
+    return list;
+  }
+
+  unique = AQL_TO_BOOL(unique);
+  if (values.length > 1 && unique) {
+    // make values unique themselves
+    values = AQL_UNIQUE(values);
+  }
+
+  type = TYPEWEIGHT(list);
+  if (type === TYPEWEIGHT_NULL) {
+    return values;
+  }
+  else if (type === TYPEWEIGHT_LIST) {
+    var copy = CLONE(list);
+    if (unique) {
+      var i;
+      for (i = 0; i < values.length; ++i) {
+        if (RELATIONAL_IN(values[i], list)) {
+          continue;
+        }
+        copy.push(values[i]);
+      }
+      return copy;
+    }
+    return copy.concat(values);
+  }
+
+  WARN("APPEND", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+  return null;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief pops an element from a list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_POP (list) {
+  "use strict";
+
+  var type = TYPEWEIGHT(list);
+  if (type === TYPEWEIGHT_NULL) {
+    return null;
+  }
+  else if (type === TYPEWEIGHT_LIST) {
+    if (list.length === 0) {
+      return [ ];
+    }
+    var copy = CLONE(list);
+    copy.pop();
+
+    return copy;
+  }
+
+  WARN("POP", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+  return null;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief insert an element into a list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_UNSHIFT (list, value, unique) {
+  "use strict";
+
+  var type = TYPEWEIGHT(list);
+  if (type === TYPEWEIGHT_NULL) {
+    return [ value ];
+  }
+  else if (type === TYPEWEIGHT_LIST) {
+    if (unique) {
+      if (RELATIONAL_IN(value, list)) {
+        return list;
+      } 
+    }
+
+    var copy = CLONE(list);
+    copy.unshift(value);
+    return copy;
+  }
+
+  WARN("UNSHIFT", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief pops an element from a list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_SHIFT (list) {
+  "use strict";
+
+  var type = TYPEWEIGHT(list);
+  if (type === TYPEWEIGHT_NULL) {
+    return null;
+  }
+  else if (type === TYPEWEIGHT_LIST) {
+    if (list.length === 0) {
+      return [ ];
+    }
+    var copy = CLONE(list);
+    copy.shift();
+
+    return copy;
+  }
+
+  WARN("SHIFT", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+  return null;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief extract a slice from a list
@@ -2640,6 +3243,87 @@ function AQL_MEDIAN (values) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// @brief returns the pth percentile of all values
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_PERCENTILE (values, p, method) {
+  "use strict";
+
+  if (TYPEWEIGHT(values) !== TYPEWEIGHT_LIST) {
+    WARN("PERCENTILE", INTERNAL.errors.ERROR_QUERY_LIST_EXPECTED);
+    return null;
+  }
+
+  if (TYPEWEIGHT(p) !== TYPEWEIGHT_NUMBER) {
+    WARN("PERCENTILE", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+
+  if (p <= 0 || p > 100) {
+    WARN("PERCENTILE", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+ 
+  if (method === null || method === undefined) {
+    method = "rank";
+  }
+   
+  if (method !== "interpolation" && method !== "rank") {
+    WARN("PERCENTILE", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+
+  var copy = [ ], current, typeWeight;
+  var i, n;
+
+  for (i = 0, n = values.length; i < n; ++i) {
+    current = values[i];
+    typeWeight = TYPEWEIGHT(current);
+
+    if (typeWeight !== TYPEWEIGHT_NULL) {
+      if (typeWeight !== TYPEWEIGHT_NUMBER) {
+        WARN("PERCENTILE", INTERNAL.errors.ERROR_QUERY_INVALID_ARITHMETIC_VALUE);
+        return null;
+      }
+
+      copy.push(current);
+    }
+  }
+
+  if (copy.length === 0) {
+    return null;
+  }
+  else if (copy.length === 1) {
+    return copy[0];
+  }
+
+  copy.sort(RELATIONAL_CMP);
+
+  var idx, pos;
+  if (method === "interpolation") {
+    // interpolation method
+    idx = p * (copy.length + 1) / 100;
+    pos = Math.floor(idx);
+    var delta = idx - pos;
+
+    if (pos >= copy.length) {
+      return NUMERIC_VALUE(copy[copy.length - 1]);
+    }
+    return NUMERIC_VALUE(delta * (copy[pos] - copy[pos - 1]) + copy[pos - 1]);
+  }
+  else {
+    // rank method
+    idx = p * (copy.length) / 100;
+    pos = Math.ceil(idx);
+
+    if (pos >= copy.length) {
+      return NUMERIC_VALUE(copy[copy.length - 1]);
+    }
+    return NUMERIC_VALUE(copy[pos - 1]);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// @brief variance of all values
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -2788,7 +3472,7 @@ function AQL_NEAR (collection, latitude, longitude, limit, distanceAttribute) {
     THROW("NEAR", INTERNAL.errors.ERROR_QUERY_GEO_INDEX_MISSING, collection);
   }
 
-  var result = COLLECTION(collection).NEAR(idx, latitude, longitude, limit);
+  var result = COLLECTION(collection).NEAR(idx.id, latitude, longitude, limit);
 
   if (distanceAttribute === null || distanceAttribute === undefined) {
     return result.documents;
@@ -2814,24 +3498,24 @@ function AQL_NEAR (collection, latitude, longitude, limit, distanceAttribute) {
 function AQL_WITHIN (collection, latitude, longitude, radius, distanceAttribute) {
   "use strict";
 
+  var weight = TYPEWEIGHT(distanceAttribute);
+  if (weight !== TYPEWEIGHT_NULL && weight !== TYPEWEIGHT_STRING) {
+    WARN("WITHIN", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+  }
+  
   if (isCoordinator) {
     var query = COLLECTION(collection).within(latitude, longitude, radius);
     query._distance = distanceAttribute;
     return query.toArray();
   }
   
-  var weight = TYPEWEIGHT(distanceAttribute);
-  if (weight !== TYPEWEIGHT_NULL && weight !== TYPEWEIGHT_STRING) {
-    WARN("WITHIN", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
-  }
-    
   var idx = INDEX(COLLECTION(collection), [ "geo1", "geo2" ]);
 
   if (idx === null) {
     THROW("WITHIN", INTERNAL.errors.ERROR_QUERY_GEO_INDEX_MISSING, collection);
   }
 
-  var result = COLLECTION(collection).WITHIN(idx, latitude, longitude, radius);
+  var result = COLLECTION(collection).WITHIN(idx.id, latitude, longitude, radius);
 
   if (distanceAttribute === null || distanceAttribute === undefined) {
     return result.documents;
@@ -2846,6 +3530,92 @@ function AQL_WITHIN (collection, latitude, longitude, radius, distanceAttribute)
   }
 
   return documents;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return documents within a bounding rectangle 
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_WITHIN_RECTANGLE (collection, latitude1, longitude1, latitude2, longitude2) {
+  "use strict";
+
+  if (TYPEWEIGHT(latitude1) !== TYPEWEIGHT_NUMBER ||
+      TYPEWEIGHT(longitude1) !== TYPEWEIGHT_NUMBER ||
+      TYPEWEIGHT(latitude2) !== TYPEWEIGHT_NUMBER ||
+      TYPEWEIGHT(longitude2) !== TYPEWEIGHT_NUMBER) {
+    WARN("WITHIN_RECTANGLE", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+  
+  return COLLECTION(collection).withinRectangle(latitude1, longitude1, latitude2, longitude2).toArray();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return true if a point is contained inside a polygon
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_IS_IN_POLYGON (points, latitude, longitude) {
+  "use strict";
+  
+  if (TYPEWEIGHT(points) !== TYPEWEIGHT_LIST) {
+    WARN("POINT_IN_POLYGON", INTERNAL.errors.ERROR_QUERY_LIST_EXPECTED);
+    return false;
+  }
+
+  var searchLat, searchLon, pointLat, pointLon, geoJson = false;
+  if (TYPEWEIGHT(latitude) === TYPEWEIGHT_LIST) {
+    geoJson = AQL_TO_BOOL(longitude);
+    if (geoJson) {
+      // first list value is longitude, then latitude
+      searchLat = latitude[1];
+      searchLon = latitude[0];
+      pointLat = 1;
+      pointLon = 0;
+    }
+    else {
+      // first list value is latitude, then longitude
+      searchLat = latitude[0];
+      searchLon = latitude[1];
+      pointLat = 0;
+      pointLon = 1;
+    }
+  }
+  else if (TYPEWEIGHT(latitude) === TYPEWEIGHT_NUMBER &&
+           TYPEWEIGHT(longitude) === TYPEWEIGHT_NUMBER) {
+    searchLat = latitude;
+    searchLon = longitude;
+    pointLat = 0;
+    pointLon = 1;
+  }
+  else {
+    WARN("POINT_IN_POLYGON", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return false;
+  }
+  
+  var i, j = points.length - 1;
+  var oddNodes = false;
+
+  for (i = 0; i < points.length; ++i) {
+    if (TYPEWEIGHT(points[i]) !== TYPEWEIGHT_LIST) {
+      continue;
+    }
+
+    if (((points[i][pointLat] < searchLat && points[j][pointLat] >= searchLat) || 
+         (points[j][pointLat] < searchLat && points[i][pointLat] >= searchLat)) &&
+        (points[i][pointLon] <= searchLon || points[j][pointLon] <= searchLon)) {
+      oddNodes ^= ((points[i][pointLon] + (searchLat - points[i][pointLat]) / 
+                   (points[j][pointLat] - points[i][pointLat]) * 
+                    (points[j][pointLon] - points[i][pointLon])) < searchLon);
+    }
+
+    j = i;
+  }
+
+  if (oddNodes) {
+    return true;
+  }
+
+  return false;
 }
 
 // -----------------------------------------------------------------------------
@@ -3045,8 +3815,7 @@ function AQL_HAS (element, name) {
   }
 
   if (weight !== TYPEWEIGHT_DOCUMENT) {
-    WARN("HAS", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
-    return;
+    return false;
   }
 
   return element.hasOwnProperty(AQL_TO_STRING(name));
@@ -3068,7 +3837,7 @@ function AQL_ATTRIBUTES (element, removeInternal, sort) {
     var result = [ ];
 
     Object.keys(element).forEach(function(k) {
-      if (k.substring(0, 1) !== '_') {
+      if (k[0] !== '_') {
         result.push(k);
       }
     });
@@ -3081,6 +3850,54 @@ function AQL_ATTRIBUTES (element, removeInternal, sort) {
   }
 
   return KEYS(element, sort);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return the attribute values of a document as a list
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_VALUES (element, removeInternal) {
+  "use strict";
+
+  if (TYPEWEIGHT(element) !== TYPEWEIGHT_DOCUMENT) {
+    WARN("VALUES", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+
+  var result = [ ], a;
+
+  for (a in element) {
+    if (element.hasOwnProperty(a)) {
+      if (a[0] !== '_' || ! removeInternal) {
+        result.push(element[a]);
+      } 
+    }
+  }
+
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief assemble a document from two lists
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_ZIP (keys, values) {
+  "use strict";
+
+  if (TYPEWEIGHT(keys) !== TYPEWEIGHT_LIST ||
+      TYPEWEIGHT(values) !== TYPEWEIGHT_LIST ||
+      keys.length !== values.length) {
+    WARN("ZIP", INTERNAL.errors.ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
+    return null;
+  }
+
+  var result = { }, i, n = keys.length;
+
+  for (i = 0; i < n; ++i) {
+    result[AQL_TO_STRING(keys[i])] = values[i];
+  }
+
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4130,7 +4947,6 @@ function TRAVERSAL_FUNC (func,
     weight : params.weight,
     defaultWeight : params.defaultWeight,
     prefill : params.prefill
-
   };
 
   if (params.followEdges) {
@@ -4225,24 +5041,22 @@ function FILTER_RESTRICTION (list, restrictionList) {
 ////////////////////////////////////////////////////////////////////////////////
 
 function DOCUMENTS_BY_EXAMPLE (collectionList, example) {
-  var res = [];
-  if (example === "null") {
-    example = [{}];
-  }
-  if (!example) {
-    example = [{}];
+  var res = [ ];
+  if (example === "null" || example === null || ! example) {
+    example = [ { } ];
   }
   if (typeof example === "string") {
-    example = {_id : example};
+    example = { _id : example };
   }
-  if (!Array.isArray(example)) {
-    example = [example];
+  if (! Array.isArray(example)) {
+    example = [ example ];
   }
-  var tmp = [];
+  var tmp = [ ];
   example.forEach(function (e) {
     if (typeof e === "string") {
-      tmp.push({_id : e});
-    } else {
+      tmp.push({ _id : e });
+    } 
+    else {
       tmp.push(e);
     }
   });
@@ -4789,6 +5603,9 @@ function CALCULATE_SHORTEST_PATHES_WITH_DIJKSTRA (graphName, options) {
   params.paths = true;
   if (options.edgeExamples) {
     params.followEdges = options.edgeExamples;
+    if (! Array.isArray(params.followEdges)) {
+      params.followEdges = [ params.followEdges ];
+    }
   }
   if (options.edgeCollectionRestriction) {
     params.edgeCollectionRestriction = options.edgeCollectionRestriction;
@@ -5214,7 +6031,7 @@ function AQL_GRAPH_DISTANCE_TO (graphName,
 /// * *connectName*        : The result attribute which
 ///  contains the connection.
 /// * *options* (optional) : An object containing options, see
-///  [Graph Traversals](../AQL/GraphOperations.html#graph_traversal):
+///  [Graph Traversals](../Aql/GraphOperations.html#graph_traversal):
 ///
 /// @EXAMPLES
 ///
@@ -5257,13 +6074,13 @@ function AQL_GRAPH_TRAVERSAL_TREE (graphName,
     return null;
   }
   options.fromVertexExample = startVertexExample;
-  options.direction =  direction;
+  options.direction = direction;
 
   var startVertices = RESOLVE_GRAPH_START_VERTICES(graphName, options);
-  var factory = TRAVERSAL.generalGraphDatasourceFactory(graphName), r;
+  var factory = TRAVERSAL.generalGraphDatasourceFactory(graphName);
 
   startVertices.forEach(function (f) {
-    r = TRAVERSAL_FUNC("GRAPH_TRAVERSAL_TREE",
+    var r = TRAVERSAL_FUNC("GRAPH_TRAVERSAL_TREE",
       factory,
       TO_ID(f),
       undefined,
@@ -5395,7 +6212,9 @@ function AQL_NEIGHBORS (vertexCollection,
 ///      depth a path to a neighbor must have to be returned (default is 1).
 ///   * *maxDepth*                         : Defines the maximal
 ///      depth a path to a neighbor must have to be returned (default is 1).
-///
+///   * *maxIterations*: the maximum number of iterations that the traversal is
+///      allowed to perform. It is sensible to set this number so unbounded traversals
+/// will terminate at some point.
 /// @EXAMPLES
 ///
 /// A route planner example, all neighbors of locations with a distance of either
@@ -5445,6 +6264,7 @@ function AQL_GRAPH_NEIGHBORS (graphName,
     factory = TRAVERSAL.generalGraphDatasourceFactory(graphName);
   params.minDepth = options.minDepth === undefined ? 1 : options.minDepth;
   params.maxDepth = options.maxDepth === undefined ? 1 : options.maxDepth;
+  params.maxIterations = options.maxIterations;
   params.paths = true;
   params.visitor = TRAVERSAL_NEIGHBOR_VISITOR;
   var fromVertices = RESOLVE_GRAPH_TO_FROM_VERTICES(graphName, options);
@@ -5456,6 +6276,9 @@ function AQL_GRAPH_NEIGHBORS (graphName,
   }
   if (options.vertexCollectionRestriction) {
     params.filterVertexCollections = options.vertexCollectionRestriction;
+  }
+  if (options.endVertexCollectionRestriction) {
+    params.filterVertexCollections = options.endVertexCollectionRestriction;
   }
   fromVertices.forEach(function (v) {
     var e = TRAVERSAL_FUNC("GRAPH_NEIGHBORS",
@@ -5516,6 +6339,8 @@ function AQL_GRAPH_NEIGHBORS (graphName,
 ///   * *maxDepth*                         : Defines the maximal length of a path from an edge
 ///  to a vertex (default is 1, which means only the edges directly connected to a vertex would
 ///  be returned).
+///   * *maxIterations*: the maximum number of iterations that the traversal is
+///      allowed to perform. It is sensible to set this number so unbounded traversals
 ///
 /// @EXAMPLES
 ///
@@ -6677,6 +7502,10 @@ exports.AQL_LIKE = AQL_LIKE;
 exports.AQL_LEFT = AQL_LEFT;
 exports.AQL_RIGHT = AQL_RIGHT;
 exports.AQL_TRIM = AQL_TRIM;
+exports.AQL_LTRIM = AQL_LTRIM;
+exports.AQL_RTRIM = AQL_RTRIM;
+exports.AQL_SPLIT = AQL_SPLIT;
+exports.AQL_SUBSTITUTE = AQL_SUBSTITUTE;
 exports.AQL_FIND_FIRST = AQL_FIND_FIRST;
 exports.AQL_FIND_LAST = AQL_FIND_LAST;
 exports.AQL_TO_BOOL = AQL_TO_BOOL;
@@ -6705,6 +7534,16 @@ exports.AQL_RANGE = AQL_RANGE;
 exports.AQL_UNIQUE = AQL_UNIQUE;
 exports.AQL_UNION = AQL_UNION;
 exports.AQL_UNION_DISTINCT = AQL_UNION_DISTINCT;
+exports.AQL_CALL = AQL_CALL;
+exports.AQL_APPLY = AQL_APPLY;
+exports.AQL_REMOVE_VALUE = AQL_REMOVE_VALUE; 
+exports.AQL_REMOVE_VALUES = AQL_REMOVE_VALUES; 
+exports.AQL_REMOVE_NTH = AQL_REMOVE_NTH; 
+exports.AQL_PUSH = AQL_PUSH;
+exports.AQL_APPEND = AQL_APPEND;
+exports.AQL_POP = AQL_POP;
+exports.AQL_SHIFT = AQL_SHIFT;
+exports.AQL_UNSHIFT = AQL_UNSHIFT;
 exports.AQL_SLICE = AQL_SLICE;
 exports.AQL_MINUS = AQL_MINUS;
 exports.AQL_INTERSECTION = AQL_INTERSECTION;
@@ -6714,12 +7553,15 @@ exports.AQL_MIN = AQL_MIN;
 exports.AQL_SUM = AQL_SUM;
 exports.AQL_AVERAGE = AQL_AVERAGE;
 exports.AQL_MEDIAN = AQL_MEDIAN;
+exports.AQL_PERCENTILE = AQL_PERCENTILE;
 exports.AQL_VARIANCE_SAMPLE = AQL_VARIANCE_SAMPLE;
 exports.AQL_VARIANCE_POPULATION = AQL_VARIANCE_POPULATION;
 exports.AQL_STDDEV_SAMPLE = AQL_STDDEV_SAMPLE;
 exports.AQL_STDDEV_POPULATION = AQL_STDDEV_POPULATION;
 exports.AQL_NEAR = AQL_NEAR;
 exports.AQL_WITHIN = AQL_WITHIN;
+exports.AQL_WITHIN_RECTANGLE = AQL_WITHIN_RECTANGLE;
+exports.AQL_IS_IN_POLYGON = AQL_IS_IN_POLYGON;
 exports.AQL_FULLTEXT = AQL_FULLTEXT;
 exports.AQL_PATHS = AQL_PATHS;
 exports.AQL_SHORTEST_PATH = AQL_SHORTEST_PATH;
@@ -6752,6 +7594,8 @@ exports.AQL_PARSE_IDENTIFIER = AQL_PARSE_IDENTIFIER;
 exports.AQL_SKIPLIST = AQL_SKIPLIST;
 exports.AQL_HAS = AQL_HAS;
 exports.AQL_ATTRIBUTES = AQL_ATTRIBUTES;
+exports.AQL_VALUES = AQL_VALUES;
+exports.AQL_ZIP = AQL_ZIP;
 exports.AQL_UNSET = AQL_UNSET;
 exports.AQL_KEEP = AQL_KEEP;
 exports.AQL_MERGE = AQL_MERGE;

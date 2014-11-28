@@ -12,6 +12,9 @@
     * [Upgrading in general](Installing/Upgrading.md)
   * [Cluster setup](Installing/Cluster.md)
 <!-- 2 -->
+* [Whats New](NewFeatures/NewFeatures23.md)
+  * [Whats New in 2.2](NewFeatures/NewFeatures22.md)
+  * [Whats New in 2.1](NewFeatures/NewFeatures21.md)
 * [First Steps](FirstSteps/README.md)
   * [Getting Familiar](FirstSteps/GettingFamiliar.md)
   * [The ArangoDB Server](FirstSteps/Arangod.md)
@@ -134,7 +137,6 @@
   * [Example Setup](Replication/ExampleSetup.md)
   * [Replication Limitations](Replication/Limitations.md)
   * [Replication Overhead](Replication/Overhead.md)
-  * [Replication Events](Replication/Events.md)
 <!-- 19 -->
 * [Sharding](Sharding/README.md)
   * [How to try it out](Sharding/HowTo.md)
@@ -204,6 +206,7 @@
     * [JSON Documents](HttpBulkImports/ImportingSelfContained.md)
     * [Headers and Values](HttpBulkImports/ImportingHeadersAndValues.md)
   * [Batch Requests](HttpBatchRequest/README.md)
+  * [Tasks](HttpTasks/README.md)
   * [Monitoring](HttpAdministrationAndMonitoring/README.md)
   * [User Management](HttpUserManagement/README.md)
   * [Async Result](HttpAsyncResultsManagement/README.md)
@@ -227,12 +230,14 @@
 <!-- 26 -->
 * [Administrating ArangoDB](AdministratingArango/README.md)
 <!-- 27 -->
-* [Handling Indexes](IndexHandling/README.md)
-  * [Cap Constraint](IndexHandling/Cap.md)
-  * [Geo Indexes](IndexHandling/Geo.md)
-  * [Fulltext Indexes](IndexHandling/Fulltext.md)
-  * [Hash Indexes](IndexHandling/Hash.md)
-  * [Skip-Lists](IndexHandling/Skiplist.md)
+* [Indexing](IndexHandling/README.md)
+  * [Index Basics](IndexHandling/IndexBasics.md)
+  * [Working with Indexes](IndexHandling/WorkingWithIndexes.md)
+    * [Hash Indexes](IndexHandling/Hash.md)
+    * [Skiplists](IndexHandling/Skiplist.md)
+    * [Fulltext Indexes](IndexHandling/Fulltext.md)
+    * [Geo Indexes](IndexHandling/Geo.md)
+    * [Cap Constraint](IndexHandling/Cap.md)
 <!-- 28 -->
 * [Datafile Debugger](DatafileDebugger/README.md)
 <!-- 29 -->

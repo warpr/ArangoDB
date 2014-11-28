@@ -147,7 +147,7 @@
     },
 
     getDocuments: function (callback) {
-      window.progressView.show("Fetching documents...");
+      window.progressView.showWithDelay(300, "Fetching documents...");
       var self = this,
           query,
           bindVars,
@@ -159,7 +159,9 @@
         "count": this.getPageSize()
       };
 
-      query = "FOR x in @@collection let att = slice(ATTRIBUTES(x), 0, 10)";
+      // fetch just the first 25 attributes of the document
+      // this number is arbitrary, but may reduce HTTP traffic a bit
+      query = "FOR x IN @@collection LET att = SLICE(ATTRIBUTES(x), 0, 25)";
       query += this.setFiltersForQuery(bindVars);
       // Sort result, only useful for a small number of docs
       if (this.getTotal() < this.MAX_SORT) {
@@ -173,14 +175,14 @@
       }
 
       if (bindVars.count !== 'all') {
-        query += " LIMIT @offset, @count RETURN keep(x, att)";
+        query += " LIMIT @offset, @count RETURN KEEP(x, att)";
       }
       else {
         tmp = {
           "@collection": this.collectionID
         };
         bindVars = tmp;
-        query += " RETURN keep(x, att)";
+        query += " RETURN KEEP(x, att)";
       }
 
       queryObj = {
@@ -201,6 +203,7 @@
         data: JSON.stringify(queryObj),
         contentType: "application/json",
         success: function(data) {
+          window.progressView.toShow = false;
           self.clearDocuments();
           if (data.extra && data.extra.fullCount !== undefined) {
             self.setTotal(data.extra.fullCount);
@@ -254,7 +257,7 @@
       return queryObj;
     },
 
-    updloadDocuments : function (file) {
+    uploadDocuments : function (file) {
       var result;
       $.ajax({
         type: "POST",

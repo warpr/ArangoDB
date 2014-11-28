@@ -116,6 +116,7 @@ namespace triagens {
         ExecutionNode (ExecutionPlan* plan, size_t id)
           : _id(id), 
             _estimatedCost(0.0), 
+            _estimatedNrItems(0),
             _estimatedCostSet(false),
             _varUsageValid(false),
             _plan(plan),
@@ -383,19 +384,25 @@ namespace triagens {
 /// @brief estimate the cost of the node . . .
 ////////////////////////////////////////////////////////////////////////////////
         
-        double getCost () const {
+        double getCost (size_t& nrItems) const {
           if (! _estimatedCostSet) {
-            _estimatedCost = estimateCost();
+            _estimatedCost = estimateCost(_estimatedNrItems);
+            nrItems = _estimatedNrItems;
             _estimatedCostSet = true;
             TRI_ASSERT(_estimatedCost >= 0.0);
+          }
+          else {
+            nrItems = _estimatedNrItems;
           }
           return _estimatedCost;
         };
 
-        virtual double estimateCost () const = 0;
+////////////////////////////////////////////////////////////////////////////////
+/// @brief this actually estimates the costs as well as the number of items
+/// coming out of the node
+////////////////////////////////////////////////////////////////////////////////
         
-        //TODO nodes should try harder to estimate their own cost, i.e. the cost
-        //of performing the operation of the node . . .
+        virtual double estimateCost (size_t& nrItems) const = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief walk a complete execution plan recursively
@@ -674,10 +681,13 @@ namespace triagens {
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief _estimatedCost = 0 if uninitialised and otherwise stores the result
 /// of estimateCost(), the bool indicates if the cost has been set, it starts
-/// out as false
+/// out as false, _estimatedNrItems is the estimated number of items coming
+/// out of this node.
 ////////////////////////////////////////////////////////////////////////////////
 
         double mutable _estimatedCost;
+
+        size_t mutable _estimatedNrItems;
 
         bool mutable _estimatedCostSet;
 
@@ -761,7 +771,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return SINGLETON;
         }
 
@@ -791,9 +801,7 @@ namespace triagens {
 /// @brief the cost of a singleton is 1
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 1.0;
-        }
+        virtual double estimateCost (size_t&) const override final;
 
     };
 
@@ -837,7 +845,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return ENUMERATE_COLLECTION;
         }
 
@@ -862,10 +870,7 @@ namespace triagens {
 /// its unique dependency
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final { 
-          return static_cast<double>(_collection->count()) * _dependencies.at(0)->getCost(); 
-          //FIXME improve this estimate . . .
-        }
+        virtual double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesSetHere
@@ -990,7 +995,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return ENUMERATE_LIST;
         }
 
@@ -1014,10 +1019,7 @@ namespace triagens {
 /// @brief the cost of an enumerate list node is . . . FIXME
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 1000 * _dependencies.at(0)->getCost(); 
-          //FIXME improve this estimate . . .
-        }
+        virtual double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -1107,7 +1109,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return INDEX_RANGE;
         }
 
@@ -1125,6 +1127,22 @@ namespace triagens {
 
         Collection const* collection () const {
           return _collection;
+        }
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return out variable
+////////////////////////////////////////////////////////////////////////////////
+
+        Variable const* outVariable () const {
+          return _outVariable;
+        }
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief return the ranges
+////////////////////////////////////////////////////////////////////////////////
+        
+        std::vector<std::vector<RangeInfo>> const& ranges () const { 
+          return _ranges;
         }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1163,10 +1181,10 @@ namespace triagens {
 /// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
 
-        double estimateCost () const override final;
+        virtual double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief check whether the pattern matches this nodes index
+/// @brief check whether the pattern matches this node's index
 ////////////////////////////////////////////////////////////////////////////////
 
         IndexMatch MatchesIndex (IndexMatchVec const& pattern) const;
@@ -1266,7 +1284,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return LIMIT;
         }
 
@@ -1293,14 +1311,10 @@ namespace triagens {
         }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a limit node is the minimum of the _limit, and the cost
-/// the dependency . . .
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 1.005 * (std::min)(static_cast<double>(_limit), _dependencies.at(0)->getCost());
-          //FIXME improve this estimate . . .
-        }
+        double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief tell the node to fully count what it will limit
@@ -1381,7 +1395,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return CALCULATION;
         }
 
@@ -1418,14 +1432,10 @@ namespace triagens {
         }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a calculation node is the cost of the unique dependency
-//  times a constant
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 2 * _dependencies.at(0)->getCost(); 
-          //FIXME improve this estimate . . . 
-        }
+        double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -1517,7 +1527,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return SUBQUERY;
         }
 
@@ -1556,14 +1566,10 @@ namespace triagens {
         }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a subquery node is the cost of its unique dependency
-/// times a small constant
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 1.005 * _dependencies.at(0)->getCost();
-          //FIXME improve this estimate . . .
-        }
+        double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -1650,7 +1656,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return FILTER;
         }
 
@@ -1671,14 +1677,10 @@ namespace triagens {
                                       bool withProperties) const;
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a filter node is . . . FIXME
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return _dependencies.at(0)->getCost() * 0.105;
-          //FIXME! 0.105 is the cost of doing the filter node under the
-          //assumption that it returns 10% of the results of its dependency
-        }
+        double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -1718,9 +1720,10 @@ namespace triagens {
       };
 
       std::vector<std::tuple<ExecutionNode const*, std::string, bool>> criteria;
-      bool isValid   = true;
-      bool isComplex = false;
-      bool canThrow  = false;
+      bool isValid         = true;
+      bool isDeterministic = true;
+      bool isComplex       = false;
+      bool canThrow        = false;
           
       Match isCoveredBy (SortInformation const& other) {
         if (! isValid || ! other.isValid) {
@@ -1797,7 +1800,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return SORT;
         }
 
@@ -1832,16 +1835,10 @@ namespace triagens {
         }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a sort node is . . . FIXME
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          double depCost = _dependencies.at(0)->getCost();
-          if (depCost <= 3.0) {
-            return depCost;
-          }
-          return log(depCost) * depCost;
-        }
+        double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -1936,7 +1933,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return AGGREGATE;
         }
 
@@ -1957,13 +1954,10 @@ namespace triagens {
                                       bool withProperties) const;
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of an aggregate node is . . . FIXME
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 2 * _dependencies.at(0)->getCost();
-          //FIXME improve this estimate . . .
-        }
+        double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief whether or not the node has an outVariable (i.e. INTO ...)
@@ -2056,7 +2050,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return RETURN;
         }
 
@@ -2077,12 +2071,10 @@ namespace triagens {
                                       bool withProperties) const;
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a return node is the cost of its only dependency . . .
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return _dependencies.at(0)->getCost();
-        }
+        double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -2175,6 +2167,14 @@ namespace triagens {
           return _collection;
         }
 
+////////////////////////////////////////////////////////////////////////////////
+/// @brief estimateCost
+/// Note that all the modifying nodes use this estimateCost method which is
+/// why we can make it final here.
+////////////////////////////////////////////////////////////////////////////////
+        
+        double estimateCost (size_t&) const override final;
+
 // -----------------------------------------------------------------------------
 // --SECTION--                                               protected variables
 // -----------------------------------------------------------------------------
@@ -2243,7 +2243,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return REMOVE;
         }
 
@@ -2262,16 +2262,6 @@ namespace triagens {
         virtual ExecutionNode* clone (ExecutionPlan* plan,
                                       bool withDependencies,
                                       bool withProperties) const;
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a remove node is a multiple of the cost of its unique 
-/// dependency
-////////////////////////////////////////////////////////////////////////////////
-        
-        double estimateCost () const override final {
-          return _dependencies.at(0)->getCost();
-          // TODO: improve this estimate!
-        }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -2356,7 +2346,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return INSERT;
         }
 
@@ -2375,15 +2365,6 @@ namespace triagens {
         virtual ExecutionNode* clone (ExecutionPlan* plan,
                                       bool withDependencies,
                                       bool withProperties) const;
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of an insert node is a multiple of the cost of its unique 
-/// dependency
-////////////////////////////////////////////////////////////////////////////////
-        
-        double estimateCost () const override final {
-          return 1000 * _dependencies.at(0)->getCost(); //FIXME change this!
-        }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -2471,7 +2452,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return UPDATE;
         }
 
@@ -2490,15 +2471,6 @@ namespace triagens {
         virtual ExecutionNode* clone (ExecutionPlan* plan,
                                       bool withDependencies,
                                       bool withProperties) const;
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of an update node is a multiple of the cost of its unique 
-/// dependency
-////////////////////////////////////////////////////////////////////////////////
-        
-        double estimateCost () const override final {
-          return 1000 * _dependencies.at(0)->getCost(); //FIXME change this!
-        }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -2596,7 +2568,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return REPLACE;
         }
 
@@ -2615,15 +2587,6 @@ namespace triagens {
         virtual ExecutionNode* clone (ExecutionPlan* plan,
                                       bool withDependencies,
                                       bool withProperties) const;
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a replace node is a multiple of the cost of its unique 
-/// dependency
-////////////////////////////////////////////////////////////////////////////////
-        
-        double estimateCost () const override final {
-          return 1000 * _dependencies.at(0)->getCost(); //FIXME change this!
-        }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere
@@ -2708,7 +2671,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return NORESULTS;
         }
 
@@ -2738,9 +2701,7 @@ namespace triagens {
 /// @brief the cost of a NoResults is 0
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 0.0;
-        }
+        double estimateCost (size_t&) const override final;
 
     };
 
@@ -2785,7 +2746,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return REMOTE;
         }
 
@@ -2812,19 +2773,10 @@ namespace triagens {
         }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a remote node is that of its dependency,
-/// times a factor for extra HTTP work
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          if (_dependencies.size() == 1) {
-            // the 1.5 is an arbitrary factor to account for some overhead of the
-            // remote processing, HTTP communication etc.
-            return 1.5 * _dependencies[0]->estimateCost();
-          }
-
-          return 1.5;
-        }
+        double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief return the database
@@ -2968,7 +2920,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return SCATTER;
         }
 
@@ -2995,12 +2947,10 @@ namespace triagens {
         }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a scatter node is 1
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 1.0;
-        }
+        double estimateCost (size_t&) const override final;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief return the database
@@ -3071,7 +3021,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return DISTRIBUTE;
         }
 
@@ -3098,12 +3048,10 @@ namespace triagens {
         }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a distribute node is 1
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 1.0;
-        }
+        double estimateCost (size_t&) const override final;
       
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief return the database
@@ -3179,7 +3127,7 @@ namespace triagens {
 /// @brief return the type of the node
 ////////////////////////////////////////////////////////////////////////////////
 
-        NodeType getType () const override {
+        NodeType getType () const override final {
           return GATHER;
         }
 
@@ -3206,12 +3154,10 @@ namespace triagens {
         }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief the cost of a gather node is 1
+/// @brief estimateCost
 ////////////////////////////////////////////////////////////////////////////////
         
-        double estimateCost () const override final {
-          return 1.0; 
-        }
+        double estimateCost (size_t&) const override final;
       
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getVariablesUsedHere

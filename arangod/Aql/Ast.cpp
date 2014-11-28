@@ -57,19 +57,31 @@ AstNode const Ast::NullNode{ NODE_TYPE_VALUE, VALUE_TYPE_NULL };
 /// @brief initialise a singleton false node instance
 ////////////////////////////////////////////////////////////////////////////////
 
-AstNode const Ast::FalseNode{ false }; 
+AstNode const Ast::FalseNode{ false, VALUE_TYPE_BOOL }; 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief initialise a singleton true node instance
 ////////////////////////////////////////////////////////////////////////////////
 
-AstNode const Ast::TrueNode{ true }; 
+AstNode const Ast::TrueNode{ true, VALUE_TYPE_BOOL }; 
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief initialise a singleton zero node instance
+////////////////////////////////////////////////////////////////////////////////
+
+AstNode const Ast::ZeroNode{ static_cast<int64_t>(0), VALUE_TYPE_INT }; 
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief initialise a singleton empty string node instance
+////////////////////////////////////////////////////////////////////////////////
+
+AstNode const Ast::EmptyStringNode{ "", VALUE_TYPE_STRING }; 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief inverse comparison operators
 ////////////////////////////////////////////////////////////////////////////////
 
-std::unordered_map<int, AstNodeType> const Ast::ReverseOperators{ 
+std::unordered_map<int, AstNodeType> const Ast::NegatedOperators{ 
   { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_EQ), NODE_TYPE_OPERATOR_BINARY_NE },
   { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_NE), NODE_TYPE_OPERATOR_BINARY_EQ },
   { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_GT), NODE_TYPE_OPERATOR_BINARY_LE },
@@ -78,6 +90,18 @@ std::unordered_map<int, AstNodeType> const Ast::ReverseOperators{
   { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_LE), NODE_TYPE_OPERATOR_BINARY_GT },
   { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_IN), NODE_TYPE_OPERATOR_BINARY_NIN },
   { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_NIN), NODE_TYPE_OPERATOR_BINARY_IN }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief reverse comparison operators
+////////////////////////////////////////////////////////////////////////////////
+
+std::unordered_map<int, AstNodeType> const Ast::ReversedOperators{ 
+  { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_EQ), NODE_TYPE_OPERATOR_BINARY_EQ },
+  { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_GT), NODE_TYPE_OPERATOR_BINARY_LT },
+  { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_GE), NODE_TYPE_OPERATOR_BINARY_LE },
+  { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_LT), NODE_TYPE_OPERATOR_BINARY_GT },
+  { static_cast<int>(NODE_TYPE_OPERATOR_BINARY_LE), NODE_TYPE_OPERATOR_BINARY_GE }
 };
 
 // -----------------------------------------------------------------------------
@@ -606,6 +630,7 @@ AstNode* Ast::createNodeIterator (char const* variableName,
 ////////////////////////////////////////////////////////////////////////////////
 
 AstNode* Ast::createNodeValueNull () {
+  // performance optimization:
   // return a pointer to the singleton null node
   // note: this node is never registered nor freed
   return const_cast<AstNode*>(&NullNode);
@@ -616,11 +641,13 @@ AstNode* Ast::createNodeValueNull () {
 ////////////////////////////////////////////////////////////////////////////////
 
 AstNode* Ast::createNodeValueBool (bool value) {
+  // performance optimization:
   // return a pointer to the singleton bool nodes
   // note: these nodes are never registered nor freed
   if (value) {
     return const_cast<AstNode*>(&TrueNode);
   }
+
   return const_cast<AstNode*>(&FalseNode);
 }
 
@@ -629,6 +656,13 @@ AstNode* Ast::createNodeValueBool (bool value) {
 ////////////////////////////////////////////////////////////////////////////////
 
 AstNode* Ast::createNodeValueInt (int64_t value) {
+  if (value == 0) {
+    // performance optimization:
+    // return a pointer to the singleton zero node
+    // note: these nodes are never registered nor freed
+    return const_cast<AstNode*>(&ZeroNode);
+  }
+
   AstNode* node = createNode(NODE_TYPE_VALUE);
   node->setValueType(VALUE_TYPE_INT);
   node->setIntValue(value);
@@ -655,6 +689,13 @@ AstNode* Ast::createNodeValueDouble (double value) {
 AstNode* Ast::createNodeValueString (char const* value) {
   if (value == nullptr) {
     THROW_ARANGO_EXCEPTION(TRI_ERROR_OUT_OF_MEMORY);
+  }
+
+  if (*value == '\0') {
+    // performance optimization:
+    // return a pointer to the singleton empty string node
+    // note: these nodes are never registered nor freed
+    return const_cast<AstNode*>(&EmptyStringNode);
   }
 
   AstNode* node = createNode(NODE_TYPE_VALUE);
@@ -864,7 +905,7 @@ void Ast::injectBindParameters (BindParameters& parameters) {
 
 AstNode* Ast::replaceVariables (AstNode* node,
                                 std::unordered_map<VariableId, Variable const*> const& replacements) {
-  auto func = [&](AstNode* node, void*) -> AstNode* {
+  auto visitor = [&](AstNode* node, void*) -> AstNode* {
     if (node == nullptr) {
       return nullptr;
     }
@@ -885,7 +926,7 @@ AstNode* Ast::replaceVariables (AstNode* node,
     return node;
   };
 
-  return traverse(node, func, nullptr);
+  return traverse(node, visitor, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -893,7 +934,19 @@ AstNode* Ast::replaceVariables (AstNode* node,
 ////////////////////////////////////////////////////////////////////////////////
 
 void Ast::optimize () {
-  auto func = [&](AstNode* node, void*) -> AstNode* {
+  auto preVisitor = [&](AstNode const* node, void* data) -> void {
+    if (node->type == NODE_TYPE_FILTER) {
+      *(static_cast<bool*>(data)) = true;
+    }
+  };
+
+  auto postVisitor = [&](AstNode const* node, void* data) -> void {
+    if (node->type == NODE_TYPE_FILTER) {
+      *(static_cast<bool*>(data)) = false;
+    }
+  };
+
+  auto visitor = [&](AstNode* node, void* data) -> AstNode* {
     if (node == nullptr) {
       return nullptr;
     }
@@ -911,7 +964,7 @@ void Ast::optimize () {
     // binary operators
     if (node->type == NODE_TYPE_OPERATOR_BINARY_AND ||
         node->type == NODE_TYPE_OPERATOR_BINARY_OR) {
-      return optimizeBinaryOperatorLogical(node);
+      return optimizeBinaryOperatorLogical(node, *(static_cast<bool*>(data)));
     }
     
     if (node->type == NODE_TYPE_OPERATOR_BINARY_EQ ||
@@ -953,11 +1006,22 @@ void Ast::optimize () {
       return optimizeLet(node);
     }
 
+    // FILTER
+    if (node->type == NODE_TYPE_FILTER) {
+      return optimizeFilter(node);
+    }
+ 
+    // FOR
+    if (node->type == NODE_TYPE_FOR) {
+      return optimizeFor(node);
+    }
+
     return node;
   };
 
-  // optimization
-  _root = traverse(_root, func, nullptr);
+  // run the optimizations
+  bool canModifyResultType = false;
+  _root = traverse(_root, preVisitor, visitor, postVisitor, &canModifyResultType);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -965,7 +1029,7 @@ void Ast::optimize () {
 ////////////////////////////////////////////////////////////////////////////////
 
 std::unordered_set<Variable*> Ast::getReferencedVariables (AstNode const* node) {
-  auto func = [&](AstNode const* node, void* data) -> void {
+  auto visitor = [&](AstNode const* node, void* data) -> void {
     if (node == nullptr) {
       return;
     }
@@ -986,7 +1050,7 @@ std::unordered_set<Variable*> Ast::getReferencedVariables (AstNode const* node) 
   };
 
   std::unordered_set<Variable*> result;  
-  traverse(node, func, &result); 
+  traverse(node, visitor, &result); 
 
   return result;
 }
@@ -1047,6 +1111,19 @@ AstNode* Ast::clone (AstNode const* node) {
   }
 
   return copy;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief get the reversed operator for a comparison operator
+////////////////////////////////////////////////////////////////////////////////
+
+AstNodeType Ast::ReverseOperator (AstNodeType type) {
+  auto it = ReversedOperators.find(static_cast<int>(type));
+  if (it == ReversedOperators.end()) {
+    THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL, "invalid node type for inversed operator");
+  }
+  
+  return (*it).second;
 }
 
 // -----------------------------------------------------------------------------
@@ -1188,8 +1265,8 @@ AstNode* Ast::optimizeNotExpression (AstNode* node) {
     auto lhs = operand->getMember(0);
     auto rhs = operand->getMember(1);
 
-    auto it = ReverseOperators.find(static_cast<int>(operand->type));
-    TRI_ASSERT(it != ReverseOperators.end());
+    auto it = NegatedOperators.find(static_cast<int>(operand->type));
+    TRI_ASSERT(it != NegatedOperators.end());
 
     return createNodeBinaryOperator((*it).second, lhs, rhs); 
   }
@@ -1223,7 +1300,8 @@ AstNode* Ast::optimizeUnaryOperatorLogical (AstNode* node) {
 /// @brief optimizes the binary logical operators && and ||
 ////////////////////////////////////////////////////////////////////////////////
 
-AstNode* Ast::optimizeBinaryOperatorLogical (AstNode* node) {
+AstNode* Ast::optimizeBinaryOperatorLogical (AstNode* node,
+                                             bool canModifyResultType) {
   TRI_ASSERT(node != nullptr);
   TRI_ASSERT(node->type == NODE_TYPE_OPERATOR_BINARY_AND ||
              node->type == NODE_TYPE_OPERATOR_BINARY_OR);
@@ -1237,8 +1315,8 @@ AstNode* Ast::optimizeBinaryOperatorLogical (AstNode* node) {
   }
 
   if (lhs->isConstant()) {
+    // left operand is a constant value
     if (node->type == NODE_TYPE_OPERATOR_BINARY_AND) {
-      // left operand is a constant value
       if (lhs->isFalse()) {
         // return it if it is falsey
         return lhs;
@@ -1248,7 +1326,6 @@ AstNode* Ast::optimizeBinaryOperatorLogical (AstNode* node) {
       return rhs;
     }
     else if (node->type == NODE_TYPE_OPERATOR_BINARY_OR) {
-      // left operand is a constant value
       if (lhs->isTrue()) {
         // return it if it is trueish
         return lhs;
@@ -1256,6 +1333,29 @@ AstNode* Ast::optimizeBinaryOperatorLogical (AstNode* node) {
 
       // left-operand was falsey, now return right operand
       return rhs;
+    }
+  }
+
+  if (canModifyResultType) {
+    if (rhs->isConstant() && ! lhs->canThrow()) {
+      // right operand is a constant value
+      if (node->type == NODE_TYPE_OPERATOR_BINARY_AND) {
+        if (rhs->isFalse()) {
+          return createNodeValueBool(false);
+        }
+
+        // right-operand was trueish, now return it
+        return lhs;
+      }
+      else if (node->type == NODE_TYPE_OPERATOR_BINARY_OR) {
+        if (rhs->isTrue()) {
+          // return it if it is trueish
+          return createNodeValueBool(true);
+        }
+
+        // right-operand was falsey, now return left operand
+        return lhs;
+      }
     }
   }
 
@@ -1352,33 +1452,19 @@ AstNode* Ast::optimizeBinaryOperatorArithmetic (AstNode* node) {
   if (lhs->isConstant() && rhs->isConstant()) {
     // now calculate the expression result
     if (node->type == NODE_TYPE_OPERATOR_BINARY_PLUS) {
-      if (lhs->isStringValue() || lhs->isList() || lhs->isArray() ||
-          rhs->isStringValue() || rhs->isList() || rhs->isArray()) {
-        // + means string concatenation if one of the operands is a string, a list or an array
-        auto left  = lhs->castToString(this);
-        auto right = rhs->castToString(this);
-
-        TRI_ASSERT(left->type == NODE_TYPE_VALUE && left->value.type == VALUE_TYPE_STRING);
-        TRI_ASSERT(right->type == NODE_TYPE_VALUE && right->value.type == VALUE_TYPE_STRING);
-
-        if (*left->value.value._string == '\0') {
-          // left side is empty
-          return right;
-        }
-        else if (*right->value.value._string == '\0') {
-          // right side is empty
-          return left;
-        }
-
-        // must concat
-        char* concatenated = _query->registerStringConcat(left->value.value._string, right->value.value._string);
-        TRI_ASSERT(concatenated != nullptr);
-        return createNodeValueString(concatenated);
-      }
-
       // arithmetic +
       auto left  = lhs->castToNumber(this);
       auto right = rhs->castToNumber(this);
+
+      if (left->isNullValue() && ! lhs->isNullValue()) {
+        // conversion of lhs failed
+        return createNodeValueNull();
+      }
+      
+      if (right->isNullValue() && ! rhs->isNullValue()) {
+        // conversion of rhs failed
+        return createNodeValueNull();
+      }
 
       bool useDoublePrecision = (left->isDoubleValue() || right->isDoubleValue());
 
@@ -1400,6 +1486,16 @@ AstNode* Ast::optimizeBinaryOperatorArithmetic (AstNode* node) {
     else if (node->type == NODE_TYPE_OPERATOR_BINARY_MINUS) {
       auto left  = lhs->castToNumber(this);
       auto right = rhs->castToNumber(this);
+      
+      if (left->isNullValue() && ! lhs->isNullValue()) {
+        // conversion of lhs failed
+        return createNodeValueNull();
+      }
+      
+      if (right->isNullValue() && ! rhs->isNullValue()) {
+        // conversion of rhs failed
+        return createNodeValueNull();
+      }
 
       bool useDoublePrecision = (left->isDoubleValue() || right->isDoubleValue());
 
@@ -1421,6 +1517,16 @@ AstNode* Ast::optimizeBinaryOperatorArithmetic (AstNode* node) {
     else if (node->type == NODE_TYPE_OPERATOR_BINARY_TIMES) {
       auto left  = lhs->castToNumber(this);
       auto right = rhs->castToNumber(this);
+      
+      if (left->isNullValue() && ! lhs->isNullValue()) {
+        // conversion of lhs failed
+        return createNodeValueNull();
+      }
+      
+      if (right->isNullValue() && ! rhs->isNullValue()) {
+        // conversion of rhs failed
+        return createNodeValueNull();
+      }
 
       bool useDoublePrecision = (left->isDoubleValue() || right->isDoubleValue());
       
@@ -1442,6 +1548,16 @@ AstNode* Ast::optimizeBinaryOperatorArithmetic (AstNode* node) {
     else if (node->type == NODE_TYPE_OPERATOR_BINARY_DIV) {
       auto left  = lhs->castToNumber(this);
       auto right = rhs->castToNumber(this);
+      
+      if (left->isNullValue() && ! lhs->isNullValue()) {
+        // conversion of lhs failed
+        return createNodeValueNull();
+      }
+      
+      if (right->isNullValue() && ! rhs->isNullValue()) {
+        // conversion of rhs failed
+        return createNodeValueNull();
+      }
 
       bool useDoublePrecision = (left->isDoubleValue() || right->isDoubleValue());
       if (! useDoublePrecision) {
@@ -1472,6 +1588,16 @@ AstNode* Ast::optimizeBinaryOperatorArithmetic (AstNode* node) {
     else if (node->type == NODE_TYPE_OPERATOR_BINARY_MOD) {
       auto left  = lhs->castToNumber(this);
       auto right = rhs->castToNumber(this);
+      
+      if (left->isNullValue() && ! lhs->isNullValue()) {
+        // conversion of lhs failed
+        return createNodeValueNull();
+      }
+      
+      if (right->isNullValue() && ! rhs->isNullValue()) {
+        // conversion of rhs failed
+        return createNodeValueNull();
+      }
 
       bool useDoublePrecision = (left->isDoubleValue() || right->isDoubleValue());
       if (! useDoublePrecision) {
@@ -1615,6 +1741,62 @@ AstNode* Ast::optimizeLet (AstNode* node) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// @brief optimizes the FILTER statement 
+////////////////////////////////////////////////////////////////////////////////
+
+AstNode* Ast::optimizeFilter (AstNode* node) {
+  TRI_ASSERT(node != nullptr);
+  TRI_ASSERT(node->type == NODE_TYPE_FILTER);
+  TRI_ASSERT(node->numMembers() == 1);
+
+  AstNode* expression = node->getMember(0);
+
+  if (expression == nullptr || ! expression->isDeterministic()) {
+    return node;
+  }
+
+  if (expression->isTrue()) {
+    // optimize away the filter if it is always true
+    return createNodeFilter(createNodeValueBool(true));
+  }
+
+  if (expression->isFalse()) {
+    // optimize away the filter if it is always false
+    return createNodeFilter(createNodeValueBool(false));
+  }
+
+  return node; 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief optimizes the FOR statement 
+/// no real optimizations are done here, but we do an early check if the
+/// FOR loop operand is actually a list 
+////////////////////////////////////////////////////////////////////////////////
+
+AstNode* Ast::optimizeFor (AstNode* node) {
+  TRI_ASSERT(node != nullptr);
+  TRI_ASSERT(node->type == NODE_TYPE_FOR);
+  TRI_ASSERT(node->numMembers() == 2);
+
+  AstNode* expression = node->getMember(1);
+
+  if (expression == nullptr) {
+    return node;
+  }
+
+  if (expression->isConstant() && 
+      expression->type != NODE_TYPE_LIST) {
+    // right-hand operand to FOR statement is no list
+    THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_QUERY_LIST_EXPECTED,
+                                   TRI_errno_string(TRI_ERROR_QUERY_LIST_EXPECTED) + std::string(" as operand to FOR loop"));
+  }
+  
+  // no real optimizations will be done here  
+  return node; 
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// @brief create an AST node from JSON
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1669,11 +1851,44 @@ AstNode* Ast::nodeFromJson (TRI_json_t const* json) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief traverse the AST
+/// @brief traverse the AST, using pre- and post-order visitors
 ////////////////////////////////////////////////////////////////////////////////
 
 AstNode* Ast::traverse (AstNode* node, 
-                        std::function<AstNode*(AstNode*, void*)> func,
+                        std::function<void(AstNode const*, void*)> preVisitor,
+                        std::function<AstNode*(AstNode*, void*)> visitor,
+                        std::function<void(AstNode const*, void*)> postVisitor,
+                        void* data) {
+  if (node == nullptr) {
+    return nullptr;
+  }
+ 
+  preVisitor(node, data);
+  size_t const n = node->numMembers();
+
+  for (size_t i = 0; i < n; ++i) {
+    auto member = node->getMember(i);
+
+    if (member != nullptr) {
+      AstNode* result = traverse(member, preVisitor, visitor, postVisitor, data);
+
+      if (result != node) {
+        node->changeMember(i, result);
+      }
+    }
+  }
+
+  auto result = visitor(node, data);
+  postVisitor(node, data);
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief traverse the AST, using a visitor
+////////////////////////////////////////////////////////////////////////////////
+
+AstNode* Ast::traverse (AstNode* node, 
+                        std::function<AstNode*(AstNode*, void*)> visitor,
                         void* data) {
   if (node == nullptr) {
     return nullptr;
@@ -1685,7 +1900,7 @@ AstNode* Ast::traverse (AstNode* node,
     auto member = node->getMember(i);
 
     if (member != nullptr) {
-      AstNode* result = traverse(member, func, data);
+      AstNode* result = traverse(member, visitor, data);
 
       if (result != node) {
         node->changeMember(i, result);
@@ -1693,15 +1908,15 @@ AstNode* Ast::traverse (AstNode* node,
     }
   }
 
-  return func(node, data);
+  return visitor(node, data);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief traverse the AST, with const nodes
+/// @brief traverse the AST using a visitor, with const nodes
 ////////////////////////////////////////////////////////////////////////////////
 
 void Ast::traverse (AstNode const* node, 
-                    std::function<void(AstNode const*, void*)> func,
+                    std::function<void(AstNode const*, void*)> visitor,
                     void* data) {
   if (node == nullptr) {
     return;
@@ -1713,11 +1928,11 @@ void Ast::traverse (AstNode const* node,
     auto member = node->getMember(i);
 
     if (member != nullptr) {
-      traverse(const_cast<AstNode const*>(member), func, data);
+      traverse(const_cast<AstNode const*>(member), visitor, data);
     }
   }
 
-  func(node, data);
+  visitor(node, data);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -78,12 +78,14 @@ AggregatorGroup::~AggregatorGroup () {
 void AggregatorGroup::initialize (size_t capacity) {
   TRI_ASSERT(capacity > 0);
 
+  groupValues.clear();
+  collections.clear();
   groupValues.reserve(capacity);
   collections.reserve(capacity);
 
   for (size_t i = 0; i < capacity; ++i) {
-    groupValues[i] = AqlValue();
-    collections[i] = nullptr;
+    groupValues.emplace_back();
+    collections.push_back(nullptr);
   }
 }
 
@@ -92,7 +94,8 @@ void AggregatorGroup::reset () {
     delete (*it);
   }
   groupBlocks.clear();
-  groupValues[0].erase();
+  groupValues[0].erase();   // only need to erase [0], because we have
+                            // only copies of references anyway
 }
 
 void AggregatorGroup::addValues (AqlItemBlock const* src,
@@ -409,7 +412,7 @@ size_t ExecutionBlock::skipSome (size_t atLeast, size_t atMost) {
 bool ExecutionBlock::skip (size_t number) {
   size_t skipped = skipSome(number, number);
   size_t nr = skipped;
-  while ( nr != 0 && skipped < number ){
+  while (nr != 0 && skipped < number) {
     nr = skipSome(number - skipped, number - skipped);
     skipped += nr;
   }
@@ -473,8 +476,7 @@ int ExecutionBlock::getOrSkipSome (size_t atLeast,
           return TRI_ERROR_NO_ERROR;
         }
         else {
-          if (! getBlock(atLeast - skipped,
-                         (std::max)(atMost - skipped, DefaultBatchSize))) {
+          if (! getBlock(atLeast - skipped, atMost - skipped)) {
             _done = true;
             break; // must still put things in the result from the collector . . .
           }
@@ -486,7 +488,7 @@ int ExecutionBlock::getOrSkipSome (size_t atLeast,
 
       if (cur->size() - _pos > atMost - skipped) {
         // The current block is too large for atMost:
-        if (! skipping){
+        if (! skipping) { 
           unique_ptr<AqlItemBlock> more(cur->slice(_pos, _pos + (atMost - skipped)));
           collector.push_back(more.get());
           more.release(); // do not delete it!
@@ -497,7 +499,7 @@ int ExecutionBlock::getOrSkipSome (size_t atLeast,
       else if (_pos > 0) {
         // The current block fits into our result, but it is already
         // half-eaten:
-        if(! skipping){
+        if (! skipping) {
           unique_ptr<AqlItemBlock> more(cur->slice(_pos, cur->size()));
           collector.push_back(more.get());
           more.release();
@@ -580,7 +582,7 @@ int SingletonBlock::shutdown (int errorCode) {
 }
 
 int SingletonBlock::getOrSkipSome (size_t,   // atLeast,
-                                   size_t,   // atMost,
+                                   size_t atMost,   // atMost,
                                    bool skipping,
                                    AqlItemBlock*& result,
                                    size_t& skipped) {
@@ -591,7 +593,7 @@ int SingletonBlock::getOrSkipSome (size_t,   // atLeast,
     return TRI_ERROR_NO_ERROR;
   }
 
-  if(! skipping){
+  if (! skipping) {
     result = new AqlItemBlock(1, getPlanNode()->getRegisterPlan()->nrRegs[getPlanNode()->getDepth()]);
     try {
       if (_inputRegisterValues != nullptr) {
@@ -717,7 +719,8 @@ AqlItemBlock* EnumerateCollectionBlock::getSome (size_t, // atLeast,
   }
 
   if (_buffer.empty()) {
-    if (! ExecutionBlock::getBlock(DefaultBatchSize, DefaultBatchSize)) {
+    size_t toFetch = (std::min)(DefaultBatchSize, atMost);
+    if (! ExecutionBlock::getBlock(toFetch, toFetch)) {
       _done = true;
       return nullptr;
     }
@@ -798,7 +801,8 @@ size_t EnumerateCollectionBlock::skipSome (size_t atLeast, size_t atMost) {
 
   while (skipped < atLeast) {
     if (_buffer.empty()) {
-      if (! getBlock(DefaultBatchSize, DefaultBatchSize)) {
+      size_t toFetch = (std::min)(DefaultBatchSize, atMost);
+      if (! getBlock(toFetch, toFetch)) {
         _done = true;
         return skipped;
       }
@@ -849,9 +853,12 @@ IndexRangeBlock::IndexRangeBlock (ExecutionEngine* engine,
   : ExecutionBlock(engine, en),
     _collection(en->collection()),
     _posInDocs(0),
-    _allBoundsConstant(true) {
+    _allBoundsConstant(true),
+    _skiplistIterator(nullptr),
+    _condition(&en->_ranges),
+    _freeCondition(false) {
    
-  std::vector<std::vector<RangeInfo>> const& orRanges = en->_ranges;
+  std::vector<std::vector<RangeInfo>> const& orRanges = en->_ranges;//TODO replace this with _condition
   TRI_ASSERT(en->_index != nullptr);
 
   TRI_ASSERT(orRanges.size() == 1);  // OR expressions not yet implemented
@@ -868,6 +875,10 @@ IndexRangeBlock::~IndexRangeBlock () {
     delete e;
   }
   _allVariableBoundExpressions.clear();
+
+  if (_freeCondition && _condition != nullptr) {
+    delete _condition;
+  }
 }
 
 int IndexRangeBlock::initialize () {
@@ -931,38 +942,38 @@ int IndexRangeBlock::initialize () {
       throw;
     }
   }
-  else {   // _allBoundsConstant
-    readIndex();
-  }
   return res;
 }
 
-bool IndexRangeBlock::readIndex () {
-  // This is either called from initialize if all bounds are constant,
-  // in this case it is never called again. If there is at least one
-  // variable bound, then readIndex is called once for every item coming
-  // in from our dependency. In that case, it is guaranteed that
-  //   _buffer   is not empty, in particular _buffer.front() is defined
-  //   _pos      points to a position in _buffer.front()
-  // Therefore, we can use the register values in _buffer.front() in row
-  // _pos to evaluate the variable bounds.
-  
-  if (_documents.empty()) {
-    _documents.reserve(DefaultBatchSize);
-  }
-  else {
-    _documents.clear();
-  }
+// init the index for reading, this should be called once per new incoming
+// block!
+//
+// This is either called every time we get a new incoming block. 
+// If all the bounds are constant, then in the case of hash, primary or edges
+// indexes it does nothing. In the case of a skiplist index, it creates a
+// skiplistIterator which is used by readIndex. If at least one bound is
+// variable, then this this also evaluates the IndexOrCondition required to
+// determine the values of the bounds. 
+//
+// It is guaranteed that
+//   _buffer   is not empty, in particular _buffer.front() is defined
+//   _pos      points to a position in _buffer.front()
+// Therefore, we can use the register values in _buffer.front() in row
+// _pos to evaluate the variable bounds.
 
+bool IndexRangeBlock::initIndex () {
+  ENTER_BLOCK
+  _flag = true; 
   auto en = static_cast<IndexRangeNode const*>(getPlanNode());
-  IndexOrCondition const* condition = &en->_ranges;
+  freeCondition();
+  _condition = &en->_ranges;
+  _freeCondition = false;
   
   TRI_ASSERT(en->_index != nullptr);
-   
-  std::unique_ptr<IndexOrCondition> newCondition;
 
   // Find out about the actual values for the bounds in the variable bound case:
   if (! _allBoundsConstant) {
+    std::unique_ptr<IndexOrCondition> newCondition;
     // The following are needed to evaluate expressions with local data from
     // the current incoming item:
     AqlItemBlock* cur = _buffer.front();
@@ -1071,30 +1082,87 @@ bool IndexRangeBlock::readIndex () {
 
       newCondition.get()->at(0).push_back(actualRange);
     }
-    
-    condition = newCondition.get();
+   
+    freeCondition(); 
+    _condition = newCondition.release();
+    _freeCondition = true;
   }
-  
+   
   if (en->_index->type == TRI_IDX_TYPE_PRIMARY_INDEX) {
-    readPrimaryIndex(*condition);
+    return true; //no initialization here!
   }
   else if (en->_index->type == TRI_IDX_TYPE_HASH_INDEX) {
-    readHashIndex(*condition);
+    return true; //no initialization here!
   }
-  else if (en->_index->type == TRI_IDX_TYPE_SKIPLIST_INDEX) {
-    readSkiplistIndex(*condition);
+  if (en->_index->type == TRI_IDX_TYPE_SKIPLIST_INDEX) {
+    initSkiplistIndex(*_condition);
+    return (_skiplistIterator != nullptr);
   }
   else if (en->_index->type == TRI_IDX_TYPE_EDGE_INDEX) {
-    readEdgeIndex(*condition);
+    return true; //no initialization here!
+  }
+          
+  THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL, "unexpected index type"); 
+  LEAVE_BLOCK;
+}
+
+void IndexRangeBlock::freeCondition () {
+  if (_condition != nullptr && _freeCondition) {
+    delete _condition;
+    _condition = nullptr;
+    _freeCondition = false;
+  }
+}
+
+// this is called every time everything in _documents has been passed on
+
+bool IndexRangeBlock::readIndex (size_t atMost) {
+  ENTER_BLOCK;
+  // this is called every time we want more in _documents. 
+  // For non-skiplist indexes (currently hash, primary, edge), this 
+  // only reads the index once, and never again (although there might be
+  // multiple calls to this function). For skiplists indexes, initIndex creates
+  // a skiplistIterator and readIndex just reads from the iterator until it is
+  // done. Then initIndex is read again and so on. This is to avoid reading the
+  // entire index when we only want a small number of documents. 
+  
+  if (_documents.empty()) {
+    _documents.reserve(atMost);
+  }
+  else { 
+    _documents.clear();
+  }
+  
+  auto en = static_cast<IndexRangeNode const*>(getPlanNode());
+  
+  if (en->_index->type == TRI_IDX_TYPE_PRIMARY_INDEX) {
+    if (_flag) {
+      readPrimaryIndex(*_condition);
+    }
+  }
+  else if (en->_index->type == TRI_IDX_TYPE_HASH_INDEX) {
+    if (_flag) {
+      readHashIndex(*_condition);
+    }
+  }
+  else if (en->_index->type == TRI_IDX_TYPE_SKIPLIST_INDEX) {
+    readSkiplistIndex(atMost);
+  }
+  else if (en->_index->type == TRI_IDX_TYPE_EDGE_INDEX) {
+    if (_flag) {
+      readEdgeIndex(*_condition); 
+    }
   }
   else {
     TRI_ASSERT(false);
   }
-
-  return (!_documents.empty());
+  _flag = false;
+  return (! _documents.empty());
+  LEAVE_BLOCK;
 }
 
 int IndexRangeBlock::initializeCursor (AqlItemBlock* items, size_t pos) {
+  ENTER_BLOCK;
   int res = ExecutionBlock::initializeCursor(items, pos);
   if (res != TRI_ERROR_NO_ERROR) {
     return res;
@@ -1102,19 +1170,17 @@ int IndexRangeBlock::initializeCursor (AqlItemBlock* items, size_t pos) {
   _pos = 0;
   _posInDocs = 0;
   
-  if (_allBoundsConstant && _documents.size() == 0) {
-    _done = true;
-  }
-
   return TRI_ERROR_NO_ERROR; 
+  LEAVE_BLOCK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief getSome
 ////////////////////////////////////////////////////////////////////////////////
 
-AqlItemBlock* IndexRangeBlock::getSome (size_t, // atLeast
+AqlItemBlock* IndexRangeBlock::getSome (size_t atLeast,
                                         size_t atMost) {
+  ENTER_BLOCK;
   if (_done) {
     return nullptr;
   }
@@ -1128,18 +1194,45 @@ AqlItemBlock* IndexRangeBlock::getSome (size_t, // atLeast
     // try again!
 
     if (_buffer.empty()) {
-      if (! ExecutionBlock::getBlock(DefaultBatchSize, DefaultBatchSize)) {
+      size_t toFetch = (std::min)(DefaultBatchSize, atMost);
+      if (! ExecutionBlock::getBlock(toFetch, toFetch) 
+          || (! initIndex())) {
         _done = true;
         return nullptr;
       }
       _pos = 0;           // this is in the first block
 
-      // This is a new item, so let's read the index if bounds are variable:
-      if (! _allBoundsConstant) {
-        readIndex();
-      }
-
+      // This is a new item, so let's read the index (it is already
+      // initialised).
+      readIndex(atMost);
       _posInDocs = 0;     // position in _documents . . .
+    } 
+    else if (_posInDocs >= _documents.size()) {
+      // we have exhausted our local documents buffer,
+
+      _posInDocs = 0;
+      AqlItemBlock* cur = _buffer.front();
+
+      if (! readIndex(atMost)) { //no more output from this version of the index
+        if (++_pos >= cur->size()) {
+          _buffer.pop_front();  // does not throw
+          delete cur;
+          _pos = 0;
+        }
+        if (_buffer.empty()) {
+          if (! ExecutionBlock::getBlock(DefaultBatchSize, DefaultBatchSize) ) {
+            _done = true;
+            return nullptr;
+          }
+          _pos = 0;           // this is in the first block
+        }
+        
+        if(! initIndex()) {
+          _done = true;
+          return nullptr;
+        }
+        readIndex(atMost);
+      }
     }
 
     // If we get here, we do have _buffer.front() and _pos points into it
@@ -1151,7 +1244,8 @@ AqlItemBlock* IndexRangeBlock::getSome (size_t, // atLeast
 
     if (toSend > 0) {
 
-      res.reset(new AqlItemBlock(toSend, getPlanNode()->getRegisterPlan()->nrRegs[getPlanNode()->getDepth()]));
+      res.reset(new AqlItemBlock(toSend,
+            getPlanNode()->getRegisterPlan()->nrRegs[getPlanNode()->getDepth()]));
 
       // automatically freed should we throw
       TRI_ASSERT(curRegs <= res->getNrRegs());
@@ -1160,7 +1254,8 @@ AqlItemBlock* IndexRangeBlock::getSome (size_t, // atLeast
       inheritRegisters(cur, res.get(), _pos);
 
       // set our collection for our output register
-      res->setDocumentCollection(static_cast<triagens::aql::RegisterId>(curRegs), _trx->documentCollection(_collection->cid()));
+      res->setDocumentCollection(static_cast<triagens::aql::RegisterId>(curRegs),
+          _trx->documentCollection(_collection->cid()));
 
       for (size_t j = 0; j < toSend; j++) {
         if (j > 0) {
@@ -1182,32 +1277,13 @@ AqlItemBlock* IndexRangeBlock::getSome (size_t, // atLeast
       }
     }
 
-    // Advance read position:
-    if (_posInDocs >= _documents.size()) {
-      // we have exhausted our local documents buffer,
-
-      _posInDocs = 0;
-
-      if (++_pos >= cur->size()) {
-        _buffer.pop_front();  // does not throw
-        delete cur;
-        _pos = 0;
-      }
-
-      // let's read the index if bounds are variable:
-      if (! _buffer.empty() && ! _allBoundsConstant) {
-        readIndex();
-      }
-      // If _buffer is empty, then we will fetch a new block in the next call
-      // and then read the index.
-      
-    }
   }
   while (res.get() == nullptr);
 
   // Clear out registers no longer needed later:
   clearRegisters(res.get());
   return res.release();
+  LEAVE_BLOCK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1223,19 +1299,18 @@ size_t IndexRangeBlock::skipSome (size_t atLeast,
 
   size_t skipped = 0;
 
-  while (skipped < atLeast ){
+  while (skipped < atLeast) {
     if (_buffer.empty()) {
-      if (! ExecutionBlock::getBlock(DefaultBatchSize, DefaultBatchSize)) {
+      size_t toFetch = (std::min)(DefaultBatchSize, atMost);
+      if (! ExecutionBlock::getBlock(toFetch, toFetch) 
+          || (! initIndex())) {
         _done = true;
         return skipped;
       }
       _pos = 0;           // this is in the first block
       
       // This is a new item, so let's read the index if bounds are variable:
-      if (! _allBoundsConstant) {
-        readIndex();
-      }
-
+      readIndex(atMost); 
       _posInDocs = 0;     // position in _documents . . .
     }
 
@@ -1259,15 +1334,18 @@ size_t IndexRangeBlock::skipSome (size_t atLeast,
       }
 
       // let's read the index if bounds are variable:
-      if (! _buffer.empty() && ! _allBoundsConstant) {
-        readIndex();
+      if (! _buffer.empty()) {
+          if(! initIndex()) {
+            _done = true;
+            return skipped;
+          }
+          readIndex(atMost);
       }
       _posInDocs = 0;
       
       // If _buffer is empty, then we will fetch a new block in the next round
       // and then read the index.
     }
-
   }
 
   return skipped; 
@@ -1278,6 +1356,7 @@ size_t IndexRangeBlock::skipSome (size_t atLeast,
 ////////////////////////////////////////////////////////////////////////////////
 
 void IndexRangeBlock::readPrimaryIndex (IndexOrCondition const& ranges) {
+  ENTER_BLOCK;
   TRI_primary_index_t* primaryIndex = &(_collection->documentCollection()->_primaryIndex);
      
   std::string key;
@@ -1331,9 +1410,10 @@ void IndexRangeBlock::readPrimaryIndex (IndexOrCondition const& ranges) {
 
     auto found = static_cast<TRI_doc_mptr_t const*>(TRI_LookupByKeyPrimaryIndex(primaryIndex, key.c_str()));
     if (found != nullptr) {
-      _documents.push_back(*found);
+      _documents.emplace_back(*found);
     }
   }
+  LEAVE_BLOCK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1341,11 +1421,12 @@ void IndexRangeBlock::readPrimaryIndex (IndexOrCondition const& ranges) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void IndexRangeBlock::readHashIndex (IndexOrCondition const& ranges) {
+  ENTER_BLOCK;
   auto en = static_cast<IndexRangeNode const*>(getPlanNode());
   TRI_index_t* idx = en->_index->data;
   TRI_ASSERT(idx != nullptr);
   TRI_hash_index_t* hashIndex = (TRI_hash_index_t*) idx;
-             
+
   TRI_shaper_t* shaper = _collection->documentCollection()->getShaper(); 
   TRI_ASSERT(shaper != nullptr);
   
@@ -1373,7 +1454,7 @@ void IndexRangeBlock::readHashIndex (IndexOrCondition const& ranges) {
     
     searchValue._length = n;
 
-    for (size_t i = 0;  i < n;  ++i) {
+    for (size_t i = 0; i < n; ++i) {
       TRI_shape_pid_t pid = *(static_cast<TRI_shape_pid_t*>(TRI_AtVector(&hashIndex->_paths, i)));
       TRI_ASSERT(pid != 0);
    
@@ -1385,30 +1466,30 @@ void IndexRangeBlock::readHashIndex (IndexOrCondition const& ranges) {
           // here x->_low->_bound = x->_high->_bound 
           searchValue._values[i] = *shaped;
           TRI_Free(shaper->_memoryZone, shaped);
+          break; 
         }
       }
-
     }
   };
  
   setupSearchValue();  
-  TRI_index_result_t list = TRI_LookupHashIndex(idx, &searchValue);
-
+  TRI_vector_pointer_t list = TRI_LookupHashIndex(idx, &searchValue);
   destroySearchValue();
   
-  size_t const n = list._length;
+  size_t const n = TRI_LengthVectorPointer(&list);
   try {
     for (size_t i = 0; i < n; ++i) {
-      _documents.push_back(*(list._documents[i]));
+      _documents.emplace_back(* (static_cast<TRI_doc_mptr_t*>(TRI_AtVectorPointer(&list, i))));
     }
   
     _engine->_stats.scannedIndex += static_cast<int64_t>(n);
-    TRI_DestroyIndexResult(&list);
+    TRI_DestroyVectorPointer(&list);
   }
   catch (...) {
-    TRI_DestroyIndexResult(&list);
+    TRI_DestroyVectorPointer(&list);
     throw;
   }
+  LEAVE_BLOCK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1416,6 +1497,7 @@ void IndexRangeBlock::readHashIndex (IndexOrCondition const& ranges) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void IndexRangeBlock::readEdgeIndex (IndexOrCondition const& ranges) {
+  ENTER_BLOCK;
   TRI_document_collection_t* document = _collection->documentCollection();
      
   std::string key;
@@ -1456,12 +1538,13 @@ void IndexRangeBlock::readEdgeIndex (IndexOrCondition const& ranges) {
       // silently ignore all errors due to wrong _from / _to specifications
       auto&& result = TRI_LookupEdgesDocumentCollection(document, direction, documentCid, (TRI_voc_key_t) documentKey.c_str());
       for (auto it : result) {
-        _documents.push_back((it));
+        _documents.emplace_back(it);
       }
   
       _engine->_stats.scannedIndex += static_cast<int64_t>(result.size());
     }
   }
+  LEAVE_BLOCK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1500,14 +1583,17 @@ void IndexRangeBlock::readEdgeIndex (IndexOrCondition const& ranges) {
 // (i.e. the 1 in x.c >= 1) cannot be lists or arrays.
 //
 
-void IndexRangeBlock::readSkiplistIndex (IndexOrCondition const& ranges) {
+void IndexRangeBlock::initSkiplistIndex (IndexOrCondition const& ranges) {
+  ENTER_BLOCK;
+  TRI_ASSERT(_skiplistIterator == nullptr);
+  
   auto en = static_cast<IndexRangeNode const*>(getPlanNode());
   TRI_index_t* idx = en->_index->data;
   TRI_ASSERT(idx != nullptr);
-  
+
   TRI_shaper_t* shaper = _collection->documentCollection()->getShaper(); 
   TRI_ASSERT(shaper != nullptr);
-  
+
   TRI_index_operator_t* skiplistOperator = nullptr; 
 
   Json parameters(Json::List); 
@@ -1563,12 +1649,12 @@ void IndexRangeBlock::readSkiplistIndex (IndexOrCondition const& ranges) {
     }
   }
 
-  TRI_skiplist_iterator_t* skiplistIterator = TRI_LookupSkiplistIndex(idx, skiplistOperator, en->_reverse);
+  _skiplistIterator = TRI_LookupSkiplistIndex(idx, skiplistOperator, en->_reverse);
   if (skiplistOperator != nullptr) {
     TRI_FreeIndexOperator(skiplistOperator);
   }
-  
-  if (skiplistIterator == nullptr) {
+
+  if (_skiplistIterator == nullptr) {
     int res = TRI_errno();
     if (res == TRI_RESULT_ELEMENT_NOT_FOUND) {
       return;
@@ -1576,23 +1662,38 @@ void IndexRangeBlock::readSkiplistIndex (IndexOrCondition const& ranges) {
 
     THROW_ARANGO_EXCEPTION(TRI_ERROR_ARANGO_NO_INDEX);
   }
+  LEAVE_BLOCK;
+}
 
+void IndexRangeBlock::readSkiplistIndex (size_t atMost) {
+  ENTER_BLOCK;
+  if (_skiplistIterator == nullptr) {
+    return;
+  }
+  
   try {
-    while (true) { 
-      TRI_skiplist_index_element_t* indexElement = skiplistIterator->next(skiplistIterator);
+    size_t nrSent = 0;
+    TRI_skiplist_index_element_t* indexElement;
+    while (nrSent < atMost) { 
+      indexElement = _skiplistIterator->next(_skiplistIterator);
 
       if (indexElement == nullptr) {
         break;
       }
-      _documents.push_back(*(indexElement->_document));
+      _documents.emplace_back(*(indexElement->_document));
+      ++nrSent;
       ++_engine->_stats.scannedIndex;
     }
-    TRI_FreeSkiplistIterator(skiplistIterator);
+    if (indexElement == nullptr) {
+      TRI_FreeSkiplistIterator(_skiplistIterator);
+      _skiplistIterator = nullptr;
+    }
   }
   catch (...) {
-    TRI_FreeSkiplistIterator(skiplistIterator);
+    TRI_FreeSkiplistIterator(_skiplistIterator);
     throw;
   }
+  LEAVE_BLOCK;
 }
 
 // -----------------------------------------------------------------------------
@@ -1605,7 +1706,7 @@ EnumerateListBlock::EnumerateListBlock (ExecutionEngine* engine,
     _inVarRegId(ExecutionNode::MaxRegisterId) {
 
   auto it = en->getRegisterPlan()->varInfo.find(en->_inVariable->id);
-  if (it == en->getRegisterPlan()->varInfo.end()){
+  if (it == en->getRegisterPlan()->varInfo.end()) {
     THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL, "variable not found");
   }
   _inVarRegId = (*it).second.registerId;
@@ -1653,7 +1754,8 @@ AqlItemBlock* EnumerateListBlock::getSome (size_t, size_t atMost) {
     // try again!
 
     if (_buffer.empty()) {
-      if (! ExecutionBlock::getBlock(DefaultBatchSize, DefaultBatchSize)) {
+      size_t toFetch = (std::min)(DefaultBatchSize, atMost);
+      if (! ExecutionBlock::getBlock(toFetch, toFetch)) {
         _done = true;
         return nullptr;
       }
@@ -1670,45 +1772,42 @@ AqlItemBlock* EnumerateListBlock::getSome (size_t, size_t atMost) {
     // get the size of the thing we are looping over
     _collection = nullptr;
     switch (inVarReg._type) {
-    case AqlValue::JSON: {
-      if(! inVarReg._json->isList()) {
-        THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL,
-                                       "EnumerateListBlock: JSON is not a list");
-      }
-      sizeInVar = inVarReg._json->size();
-      break;
-    }
-
-    case AqlValue::RANGE: {
-      sizeInVar = inVarReg._range->size();
-      break;
-    }
-
-    case AqlValue::DOCVEC: {
-      if( _index == 0) { // this is a (maybe) new DOCVEC
-        _DOCVECsize = 0;
-        //we require the total number of items
-
-        for (size_t i = 0; i < inVarReg._vector->size(); i++) {
-          _DOCVECsize += inVarReg._vector->at(i)->size();
+      case AqlValue::JSON: {
+        if (! inVarReg._json->isList()) {
+          throwListExpectedException();
         }
+        sizeInVar = inVarReg._json->size();
+        break;
       }
-      sizeInVar = _DOCVECsize;
-      if (sizeInVar > 0) {
-        _collection = inVarReg._vector->at(0)->getDocumentCollection(0);
+
+      case AqlValue::RANGE: {
+        sizeInVar = inVarReg._range->size();
+        break;
       }
-      break;
-    }
 
-    case AqlValue::SHAPED: {
-      THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL,
-                                     "EnumerateListBlock: cannot iterate over shaped value");
-    }
+      case AqlValue::DOCVEC: {
+        if (_index == 0) { // this is a (maybe) new DOCVEC
+          _DOCVECsize = 0;
+          // we require the total number of items
 
-    case AqlValue::EMPTY: {
-      THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL,
-                                     "EnumerateListBlock: cannot iterate over empty value");
-    }
+          for (size_t i = 0; i < inVarReg._vector->size(); i++) {
+            _DOCVECsize += inVarReg._vector->at(i)->size();
+          }
+        }
+        sizeInVar = _DOCVECsize;
+        if (sizeInVar > 0) {
+          _collection = inVarReg._vector->at(0)->getDocumentCollection(0);
+        }
+        break;
+      }
+
+      case AqlValue::SHAPED: {
+        throwListExpectedException();
+      }
+
+      case AqlValue::EMPTY: {
+        throwListExpectedException();
+      }
     }
 
     if (sizeInVar == 0) {
@@ -1753,7 +1852,7 @@ AqlItemBlock* EnumerateListBlock::getSome (size_t, size_t atMost) {
       _thisblock = 0;
       _seen = 0;
       // advance read position in the current block . . .
-      if (++_pos == cur->size() ) {
+      if (++_pos == cur->size()) {
         delete cur;
         _buffer.pop_front();  // does not throw
         _pos = 0;
@@ -1775,9 +1874,10 @@ size_t EnumerateListBlock::skipSome (size_t atLeast, size_t atMost) {
 
   size_t skipped = 0;
 
-  while ( skipped < atLeast ) {
+  while (skipped < atLeast) {
     if (_buffer.empty()) {
-      if (! ExecutionBlock::getBlock(DefaultBatchSize, DefaultBatchSize)) {
+      size_t toFetch = (std::min)(DefaultBatchSize, atMost);
+      if (! ExecutionBlock::getBlock(toFetch, toFetch)) {
         _done = true;
         return skipped;
       }
@@ -1794,19 +1894,20 @@ size_t EnumerateListBlock::skipSome (size_t atLeast, size_t atMost) {
     // get the size of the thing we are looping over
     switch (inVarReg._type) {
       case AqlValue::JSON: {
-        if(! inVarReg._json->isList()) {
-          THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL,
-                                         "EnumerateListBlock: JSON is not a list");
+        if (! inVarReg._json->isList()) {
+          throwListExpectedException();
         }
         sizeInVar = inVarReg._json->size();
         break;
       }
+
       case AqlValue::RANGE: {
         sizeInVar = inVarReg._range->size();
         break;
       }
+
       case AqlValue::DOCVEC: {
-        if( _index == 0) { // this is a (maybe) new DOCVEC
+        if (_index == 0) { // this is a (maybe) new DOCVEC
           _DOCVECsize = 0;
           //we require the total number of items 
           for (size_t i = 0; i < inVarReg._vector->size(); i++) {
@@ -1816,9 +1917,10 @@ size_t EnumerateListBlock::skipSome (size_t atLeast, size_t atMost) {
         sizeInVar = _DOCVECsize;
         break;
       }
-      default: {
-        THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL,
-                                       "EnumerateListBlock: unexpected type in register");
+
+      case AqlValue::SHAPED: 
+      case AqlValue::EMPTY: {
+        throwListExpectedException();
       }
     }
 
@@ -1859,7 +1961,7 @@ AqlValue EnumerateListBlock::getAqlValue (AqlValue inVarReg) {
     case AqlValue::DOCVEC: { // incoming doc vec has a single column
       AqlValue out = inVarReg._vector->at(_thisblock)->getValue(_index -
                                                                 _seen, 0).clone();
-      if(++_index == (inVarReg._vector->at(_thisblock)->size() + _seen)){
+      if (++_index == (inVarReg._vector->at(_thisblock)->size() + _seen)) {
         _seen += inVarReg._vector->at(_thisblock)->size();
         _thisblock++;
       }
@@ -1873,7 +1975,17 @@ AqlValue EnumerateListBlock::getAqlValue (AqlValue inVarReg) {
     }
   }
 
-  THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_INTERNAL, "unexpected value in variable to iterate over");
+  throwListExpectedException();
+  TRI_ASSERT(false);
+
+  // cannot be reached. function call above will always throw an exception
+  return AqlValue();
+}
+          
+void EnumerateListBlock::throwListExpectedException () {
+  THROW_ARANGO_EXCEPTION_MESSAGE(TRI_ERROR_QUERY_LIST_EXPECTED, 
+                                 TRI_errno_string(TRI_ERROR_QUERY_LIST_EXPECTED) +
+                                 std::string(" as operand to FOR loop"));
 }
 
 // -----------------------------------------------------------------------------
@@ -1992,7 +2104,7 @@ AqlItemBlock* CalculationBlock::getSome (size_t atLeast,
                                          size_t atMost) {
 
   unique_ptr<AqlItemBlock> res(ExecutionBlock::getSomeWithoutRegisterClearout(
-                                                     atLeast, atMost));
+                               atLeast, atMost));
 
   if (res.get() == nullptr) {
     return nullptr;
@@ -2240,7 +2352,7 @@ int FilterBlock::getOrSkipSome (size_t atLeast,
       try {
         result = AqlItemBlock::concatenate(collector);
       }
-      catch (...){
+      catch (...) {
         for (auto x : collector) {
           delete x;
         }
@@ -2260,6 +2372,10 @@ bool FilterBlock::hasMore () {
   }
 
   if (_buffer.empty()) {
+    // QUESTION: Is this sensible? Asking whether there is more might
+    // trigger an expensive fetching operation, even if later on only
+    // a single document is needed due to a LIMIT...
+    // However, how should we know this here?
     if (! getBlock(DefaultBatchSize, DefaultBatchSize)) {
       _done = true;
       return false;
@@ -2314,13 +2430,17 @@ AggregateBlock::AggregateBlock (ExecutionEngine* engine,
     }
 
     // iterate over all our variables
-    for (auto it = en->getRegisterPlan()->varInfo.begin(); 
-         it != en->getRegisterPlan()->varInfo.end(); ++it) {
-      // find variable in the global variable map
-      auto itVar = en->_variableMap.find((*it).first);
+    for (auto& vi : en->getRegisterPlan()->varInfo) {
+      if (vi.second.depth > 0 || en->getDepth() == 1) {
+        // Do not keep variables from depth 0, unless we are depth 1 ourselves
+        // (which means no FOR in which we are contained)
+ 
+        // find variable in the global variable map
+        auto itVar = en->_variableMap.find(vi.first);
 
-      if (itVar != en->_variableMap.end()) {
-        _variableNames[(*it).second.registerId] = (*itVar).second;
+        if (itVar != en->_variableMap.end()) {
+          _variableNames[vi.second.registerId] = (*itVar).second;
+        }
       }
     }
   }
@@ -2381,7 +2501,7 @@ int AggregateBlock::getOrSkipSome (size_t atLeast,
   }
 
   while (skipped < atMost) {
-    // read the next input tow
+    // read the next input row
 
     bool newGroup = false;
     if (_currentGroup.groupValues[0].isEmpty()) {
@@ -2409,7 +2529,7 @@ int AggregateBlock::getOrSkipSome (size_t atLeast,
 
     if (newGroup) {
       if (! _currentGroup.groupValues[0].isEmpty()) {
-        if(! skipping){
+        if (! skipping) {
           // need to emit the current group first
           emitGroup(cur, res.get(), skipped);
         }
@@ -2456,7 +2576,7 @@ int AggregateBlock::getOrSkipSome (size_t atLeast,
         // no more input. we're done
         try {
           // emit last buffered group
-          if(! skipping){
+          if (! skipping) {
             emitGroup(cur, res.get(), skipped);
             ++skipped;
             TRI_ASSERT(skipped > 0);
@@ -2487,7 +2607,7 @@ int AggregateBlock::getOrSkipSome (size_t atLeast,
     }
   }
 
-  if(! skipping){
+  if (! skipping) {
     TRI_ASSERT(skipped > 0);
     res->shrink(skipped);
   }
@@ -2503,6 +2623,15 @@ int AggregateBlock::getOrSkipSome (size_t atLeast,
 void AggregateBlock::emitGroup (AqlItemBlock const* cur,
                                 AqlItemBlock* res,
                                 size_t row) {
+
+  if (row > 0) {
+    // re-use already copied aqlvalues
+    for (RegisterId i = 0; i < cur->getNrRegs(); i++) {
+      res->setValue(row, i, res->getValue(0, i));
+      // Note: if this throws, then all values will be deleted
+      // properly since the first one is.
+    }
+  }
 
   size_t i = 0;
   for (auto it = _aggregateRegisters.begin(); it != _aggregateRegisters.end(); ++it) {
@@ -3288,7 +3417,7 @@ void UpdateBlock::work (std::vector<AqlItemBlock*>& blocks) {
               TRI_json_t* old = TRI_JsonShapedJson(_collection->documentCollection()->getShaper(), &shapedJson);
 
               if (old != nullptr) {
-                TRI_json_t* patchedJson = TRI_MergeJson(TRI_UNKNOWN_MEM_ZONE, old, json.json(), ep->_options.nullMeansRemove);
+                TRI_json_t* patchedJson = TRI_MergeJson(TRI_UNKNOWN_MEM_ZONE, old, json.json(), ep->_options.nullMeansRemove, ep->_options.mergeArrays);
                 TRI_FreeJson(TRI_UNKNOWN_MEM_ZONE, old); 
 
                 if (patchedJson != nullptr) {
@@ -3530,7 +3659,7 @@ int GatherBlock::initializeCursor (AqlItemBlock* items, size_t pos) {
     return res;
   }
  
-  if (!_isSimple) {
+  if (! _isSimple) {
     for (std::deque<AqlItemBlock*>& x : _gatherBlockBuffer) {
       for (AqlItemBlock* y: x) {
         delete y;
@@ -3602,13 +3731,13 @@ bool GatherBlock::hasMore () {
 
   if (_isSimple) {
     for (size_t i = 0; i < _dependencies.size(); i++) {
-      if(_dependencies.at(i)->hasMore()) {
+      if (_dependencies.at(i)->hasMore()) {
         return true;
       }
     }
   }
   else {
-    for (size_t i = 0; i < _gatherBlockBuffer.size(); i++){
+    for (size_t i = 0; i < _gatherBlockBuffer.size(); i++) { 
       if (! _gatherBlockBuffer.at(i).empty()) {
         return true;
       } 
@@ -3906,7 +4035,7 @@ BlockWithClients::BlockWithClients (ExecutionEngine* engine,
   : ExecutionBlock(engine, ep), 
     _nrClients(shardIds.size()),
     _ignoreInitCursor(false),
-    _ignoreShutdown(false){
+    _ignoreShutdown(false) {
 
   _shardIdMap.reserve(_nrClients);
   for (size_t i = 0; i < _nrClients; i++) {
@@ -4183,7 +4312,7 @@ int ScatterBlock::getOrSkipSomeForShard (size_t atLeast,
   
   skipped = (std::min)(available, atMost); //nr rows in outgoing block
   
-  if (! skipping){ 
+  if (! skipping) { 
     result = _buffer.at(pos.first)->slice(pos.second, pos.second + skipped);
   }
 
@@ -4356,7 +4485,7 @@ int DistributeBlock::getOrSkipSomeForShard (size_t atLeast,
     skipped = (std::min)(buf.size(), atMost);
 
     if (skipping) {
-      for (size_t i = 0; i < skipped; i++){
+      for (size_t i = 0; i < skipped; i++) {
         buf.pop_front();
       }
       freeCollector();
