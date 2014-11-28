@@ -271,7 +271,7 @@ static const uint32_t V8DataSlot = 0;
 
 #define TRI_V8_RETURN_FALSE()                           \
   args.GetReturnValue().Set(v8::False(isolate));        \
-  return;
+  return
   
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief return 'null'
@@ -280,7 +280,7 @@ static const uint32_t V8DataSlot = 0;
 
 #define TRI_V8_RETURN_NULL()                            \
   args.GetReturnValue().Set(v8::Null(isolate));         \
-  return;
+  return
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief return any sort of V8-value
@@ -290,7 +290,7 @@ static const uint32_t V8DataSlot = 0;
 
 #define TRI_V8_RETURN(WHAT)               \
   args.GetReturnValue().Set(WHAT);        \
-  return;
+  return
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief return a char*
@@ -300,7 +300,7 @@ static const uint32_t V8DataSlot = 0;
 
 #define TRI_V8_RETURN_STRING(WHAT)                                      \
   args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT));    \
-  return;
+  return
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief return a std::string
@@ -310,7 +310,7 @@ static const uint32_t V8DataSlot = 0;
 
 #define TRI_V8_RETURN_STD_STRING(WHAT)                                  \
   args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT.c_str(), v8::String::kNormalString, (int) WHAT.length())); \
-  return;
+  return
   
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief return a string which you know the length of
@@ -321,7 +321,7 @@ static const uint32_t V8DataSlot = 0;
 
 #define TRI_V8_RETURN_PAIR_STRING(WHAT, WHATLEN)                        \
   args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, WHAT, v8::String::kNormalString, (int) WHATLEN)); \
-  return;
+  return
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief abort a function, marking it 'canceled' in the global.
