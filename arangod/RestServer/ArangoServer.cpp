@@ -1043,7 +1043,7 @@ int ArangoServer::runUnitTests (TRI_vocbase_t* vocbase) {
 
   auto isolate = context->isolate;
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
-  v8::Context::Scope contextScope(localContext);
+  /// todo: do we need this? v8::Context::Scope contextScope(localContext);
 
   bool ok = false;
   {
@@ -1097,7 +1097,7 @@ int ArangoServer::runScript (TRI_vocbase_t* vocbase) {
   v8::HandleScope globalScope(isolate);
 
   auto localContext = v8::Local<v8::Context>::New(isolate, context->_context);
-  v8::Context::Scope contextScope(localContext);
+  /// TODO: do we need this? v8::Context::Scope contextScope(localContext);
 
   for (size_t i = 0;  i < _scriptFile.size();  ++i) {
     bool r = TRI_ExecuteGlobalJavaScriptFile(isolate, _scriptFile[i].c_str());
