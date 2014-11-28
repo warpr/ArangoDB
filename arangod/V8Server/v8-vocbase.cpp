@@ -1159,7 +1159,6 @@ static void JS_ExecuteAqlJson (const v8::FunctionCallbackInfo<v8::Value>& args) 
 
 static void JS_ExecuteAql (const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
-  v8::TryCatch tryCatch;
   v8::HandleScope scope(isolate);
 
   TRI_vocbase_t* vocbase = GetContextVocBase(isolate);
